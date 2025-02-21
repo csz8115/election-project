@@ -1141,19 +1141,153 @@ async function createBallot(ballot) {
  *
  * @return {boolean} completed.
  */ 
-function updateBallot(ballot) {
-    //CHECK TO MAKE SURE BALLOT IS NOT ACTIVE OR FINISHED BEFORE UPDATING
+async function updateBallot(ballot) {
+    try {
+        //get Date
+        var date = new Date().toISOString().split('T')[0];
+        
+        //START TRANSACTION
+        var client = await pool.connect();
+        await client.query('BEGIN');
+
+        //CHECK TO MAKE SURE BALLOT IS NOT ACTIVE OR FINISHED BEFORE UPDATING
+        var statement = "SELECT startDate FROM Ballots WHERE ballotID = $1 AND startDate = $2;"
+        var values = [ballot.ballotID, date];
+        var result = await client.query(statement, values);
+        //check if it went through
+        if (result.rows[0].length === 0) {
+            //throw & log DAError
+            throw new DAError('ballot failed on ballot lookup');
+        }
+        
+
+        //insert into ballot table
+        statement = "Update Ballots "
+        + "SET ballotName = $1, description = $2, "
+        + "startDate = $3, endDate = $4, companyID = $5 "
+        + "WHERE ballotID = $6;";
+        values = [ballot.ballotName, ballot.description, ballot.startDate, ballot.endDate, ballot.companyID, ballot.ballotID];
+        result = await client.query(statement, values);
+        //check if it went through
+        if (!(result.rowCount >= 1)) {
+            //throw & log DAError
+            throw new DAError('ballot failed on Ballots');
+        }
+
+        //remove all ballot positions
+        statement = "DELETE FROM BallotPositions "
+        + "WHERE ballotID = $1;";
+        values = [ballot.ballotID];
+        //check if it went through
+        if (!(result.rowCount >= 1)) {
+            //throw & log DAError
+            throw new DAError('ballot failed on position delete');
+        }
+
+        //remove all ballot initiatives
+        statement = "DELETE FROM BallotInitiatives "
+        + "WHERE ballotID = $1;";
+        values = [ballot.ballotID];
+        //check if it went through
+        if (!(result.rowCount >= 1)) {
+            //throw & log DAError
+            throw new DAError('ballot failed on initiative delete');
+        }
+
+        var ballotID = ballot.ballotID;
+        //insert into positions
+        for (let i = 0; i < ballot.ballotPositions.length; i++) {
+            statement = "INSERT INTO BallotPositions (positionName, voteNum, writeIn, ballotID) "
+            + "VALUES ($1, $2, $3, $4) "
+            + "RETURNING positionID;";
+            values = [ballot.ballotPositions[i].positionName, ballot.ballotPositions[i].voteNum, ballot.ballotPositions[i].writeIn, ballotID];
+            result = await client.query(statement, values);
+            //check if it went through
+            if (result.rowCount >= 1) {
+                var positionID = result.rows[0].positionID;
+                //insert into position candidates
+                for (let n = 0; n < ballot.ballotPositions.candidates.length; n++) {
+                    statement = "INSERT INTO Candidate (fName, mName, lName, titles, positions, description, picture) "
+                    + "VALUES ($1, $2, $3, $4, $5, $6, $7) "
+                    + "RETURNING candidateID;";
+                    values = [ballot.ballotPositions[i].candidates[n].fName, 
+                    ballot.ballotPositions[i].candidates[n].mName,
+                    ballot.ballotPositions[i].candidates[n].lName,
+                    ballot.ballotPositions[i].candidates[n].titles,
+                    ballot.ballotPositions[i].candidates[n].positions,
+                    ballot.ballotPositions[i].candidates[n].description,
+                    ballot.ballotPositions[i].candidates[n].picture];
+                    result = await client.query(statement, values);
+                    var candidateID = result.rows[0].candidateID;
+                    //check if it went through
+                    if (result.rowCount >= 1) {
+                        var candidateID = result.rows[0].candidateID;
+                        //insert into ballot candidates
+                        statement = "INSERT INTO BallotCandidates (candidateID, positionID) "
+                        + "VALUES ($1, $2) ";
+                        values = [candidateID, positionID];
+                        result = await pool.query(statement, values);
+                        //check if it went through
+                        if (!(result.rowCount >= 1)) {
+                            //throw & log DAError
+                            throw new DAError('ballot failed on BallotCandidates');
+                        }
+                    } else {
+                        //throw & log DAError
+                        throw new DAError('ballot failed on Candidate');
+                    }                       
+                }
+            } else {
+                //throw & log DAError
+                throw new DAError('ballot failed on BallotPositions');
+            }
+        }
+
+        //insert into initiatives
+        for (let i = 0; i < ballot.ballotInitiatives.length; i++) {
+            statement = "INSERT INTO BallotInitiatives (initiativeName, voteNum, writeIn, ballotID) "
+            + "VALUES ($1, $2, $3, $4) "
+            + "RETURNING initiativeID;";
+            values = [ballot.ballotInitiatives[i].initiativeName, ballot.ballotInitiatives[i].voteNum, ballot.ballotInitiatives[i].writeIn, ballotID]
+            result = await client.query(statement, values);
+            //check if it went through
+            if (result.rowCount >= 1) {
+                var initiativeID = result.rows[0].initiativeID;
+                //insert into initiatives responses
+                for (let n = 0; n < ballot.ballotInitiatives.responses.length; n++) {
+                    statement = "INSERT INTO InitiativeResponses (response, initiativeID) "
+                    + "VALUES ($1, $2);";
+                    values = [ballot.ballotInitiatives[i].responses[n].response, initiativeID]
+                    result = await client.query(statement, values);
+                    //check if it went through
+                    if (!(result.rowCount >= 1)) {
+                        //throw & log DAError
+                        throw new DAError('ballot failed on InitiativeResponses');
+                    }
+                }
+            } else {
+                //throw & log DAError
+                throw new DAError('ballot failed on BallotInitiatives');
+            }   
+        }
+        //END TRANSACTION
+        await  client.query('COMMIT');
+        client.release();
+        //return boolean
+        return true;
+    } catch (error) {
+        //END TRANSACTION
+        await  client.query('ROLLBACK');
+        //check error type
+        if (error == DAError){
+            throw error;
+        } else {
+            //throw database error & Log
+        }
+    } finally {
+        client.release();
+    }
     
-    //START TRANSACTION
-
-    //update ballot information
-
-    //remove all ballot positions
-    //remove all ballot initiatives
-
-    //copy paste from create ballot for positions(& candidates) and initiatives (& responses)
-
-    //END TRANSACTION
 }
 
 /**
