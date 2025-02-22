@@ -216,8 +216,6 @@ async function getUsers(companyID) {
     }
 }
 
-//This stil needs errors
-//THIS STILL NEEDS CHECK USERNAME HELPERFUNCTION OR DO IT IN FUNCTION WITH TRANSACTION
 /**
  * inserts user information onto the database; 
  * if successful returns true.
@@ -225,30 +223,32 @@ async function getUsers(companyID) {
  * Throws error if the file is missing necessary information.
  * Throws error message on a database error.
  *
- * @param {user} user           The JSON file describing the user.
+ * @param {user} user           The user object describing the user.
  *
  * @return {boolean} completed
  */ 
 async function createUser(user) {
     //Check Username Isn't Already Taken
-    if (checkUsername(user.username)) {
-        //create insert statement
-        var statement = "INSERT INTO users (accountType, username, password, fName, mName, lName, companyID) "
-        +"VALUES ($1, $2, $3, $4, $5, $6, $7);";
-        var values = [user.accountType, user.username, user.password, user.fName, user.mName, user.lName, user.companyID];
-        //Insert user into database
-        try {
+    try {
+        if (checkUsername(user.username)) {
+            //Insert user into database
+            var statement = "INSERT INTO users (accountType, username, password, fName, mName, lName, companyID) "
+            +"VALUES ($1, $2, $3, $4, $5, $6, $7);";
+            var values = [user.accountType, user.username, user.password, user.fName, user.mName, user.lName, user.companyID];
             var result = await pool.query(statement, values);
             //return result
-            if(result.rowCount == 1){
+            if(result.rowCount >= 1){
                 return true;
             } else {
                 //throw & log error
+                throw new DAError('failed on insert');
             }
-        } catch (error) {
-            //throw database error & Log
+        } else {
+            //throw &log error
+            throw new DAError('username already in use');
+            
         }
-    } else {
+    } catch (error) {
         if (error == DAError){
             throw error;
         } else {
@@ -257,7 +257,33 @@ async function createUser(user) {
     }
 }
 
-//This stil needs errors
+/**
+ * Called by createUser(),
+ * Checks if username is already taken; 
+ * if successful returns true.
+ * 
+ * Throws error if the file is missing necessary information.
+ * Throws error message on a database error.
+ *
+ * @param {username} username           The username of the user.
+ *
+ * @return {boolean} completed
+ */ 
+async function checkUsername(username) {
+    try {
+        var statement = "SELECT userId FROM User WHERE username = $1";
+        var values = [username];
+        var result = await pool.query(statement, values);
+        if (result.rows[0].length === 0){
+            return true;
+        } else {
+            return false;
+        }
+    } catch (error) {
+        throw error;
+    }
+}
+
 /**
  * updates information onto the database; 
  * if successful returns true.
@@ -282,7 +308,7 @@ async function updateUser(user) {
         if(result.rowCount >= 1){
             return true;
         } else {
-            //throw & log error
+            throw new DAError('failed on user update')
         }
     } catch (error) {
         if (error == DAError){
@@ -293,7 +319,6 @@ async function updateUser(user) {
     }
 }
 
-//This stil needs errors
 /**
  * tells the database to delete that user; 
  * if successful returns true.
@@ -318,6 +343,7 @@ async function removeUser(userID) {
             return true;
         } else {
             //throw & log error
+            throw new DAError ('no user with that ID')
         }
     } catch (error) {
         if (error == DAError){
