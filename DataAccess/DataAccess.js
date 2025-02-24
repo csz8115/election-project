@@ -132,7 +132,7 @@ async function getUserWithID(userID) {
  */ 
 async function getUserWithUsername(username) {
     // Create SELECT statement for database 
-    var statement = "SELECT userID, password, fName, mName, lName, accountType, companyID "
+    var statement = "SELECT userID, password, fName, mName, lName, accountType, companyID " +
     "FROM User WHERE username = $1;";
     var values = [username];
     // Query database
