@@ -17,4 +17,4 @@ class DAError extends Error {
     }
 }
 
-Module.exports = DAError;
+module.exports = DAError;
