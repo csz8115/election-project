@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS User (
     mName TEXT NOT NULL,
     lName TEXT NOT NULL,
     companyID INT NOT NULL,                
-    FOREIGN KEY (companyID) REFERENCES Company(companyID) ON DELETE CASCADE
+    CONSTRAINT fk_companyID_User_Company FOREIGN KEY (companyID) REFERENCES Company(companyID) ON DELETE CASCADE
 );
 
 -- Create AssignedCompanies Table
