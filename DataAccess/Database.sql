@@ -1,8 +1,8 @@
 -- if database doesnt exist create it.
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT FROM pg_database WHERE datname = 'my_database') THEN
-        EXECUTE CREATE DATABASE American_Dream_DB;
+    IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'American_Dream_DB') THEN
+        EXECUTE 'CREATE DATABASE American_Dream_DB';
     END IF;
 END $$;
 
