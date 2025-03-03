@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS Company (
 CREATE TYPE ACCOUNT_TYPE AS ENUM ('Member', 'Officer', 'Employee', 'Administrator');
 
 -- Create User Table
-CREATE TABLE IF NOT EXISTS User (
+CREATE TABLE IF NOT EXISTS "User" (
     userID SERIAL PRIMARY KEY,
     accountType ACCOUNT_TYPE NOT NULL,    
     username TEXT UNIQUE NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS AssignedCompanies (
     userID INT NOT NULL,
     PRIMARY KEY (companyID, userID),
     CONSTRAINT fk_companyID_AssignedCompanies_Company FOREIGN KEY (companyID) REFERENCES Company(companyID) ON DELETE CASCADE,
-    CONSTRAINT fk_userID_AssignedCompanies_User FOREIGN KEY (userID) REFERENCES User(userID) ON DELETE CASCADE
+    CONSTRAINT fk_userID_AssignedCompanies_User FOREIGN KEY (userID) REFERENCES "User"(userID) ON DELETE CASCADE
 );
 
 -- Create Ballots Table
@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS Votes (
     ballotID INT NOT NULL,
     userID INT NOT NULL,
     CONSTRAINT fk_ballotID_Votes_Ballots FOREIGN KEY (ballotID) REFERENCES Ballots(ballotID) ON DELETE CASCADE,
-    CONSTRAINT fk_userID_BallotPositions_User FOREIGN KEY (userID) REFERENCES User(userID) ON DELETE CASCADE
+    CONSTRAINT fk_userID_BallotPositions_User FOREIGN KEY (userID) REFERENCES "User"(userID) ON DELETE CASCADE
 );
 
 -- Create InitiativeVotes Table
