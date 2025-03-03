@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS Company (
 );
 
 -- Create an ENUM type for the status column
-CREATE TYPE ACCOUNT_TYPE AS ENUM ('Member', 'Officer', 'Employee', 'Administrator');
+CREATE TYPE IF NOT EXISTS ACCOUNT_TYPE AS ENUM ('Member', 'Officer', 'Employee', 'Administrator');
 
 -- Create User Table
 CREATE TABLE IF NOT EXISTS "User" (
