@@ -10,7 +10,7 @@ END $$;
 -- Create Company Table
 CREATE TABLE IF NOT EXISTS Company (
     companyID SERIAL PRIMARY KEY,   
-    companyName TEXT UNIQUE NOT NULL,
+    companyName TEXT UNIQUE NOT NULL
 );
 
 -- Create an ENUM type for the status column
@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS Candidate (
     titles TEXT,
     positions TEXT,
     description TEXT,
-    picture TEXT,
+    picture TEXT
 );
 
 -- add database trigger to merge candidates if they are the same when one is created
@@ -138,5 +138,5 @@ CREATE TABLE IF NOT EXISTS WriteInNames (
     nameID SERIAL PRIMARY KEY,
     fName TEXT NOT NULL,
     mName TEXT NOT NULL,
-    lName TEXT NOT NULL,
+    lName TEXT NOT NULL
 );
