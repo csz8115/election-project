@@ -1,6 +1,6 @@
 -- if database doesnt exist create it.
 SELECT 'CREATE DATABASE American_Dream_DB'
-WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'American_Dream_DB')
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'American_Dream_DB')\gexec
 
 
 -- Create Company Table
