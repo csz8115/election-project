@@ -1,10 +1,6 @@
 -- if database doesnt exist create it.
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'American_Dream_DB') THEN
-        EXECUTE 'CREATE DATABASE American_Dream_DB';
-    END IF;
-END $$;
+SELECT 'CREATE DATABASE American_Dream_DB'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'American_Dream_DB')
 
 
 -- Create Company Table
