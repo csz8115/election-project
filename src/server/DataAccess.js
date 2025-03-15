@@ -70,6 +70,39 @@ function getUser(userVar) {
     }
 }
 
+/**
+ * Queries database for an existing user and password,  
+ * If successful returns true.
+ * 
+ * Throws error if there is no user with that ID | Username. 
+ * Throws error message on a database error.
+ *
+ * @param {string} username           The username of the User.
+ * @param {string} password           The password of the User.
+ *
+ * @return {user} user
+ */ 
+async function logInUser(username, password) { 
+    console.log("logging...")
+    //this still needs error handling and error checking
+    var statement = "SELECT username, password "
+    + "FROM User WHERE username = $1 AND password = $2;";
+    var values = [username, password];
+    try {
+        var result = await pool.query(statement, values);
+        if (result.rows.length === 0) {
+            throw new DAError('Invalid username or password');
+        }
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
+module.exports = {
+    logInUser,
+    // other functions to export
+};
 
 /**
  * Called by getUser(), 

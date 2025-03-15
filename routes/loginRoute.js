@@ -4,6 +4,7 @@ const port = 3001;
 const cors = require('cors');
 
 const db = require('../src/server/DataAccess');
+const bcrypt = require('bcrypt');
 
 app.use(express.json());
 app.use(cors({
@@ -12,15 +13,21 @@ app.use(cors({
   allowedHeaders: 'Content-Type,Authorization'
 }));
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   console.log(req.body);
 
+  const saltRounds = 10;
+  const hashedPassword = bcrypt.hashSync(req.body.password, saltRounds);
+  console.log(hashedPassword)
+
   try {
-    let userFound = db.getUser(req.body.username);
-    res.json({ message: userFound });
+    console.log("Attempted to log in...")
+    await db.logInUser(req.body.username, hashedPassword);
+    res.json({ message: 'User logged in successfully' });
   } catch (error) {
-    res.json({ message: 'User Not Found' });
+    res.json({ message: error + 'User Not Found' });
   }
+
 });
 
 app.listen(port, () => {

@@ -9,6 +9,9 @@ CREATE TABLE IF NOT EXISTS Company (
     companyName TEXT UNIQUE NOT NULL
 );
 
+-- INSERT INTO company (companyid, companyname)  VALUES (1, 'American Dream');  
+
+
 -- Create an ENUM type for the status column
 DO $$ 
 BEGIN
@@ -17,6 +20,7 @@ BEGIN
     END IF;
 END $$;
 -- CREATE TYPE IF NOT EXISTS ACCOUNT_TYPE AS ENUM ('Member', 'Officer', 'Employee', 'Administrator');
+-- INSERT INTO "User" (userid, accounttype, username, password, fname, mname, lname, companyid)  VALUES (DEFAULT, 'Administrator', 'admin', '$2b$10$fpfsD/awoy1TEDqJZPM4ZOVuM40v009x0ML1rQA7QK3uNKc3Xu3Xy', 'Ad', 'Admin', 'Min', 1);  
 
 -- Create User Table
 CREATE TABLE IF NOT EXISTS "User" (
