@@ -1,28 +1,28 @@
-const express = require('express'),
-      router = express.Router(),
-      db = require('../DataAccess/DataAccess');
+const express = require('express');
+const app = express();
+const port = 3001;
+const cors = require('cors');
 
-// POST /login endpoint
-router.post('../views/login.html', async (req, res) => {
-  const { username, password } = req.body;
-  console.log("loginform clicked");
+const db = require('../src/server/DataAccess');
 
-  if (!username || !password) {
-    return res.status(400).send({ error: 'Username and password are required' });
-  }
+app.use(express.json());
+app.use(cors({
+  origin: 'http://localhost:5174', // Allow frontend to access
+  methods: 'GET,POST,PUT,DELETE',
+  allowedHeaders: 'Content-Type,Authorization'
+}));
+
+app.post('/api/login', (req, res) => {
+  console.log(req.body);
 
   try {
-    const user = await db.getUser(username);
-
-    if (!user) {
-      return res.status(401).send({ error: 'Invalid credentials' });
-    }
-
-    res.send({ user });
+    let userFound = db.getUser(req.body.username);
+    res.json({ message: userFound });
   } catch (error) {
-    console.error(error);
-    res.status(500).send('Internal Server Error');
+    res.json({ message: 'User Not Found' });
   }
 });
 
-module.exports = router;
+app.listen(port, () => {
+console.log(`Server listening on port ${port}`);
+});
