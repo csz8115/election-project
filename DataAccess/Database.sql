@@ -1,22 +1,16 @@
--- if database doesnt exist create it.
-SELECT 'CREATE DATABASE American_Dream_DB'
-WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'American_Dream_DB')
-
-
 -- Create Company Table
 CREATE TABLE IF NOT EXISTS Company (
     companyID SERIAL PRIMARY KEY,   
     companyName TEXT UNIQUE NOT NULL
 );
 
--- Create an ENUM type for the status column
+-- Create ENUM type for accountType if not exists
 DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'account_type') THEN
         CREATE TYPE ACCOUNT_TYPE AS ENUM ('Member', 'Officer', 'Employee', 'Administrator');
     END IF;
 END $$;
--- CREATE TYPE IF NOT EXISTS ACCOUNT_TYPE AS ENUM ('Member', 'Officer', 'Employee', 'Administrator');
 
 -- Create User Table
 CREATE TABLE IF NOT EXISTS "User" (
@@ -28,7 +22,7 @@ CREATE TABLE IF NOT EXISTS "User" (
     mName TEXT NOT NULL,
     lName TEXT NOT NULL,
     companyID INT NOT NULL,                
-    CONSTRAINT fk_companyID_User_Company FOREIGN KEY (companyID) REFERENCES Company(companyID) ON DELETE CASCADE
+    CONSTRAINT fk_companyID_User FOREIGN KEY (companyID) REFERENCES Company(companyID) ON DELETE CASCADE
 );
 
 -- Create AssignedCompanies Table
@@ -36,8 +30,8 @@ CREATE TABLE IF NOT EXISTS AssignedCompanies (
     companyID INT NOT NULL,   
     userID INT NOT NULL,
     PRIMARY KEY (companyID, userID),
-    CONSTRAINT fk_companyID_AssignedCompanies_Company FOREIGN KEY (companyID) REFERENCES Company(companyID) ON DELETE CASCADE,
-    CONSTRAINT fk_userID_AssignedCompanies_User FOREIGN KEY (userID) REFERENCES "User"(userID) ON DELETE CASCADE
+    CONSTRAINT fk_companyID_AssignedCompanies FOREIGN KEY (companyID) REFERENCES Company(companyID) ON DELETE CASCADE,
+    CONSTRAINT fk_userID_AssignedCompanies FOREIGN KEY (userID) REFERENCES "User"(userID) ON DELETE CASCADE
 );
 
 -- Create Ballots Table
@@ -48,7 +42,7 @@ CREATE TABLE IF NOT EXISTS Ballots (
     startDate DATE NOT NULL,
     endDate DATE NOT NULL,
     companyID INT NOT NULL,                
-    CONSTRAINT fk_companyID_Ballots_Company FOREIGN KEY (companyID) REFERENCES Company(companyID) ON DELETE CASCADE
+    CONSTRAINT fk_companyID_Ballots FOREIGN KEY (companyID) REFERENCES Company(companyID) ON DELETE CASCADE
 );
 
 -- Create BallotInitiatives Table
@@ -57,7 +51,7 @@ CREATE TABLE IF NOT EXISTS BallotInitiatives (
     initiativeName TEXT NOT NULL,
     description TEXT NOT NULL,
     ballotID INT NOT NULL,                
-    CONSTRAINT fk_ballotID_BallotInitiatives_Ballots FOREIGN KEY (ballotID) REFERENCES Ballots(ballotID) ON DELETE CASCADE
+    CONSTRAINT fk_ballotID_BallotInitiatives FOREIGN KEY (ballotID) REFERENCES Ballots(ballotID) ON DELETE CASCADE
 );
 
 -- Create InitiativeResponses Table
@@ -65,7 +59,7 @@ CREATE TABLE IF NOT EXISTS InitiativeResponses (
     responseID SERIAL PRIMARY KEY,
     response TEXT NOT NULL,
     initiativeID INT NOT NULL,                
-    CONSTRAINT fk_initiativeID_InitiativeResponses_BallotInitiatives FOREIGN KEY (initiativeID) REFERENCES BallotInitiatives(initiativeID) ON DELETE CASCADE
+    CONSTRAINT fk_initiativeID_InitiativeResponses FOREIGN KEY (initiativeID) REFERENCES BallotInitiatives(initiativeID) ON DELETE CASCADE
 );
 
 -- Create BallotPositions Table
@@ -75,7 +69,7 @@ CREATE TABLE IF NOT EXISTS BallotPositions (
     voteNum INT NOT NULL,
     writeIn BOOLEAN NOT NULL,
     ballotID INT NOT NULL,
-    CONSTRAINT fk_ballotID_BallotPositions_Ballots FOREIGN KEY (ballotID) REFERENCES Ballots(ballotID) ON DELETE CASCADE
+    CONSTRAINT fk_ballotID_BallotPositions FOREIGN KEY (ballotID) REFERENCES Ballots(ballotID) ON DELETE CASCADE
 );
 
 -- Create Candidate Table
@@ -90,15 +84,13 @@ CREATE TABLE IF NOT EXISTS Candidate (
     picture TEXT
 );
 
--- add database trigger to merge candidates if they are the same when one is created
--- add database trigger to remove all candidates that are not in ballotcandidates when a row is removed from ballot candidates
 -- Create BallotCandidates Table
 CREATE TABLE IF NOT EXISTS BallotCandidates (
     candidateID INT NOT NULL,   
     positionID INT NOT NULL,
     PRIMARY KEY (candidateID, positionID),
-    CONSTRAINT fk_candidateID_BallotCandidates_Candidate FOREIGN KEY (candidateID) REFERENCES Candidate(candidateID) ON DELETE CASCADE,
-    CONSTRAINT fk_positionID_BallotCandidates_BallotPositions FOREIGN KEY (positionID) REFERENCES BallotPositions(positionID) ON DELETE CASCADE
+    CONSTRAINT fk_candidateID_BallotCandidates FOREIGN KEY (candidateID) REFERENCES Candidate(candidateID) ON DELETE CASCADE,
+    CONSTRAINT fk_positionID_BallotCandidates FOREIGN KEY (positionID) REFERENCES BallotPositions(positionID) ON DELETE CASCADE
 );
 
 -- Create Votes Table
@@ -106,8 +98,8 @@ CREATE TABLE IF NOT EXISTS Votes (
     voteID SERIAL PRIMARY KEY,
     ballotID INT NOT NULL,
     userID INT NOT NULL,
-    CONSTRAINT fk_ballotID_Votes_Ballots FOREIGN KEY (ballotID) REFERENCES Ballots(ballotID) ON DELETE CASCADE,
-    CONSTRAINT fk_userID_BallotPositions_User FOREIGN KEY (userID) REFERENCES "User"(userID) ON DELETE CASCADE
+    CONSTRAINT fk_ballotID_Votes FOREIGN KEY (ballotID) REFERENCES Ballots(ballotID) ON DELETE CASCADE,
+    CONSTRAINT fk_userID_Votes FOREIGN KEY (userID) REFERENCES "User"(userID) ON DELETE CASCADE
 );
 
 -- Create InitiativeVotes Table
@@ -116,23 +108,9 @@ CREATE TABLE IF NOT EXISTS InitiativeVotes (
     initiativeID INT NOT NULL,
     responseID INT NOT NULL,
     PRIMARY KEY (voteID, initiativeID, responseID),
-    CONSTRAINT fk_voteID_InitiativeVotes_Votes FOREIGN KEY (voteID) REFERENCES Votes(voteID) ON DELETE CASCADE,
-    CONSTRAINT fk_initiativeID_InitiativeVotes_BallotInitiatives FOREIGN KEY (initiativeID) REFERENCES BallotInitiatives(initiativeID),
-    CONSTRAINT fk_responseID_InitiativeVotes_InitiativeResponses FOREIGN KEY (responseID) REFERENCES InitiativeResponses(responseID) ON DELETE CASCADE
-);
-
--- Create PositionVotes Table
-CREATE TABLE IF NOT EXISTS PositionVotes (
-    voteID INT NOT NULL,   
-    positionID INT NOT NULL,
-    voteNum INT NOT NULL,
-    nameID INT NOT NULL,
-    candidateID INT NOT NULL,
-    PRIMARY KEY (voteID, positionID, voteNum),
-    CONSTRAINT fk_voteID_PositionVotes_Votes FOREIGN KEY (voteID) REFERENCES Votes(voteID) ON DELETE CASCADE,
-    CONSTRAINT fk_positionID_PositionVotes_BallotPositions FOREIGN KEY (positionID) REFERENCES BallotPositions(positionID),
-    CONSTRAINT fk_candidateID_PositionVotes_Candidate FOREIGN KEY (candidateID) REFERENCES Candidate(candidateID),
-    CONSTRAINT fk_nameID_PositionVotes_WriteInNames FOREIGN KEY (nameID) REFERENCES WriteInNames(nameID)
+    CONSTRAINT fk_voteID_InitiativeVotes FOREIGN KEY (voteID) REFERENCES Votes(voteID) ON DELETE CASCADE,
+    CONSTRAINT fk_initiativeID_InitiativeVotes FOREIGN KEY (initiativeID) REFERENCES BallotInitiatives(initiativeID),
+    CONSTRAINT fk_responseID_InitiativeVotes FOREIGN KEY (responseID) REFERENCES InitiativeResponses(responseID) ON DELETE CASCADE
 );
 
 -- Create WriteInNames Table
@@ -141,4 +119,18 @@ CREATE TABLE IF NOT EXISTS WriteInNames (
     fName TEXT NOT NULL,
     mName TEXT NOT NULL,
     lName TEXT NOT NULL
+);
+
+-- Create PositionVotes Table
+CREATE TABLE IF NOT EXISTS PositionVotes (
+    voteID INT NOT NULL,   
+    positionID INT NOT NULL,
+    voteNum INT NOT NULL,
+    candidateID INT NOT NULL,
+    nameID INT,  -- Can be NULL for non-write-in votes
+    PRIMARY KEY (voteID, positionID, voteNum),
+    CONSTRAINT fk_voteID_PositionVotes FOREIGN KEY (voteID) REFERENCES Votes(voteID) ON DELETE CASCADE,
+    CONSTRAINT fk_positionID_PositionVotes FOREIGN KEY (positionID) REFERENCES BallotPositions(positionID),
+    CONSTRAINT fk_candidateID_PositionVotes FOREIGN KEY (candidateID) REFERENCES Candidate(candidateID),
+    CONSTRAINT fk_nameID_PositionVotes FOREIGN KEY (nameID) REFERENCES WriteInNames(nameID)
 );
