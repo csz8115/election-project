@@ -1,11 +1,9 @@
-import Login from './client/Login.jsx'
+import AppRoutes from './client/routes/AppRoutes.jsx'
 
 function App() {
 
   return (
-    <>
-      <Login></Login>
-    </>
+    <AppRoutes></AppRoutes>
   )
 }
 

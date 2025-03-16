@@ -16,14 +16,13 @@ app.use(cors({
 app.post('/api/login', async (req, res) => {
   console.log(req.body);
 
-  const saltRounds = 10;
-  const hashedPassword = bcrypt.hashSync(req.body.password, saltRounds);
-  console.log(hashedPassword)
+  const username = req.body.username
+  const password = req.body.password
 
   try {
     console.log("Attempted to log in...")
-    await db.logInUser(req.body.username, hashedPassword);
-    res.json({ message: 'User logged in successfully' });
+    let result = await db.logInUser(username, password);
+    res.json({ message: result });
   } catch (error) {
     res.json({ message: error + 'User Not Found' });
   }

@@ -1,9 +1,13 @@
-import './css/Login.css'
+import '../css/Login.css'
 import { useState } from 'react';
+import { useNavigate } from "react-router-dom";
+
 
 export default function Login() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const navigate = useNavigate();
+
 
     const handleSubmit = (event) => {
         event.preventDefault();
@@ -21,7 +25,12 @@ export default function Login() {
             return response.json();
         })
         .then(data => {
-            console.log(data);
+            //Navigate to home page on success
+            if (data.message == true) {
+                navigate('/homepage');
+            } else {
+                console.log('Login failed');
+            }
         })
         .catch(error => {
             console.error('Error:', error);

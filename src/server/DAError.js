@@ -12,7 +12,11 @@ class DAError extends Error {
 
     logError() {
         const logMessage = this.name + " - " + this.time + ":\n" + this.message;
-        fs.appendFile('DAerror.log', logMessage);
+        fs.appendFile('src/server/DAerror.log', logMessage, (err) => {
+            if (err) {
+                console.error('Failed to write to log file:', err);
+            }
+        });
         console.log(logMessage);
     }
 }
