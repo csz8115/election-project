@@ -2,6 +2,7 @@
 const {response} = require('express');
 const DAError = require('./DAError');
 const { Pool } = require('pg');
+const bcrypt = require('bcrypt');
 require('dotenv').config();
 
 
@@ -67,9 +68,60 @@ function getUser(userVar) {
         }
     } else {
         throw new DAError('parameter is not a string or number'); 
+      }
+}
+
+/**
+ * Queries database for an existing user and password,  
+ * If successful returns true.
+ * 
+ * Throws error if there is no user with that ID | Username. 
+ * Throws error message on a database error.
+ *
+ * @param {string} username           The username of the User.
+ * @param {string} password           The password of the User.
+ *
+ * @return {user} user
+ */ 
+async function logInUser(username, password) { 
+    //this still needs error handling and error checking
+    var statement = "SELECT password "
+    + "FROM \"User\" WHERE username = $1;";
+    var values = [username];
+    try {
+        var result = await pool.query(statement, values);
+        if (result.rows.length === 0) {
+            throw new DAError('Invalid username or password');
+        }
+        const storedHash = result.rows[0].password;
+        let isMatch;
+        try {
+            isMatch = await bcrypt.compare(password, storedHash);
+        } catch (error) {
+            throw new DAError('Error comparing passwords');
+        }
+        if (!isMatch) {
+            throw new DAError('Invalid username or password');
+        }
+        console.log("Login successful!");
+
+        return true;
+
+    } catch (error) {
+        if (error instanceof DAError) {
+            console.error(error.message);
+            throw error;
+        } else {
+            console.error('Database error', error);
+            throw new DAError('Database error');
+        }
     }
 }
 
+module.exports = {
+    logInUser,
+    // other functions to export
+};
 
 /**
  * Called by getUser(), 

@@ -4,13 +4,14 @@ CREATE TABLE IF NOT EXISTS Company (
     companyName TEXT UNIQUE NOT NULL
 );
 
--- Create ENUM type for accountType if not exists
+-- Create an ENUM type for the status column
 DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'account_type') THEN
         CREATE TYPE ACCOUNT_TYPE AS ENUM ('Member', 'Officer', 'Employee', 'Administrator');
     END IF;
 END $$;
+-- INSERT INTO "User" (userid, accounttype, username, password, fname, mname, lname, companyid)  VALUES (DEFAULT, 'Administrator', 'admin', '$2b$10$PcmqGy/eEoonBgRSAvFS2euQ/mjaNxdWao02Xh3rQ1o3ROI.vWgke', 'Ad', 'Admin', 'Min', 1);  
 
 -- Create User Table
 CREATE TABLE IF NOT EXISTS "User" (
