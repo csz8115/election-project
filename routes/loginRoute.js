@@ -7,7 +7,7 @@ const db = require('../src/server/DataAccess');
 
 app.use(express.json());
 app.use(cors({
-  origin: 'http://localhost:5174', // Allow frontend to access
+  origin: 'http://localhost:2999', // Allow frontend to access
   methods: 'GET,POST,PUT,DELETE',
   allowedHeaders: 'Content-Type,Authorization'
 }));
