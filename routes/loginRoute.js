@@ -4,7 +4,6 @@ const port = 3001;
 const cors = require('cors');
 
 const db = require('../src/server/DataAccess');
-const bcrypt = require('bcrypt');
 
 app.use(express.json());
 app.use(cors({
