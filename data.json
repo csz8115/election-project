@@ -1,0 +1,121 @@
+{
+    "companies": [
+      {
+        "companyID": 1,
+        "companyName": "Association for Computing Machinery",
+        "ballots": [
+          {
+            "ballotID": 1,
+            "ballotName": "ACM Election",
+            "description": "Election for ACM leadership",
+            "startDate": "2025-06-01T00:00:00Z",
+            "endDate": "2025-06-15T00:00:00Z",
+            "positions": [
+              {
+                "positionID": 1,
+                "positionName": "President",
+                "voteNum": 1,
+                "writeIn": false,
+                "candidates": [
+                  { "candidateID": 1, "fName": "Yannis", "lName": "Ioannidis", "titles": "Univ of Athens", "picture": "https://drive.google.com/file/d/19c-awPha7imqNboW6QnjJLVXXHZNdUGy/view?usp=sharing" },
+                  { "candidateID": 2, "fName": "Jens", "lName": "Palsberg", "titles": "Univ of California, Los Angeles", "picture": "https://drive.google.com/file/d/1xV-BIU2wb0DE7MjQxHnl_M6tkYBo4-oM/view?usp=sharing" },
+                  { "candidateID": 3, "fName": "Vivek", "lName": "Sarkar", "titles": "Georgia Tech", "picture": "https://drive.google.com/file/d/1qqSAau0FugU1RrWi_rpcyiMHn91Up98X/view?usp=sharing" },
+                  { "candidateID": 4, "fName": "Jeanna", "lName": "Matthews", "titles": "Clarkson Univ", "picture": "https://drive.google.com/file/d/1qqSAau0FugU1RrWi_rpcyiMHn91Up98X/view?usp=sharing" },
+                  { "candidateID": 5, "fName": "Dame Wendy", "lName": "Hall", "titles": "Univ of Southampton", "picture": "https://drive.google.com/file/d/1OsiWnblo_gwo0T9PR1oIfOaJUHsPMUza/view?usp=sharing" }
+                ]
+              },
+              {
+                "positionID": 2,
+                "positionName": "Vice President",
+                "voteNum": 2,
+                "writeIn": false,
+                "candidates": [
+                  { "candidateID": 6, "fName": "Elisa", "lName": "Bertino", "titles": "Purdue Univ", "picture": "https://drive.google.com/file/d/1DYooKz2vLjQCnSOsUnMhJj5u3RwLbYrp/view?usp=sharing" },
+                  { "candidateID": 7, "fName": "Rashmi", "lName": "Mohan", "titles": "Splunk Inc", "picture": "https://drive.google.com/file/d/1V4HzAKN1k8KR-D2HxV0JUeVzWJxhUDb8/view?usp=sharing" },
+                  { "candidateID": 8, "fName": "Alejandro", "lName": "Saucedo", "titles": "Inst. for Ethical AI", "picture": "https://drive.google.com/file/d/1jvVmTKzLDI0LjNGTpAjGBaA9uA0nzbc0/view?usp=sharing" }
+                ]
+              }
+            ],
+            "initiatives": [
+              {
+                "initiativeID": 1,
+                "initiativeName": "Create SIGGame",
+                "description": "Should ACM create a new Special Interest Group on Gaming (SIGGame)?"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "companyID": 2,
+        "companyName": "World Clown Association",
+        "ballots": [
+          {
+            "ballotID": 2,
+            "ballotName": "WCA Election",
+            "startDate": "2025-06-01T00:00:00Z",
+            "endDate": "2025-06-15T00:00:00Z",
+            "positions": [
+              {
+                "positionID": 3,
+                "positionName": "President",
+                "voteNum": 1,
+                "candidates": [
+                  { "candidateID": 9, "fName": "Robin", "lName": "Bryan", "picture": "https://drive.google.com/file/d/1obpga1TTpQBaMk3flurY93g8ozsfV02z/view?usp=sharing" },
+                  { "candidateID": 10, "fName": "Pam", "lName": "Moody", "picture": "https://drive.google.com/file/d/1P9eHbbKsHQrM6SM99AEM1DaF7Ah8S8z7/view?usp=sharing" },
+                  { "candidateID": 11, "fName": "Randy", "lName": "Christensen", "picture": "https://drive.google.com/file/d/1oqKzTIEmVe0yFhdtwTPV0gcxrsqPTCbw/view?usp=sharing" }
+                ]
+              },
+              {
+                "positionID": 4,
+                "positionName": "Treasurer",
+                "voteNum": 1,
+                "candidates": [
+                  { "candidateID": 12, "fName": "Cyndi", "lName": "Parsons", "picture": "https://drive.google.com/file/d/1Wwh6FJ5U4kW1ZM2muU5zofgL6qwKTH6b/view?usp=sharing" },
+                  { "candidateID": 13, "fName": "Arthur", "lName": "Pedlar", "picture": "https://drive.google.com/file/d/1tFYCwgjZ5f7vog7BX4XDLplmco8vev3o/view?usp=sharing" }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "companyID": 3,
+        "companyName": "Solid Waste Association of North America",
+        
+        "ballots": [
+          {
+            "ballotID": 3,
+            "ballotName": "SWANA Election",
+            "startDate": "2025-06-01T00:00:00Z",
+            "endDate": "2025-06-15T00:00:00Z",
+            "positions": [
+              {
+                "positionID": 5,
+                "positionName": "President",
+                "voteNum": 1,
+                "candidates": [
+                  { "candidateID": 14, "fName": "Tim", "lName": "Flanagan", "titles": "SCS Engineers", "picture": "https://drive.google.com/file/d/1uvfLmIbyqu5gUd6X4zfqGGfWOhDlQ3C1/view?usp=sharing"},
+                  { "candidateID": 15, "fName": "Vita", "lName": "Quinn", "titles": "SCS Engineers", "picture": "https://drive.google.com/file/d/1RG7o_BtdtkFr9X1iZMFzEZ_ZjG8QFDgu/view?usp=sharing" },
+                  { "candidateID": 16, "fName": "Tammy", "lName": "Hayes", "titles": "CDM Smith", "picture": "https://drive.google.com/file/d/1oniRdKjxFlzbKjs1HslJiI-LWVvJ-SiF/view?usp=sharing" },
+                  { "candidateID": 17, "fName": "Brenda", "lName": "Haney", "titles": "City of Lubbock", "picture": "https://drive.google.com/file/d/1m6LH5cDC6PBYxkfT12P5EdQO5gvkzQJM/view?usp=sharing" }
+                ]
+              }
+            ],
+            "initiatives": [
+              {
+                "initiativeID": 2,
+                "initiativeName": "Close Dumpsites Declaration",
+                "description": "Should SWANA sign the International Solid Waste Associations declaration on closing dumpsites?"
+              },
+              {
+                "initiativeID": 3,
+                "initiativeName": "Safety Pledge",
+                "description": "Should SWANA establish a safety pledge for members?"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
