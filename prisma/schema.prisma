@@ -13,14 +13,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ENUM type for accountType
-enum AccountType {
-  Member
-  Officer
-  Employee
-  Administrator
-}
-
 // Company model
 model Company {
   companyID         Int                 @id @default(autoincrement())
@@ -33,11 +25,10 @@ model Company {
 // User model
 model User {
   userID            Int                 @id @default(autoincrement())
-  accountType       AccountType
+  accountType       String              @default("Member")
   username          String              @unique
   password          String
   fName             String
-  mName             String
   lName             String
   companyID         Int
   company           Company             @relation(fields: [companyID], references: [companyID], onDelete: Cascade)
@@ -105,7 +96,6 @@ model BallotPositions {
 model Candidate {
   candidateID      Int                @id @default(autoincrement())
   fName            String
-  mName            String
   lName            String
   titles           String?
   positions        String?
@@ -152,7 +142,6 @@ model InitiativeVotes {
 model WriteInNames {
   nameID        Int             @id @default(autoincrement())
   fName         String
-  mName         String
   lName         String
   positionVotes PositionVotes[]
 }
