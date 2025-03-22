@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Login from "../pages/Login";
-import Homepage from "../pages/Homepage";
+import Dashboard from "../pages/Dashboard";
 
 
 const AppRoutes = () => {
@@ -11,7 +11,7 @@ const AppRoutes = () => {
 
         <Route path="/login" element={<Login />} />
 
-        <Route path="/homepage" element={<Homepage />} />
+        <Route path="/dashboard" element={<Dashboard />} />
 
       </Routes>
     </Router>

@@ -1,70 +1,90 @@
-import '../css/Login.css'
-import { useState } from 'react';
+import { useState } from "react";
+import { useDispatch } from "react-redux";
+import { login } from "../store/userSlice.ts";
 import { useNavigate } from "react-router-dom";
 
-
 export default function Login() {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const navigate = useNavigate();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const response = await fetch("http://localhost:3000/user/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+      credentials: "include", // This is the correct way to include credentials
+    });
+    if (response && response.ok) {
+      const res = await response.json(); // Process response if needed
+      dispatch(
+        login({
+          username: res.data.username,
+          accountType: res.data.accountType,
+          fName: res.data.fName,
+          lName: res.data.lName,
+          companyID: res.data.companyID,
+          companyName: res.data.companyName,
+        })
+      );
+      navigate("/dashboard");
+    } else {
+      console.error("Login failed");
+    }
+  };
 
-    const handleSubmit = (event) => {
-        event.preventDefault();
-        fetch(`http://localhost:2000/api/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ username, password }),
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            //Navigate to home page on success
-            if (data.message == true) {
-                navigate('/homepage');
-            } else {
-                console.log('Login failed');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
-    };
-
-    return (
-        <>
-        <form onSubmit={handleSubmit}>
-            <div>
-                <label htmlFor="username">Username:</label>
-                <input 
-                    type="text" 
-                    id="username" 
-                    name="username" 
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required 
-                />
-            </div>
-            <div>
-                <label htmlFor="password">Password:</label>
-                <input 
-                    type="password" 
-                    id="password" 
-                    name="password" 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required 
-                />
-            </div>
-            <button type="submit">Login</button>
-        </form>
-        </>
-    );
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <form
+        onSubmit={handleSubmit}
+        className="p-8 bg-white rounded-lg shadow-md w-96"
+      >
+        <h1 className="mb-6 text-2xl font-bold text-center text-gray-800">
+          Login
+        </h1>
+        <div className="mb-4">
+          <label
+            htmlFor="username"
+            className="block mb-2 text-sm font-medium text-gray-700"
+          >
+            Username:
+          </label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="mb-6">
+          <label
+            htmlFor="password"
+            className="block mb-2 text-sm font-medium text-gray-700"
+          >
+            Password:
+          </label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <button
+          type="submit"
+          className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
+          Login
+        </button>
+      </form>
+    </div>
+  );
 }
-

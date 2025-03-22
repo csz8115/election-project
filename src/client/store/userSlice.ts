@@ -1,0 +1,50 @@
+// src/store/userSlice.ts
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+
+// Define the initial state type for the user
+interface UserState {
+    username: string | null;
+    accountType: string | null;
+    fName: string | null;
+    lName: string | null;
+    companyID: string | null;
+}
+
+// Define the initial state
+const initialState: UserState = {
+    username: null,
+    accountType: null,
+    fName: null,
+    lName: null,
+    companyID: null,
+};
+
+// Create the slice
+const userSlice = createSlice({
+    name: 'user',
+    initialState,
+    reducers: {
+        login(state, action: PayloadAction<UserState>) {
+            // Set the attributes of the user
+            state.username = action.payload.username;
+            state.accountType = action.payload.accountType;
+            state.fName = action.payload.fName;
+            state.lName = action.payload.lName;
+            state.companyID = action.payload.companyID;
+        },
+        logout(state) {
+            // Clear the attributes of the user
+            state.username = null;
+            state.accountType = null;
+            state.fName = null;
+            state.lName = null;
+            state.companyID = null;
+        },
+    },
+});
+
+// Export the actions
+export const { login, logout } = userSlice.actions;
+
+// Export the reducer
+export default userSlice.reducer;
