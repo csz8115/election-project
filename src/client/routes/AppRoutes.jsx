@@ -12,6 +12,9 @@ const AppRoutes = () => {
   return (
     <Router>
       <Routes>
+      <Route element={<ProtectedRoute />}>
+        <Route path="/" element={<Dashboard />} />
+      </Route>
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
         </Route>
