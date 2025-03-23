@@ -4,7 +4,7 @@ import fs from 'fs';
 const prisma = new PrismaClient();
 
 async function main() {
-    const data = JSON.parse(fs.readFileSync('data.json', 'utf8'));
+    const data = JSON.parse(fs.readFileSync('dataFiles/data.json', 'utf8'));
 
     // Seed the database with the data from the JSON file
     for (const company of data.companies) {
