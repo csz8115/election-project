@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,16 +7,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Company model
 model Company {
   companyID         Int                 @id @default(autoincrement())
   companyName       String              @unique
-  users             User[]
-  ballots           Ballots[]
   AssignedCompanies AssignedCompanies[]
+  ballots           Ballots[]
+  users             User[]
 }
 
-// User model
 model User {
   userID            Int                 @id @default(autoincrement())
   accountType       String              @default("Member")
@@ -31,12 +23,11 @@ model User {
   fName             String
   lName             String
   companyID         Int
-  company           Company             @relation(fields: [companyID], references: [companyID], onDelete: Cascade)
   assignedCompanies AssignedCompanies[]
+  company           Company             @relation(fields: [companyID], references: [companyID], onDelete: Cascade)
   votes             Votes[]
 }
 
-// Assigned Companies model
 model AssignedCompanies {
   companyID Int
   userID    Int
@@ -46,7 +37,6 @@ model AssignedCompanies {
   @@id([companyID, userID])
 }
 
-// Ballots model
 model Ballots {
   ballotID    Int                 @id @default(autoincrement())
   ballotName  String
@@ -54,13 +44,12 @@ model Ballots {
   startDate   DateTime
   endDate     DateTime
   companyID   Int
-  company     Company             @relation(fields: [companyID], references: [companyID], onDelete: Cascade)
   initiatives BallotInitiatives[]
   positions   BallotPositions[]
+  company     Company             @relation(fields: [companyID], references: [companyID], onDelete: Cascade)
   votes       Votes[]
 }
 
-// Ballot Initiatives model
 model BallotInitiatives {
   initiativeID    Int                   @id @default(autoincrement())
   initiativeName  String
@@ -71,7 +60,6 @@ model BallotInitiatives {
   initiativeVotes InitiativeVotes[]
 }
 
-// Initiative Responses model
 model InitiativeResponses {
   responseID      Int               @id @default(autoincrement())
   response        String
@@ -80,19 +68,17 @@ model InitiativeResponses {
   InitiativeVotes InitiativeVotes[]
 }
 
-// Ballot Positions model
 model BallotPositions {
   positionID    Int                @id @default(autoincrement())
   positionName  String
   voteNum       Int
   writeIn       Boolean
   ballotID      Int
-  ballot        Ballots            @relation(fields: [ballotID], references: [ballotID], onDelete: Cascade)
   candidates    BallotCandidates[]
+  ballot        Ballots            @relation(fields: [ballotID], references: [ballotID], onDelete: Cascade)
   positionVotes PositionVotes[]
 }
 
-// Candidate model
 model Candidate {
   candidateID      Int                @id @default(autoincrement())
   fName            String
@@ -105,7 +91,6 @@ model Candidate {
   positionVotes    PositionVotes[]
 }
 
-// Ballot Candidates model
 model BallotCandidates {
   candidateID Int
   positionID  Int
@@ -115,30 +100,27 @@ model BallotCandidates {
   @@id([candidateID, positionID])
 }
 
-// Votes model
 model Votes {
   voteID          Int               @id @default(autoincrement())
   ballotID        Int
   userID          Int
-  ballot          Ballots           @relation(fields: [ballotID], references: [ballotID], onDelete: Cascade)
-  user            User              @relation(fields: [userID], references: [userID], onDelete: Cascade)
   initiativeVotes InitiativeVotes[]
   positionVotes   PositionVotes[]
+  ballot          Ballots           @relation(fields: [ballotID], references: [ballotID], onDelete: Cascade)
+  user            User              @relation(fields: [userID], references: [userID], onDelete: Cascade)
 }
 
-// Initiative Votes model
 model InitiativeVotes {
   voteID       Int
   initiativeID Int
   responseID   Int
-  vote         Votes               @relation(fields: [voteID], references: [voteID], onDelete: Cascade)
   initiative   BallotInitiatives   @relation(fields: [initiativeID], references: [initiativeID], onDelete: Cascade)
   response     InitiativeResponses @relation(fields: [responseID], references: [responseID], onDelete: Cascade)
+  vote         Votes               @relation(fields: [voteID], references: [voteID], onDelete: Cascade)
 
   @@id([voteID, initiativeID, responseID])
 }
 
-// Write-In Names model
 model WriteInNames {
   nameID        Int             @id @default(autoincrement())
   fName         String
@@ -146,17 +128,16 @@ model WriteInNames {
   positionVotes PositionVotes[]
 }
 
-// Position Votes model
 model PositionVotes {
   voteID      Int
   positionID  Int
   voteNum     Int
   candidateID Int
   nameID      Int?
-  vote        Votes           @relation(fields: [voteID], references: [voteID], onDelete: Cascade)
-  position    BallotPositions @relation(fields: [positionID], references: [positionID], onDelete: Cascade)
   candidate   Candidate       @relation(fields: [candidateID], references: [candidateID], onDelete: Cascade)
   name        WriteInNames?   @relation(fields: [nameID], references: [nameID])
+  position    BallotPositions @relation(fields: [positionID], references: [positionID], onDelete: Cascade)
+  vote        Votes           @relation(fields: [voteID], references: [voteID], onDelete: Cascade)
 
   @@id([voteID, positionID, voteNum])
 }

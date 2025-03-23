@@ -30,7 +30,7 @@ async function getUsersByCompany(companyID: number): Promise<any> {
     });
 }
 
-async function createUser(accountType: any, username: string, fName: string, mName: string, lName: string, password: string, companyID: number): Promise<boolean> {
+async function createUser(accountType: any, username: string, fName: string, lName: string, password: string, companyID: number): Promise<any> {
     const user = prisma.user.create({
         data: {
             accountType: accountType,
@@ -38,17 +38,20 @@ async function createUser(accountType: any, username: string, fName: string, mNa
             fName: fName,
             lName: lName,
             password: password,
-            companyID: companyID,
+            company: {
+                connect: {
+                    companyID: Number(companyID),
+                },
+            }
         },
     });
-    return !!user;
+    return user;
 }
 
-async function checkUsername(username: string, password: string): Promise<any> {
+async function checkUsername(username: string): Promise<any> {
     const user = await prisma.user.findUnique({
         where: {
             username: username,
-            password: password,
         },
     });
 

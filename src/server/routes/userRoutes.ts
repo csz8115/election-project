@@ -1,6 +1,7 @@
 import express from 'express';
 import { createSession, encrypt, decrypt } from '../../../utils/session.ts';
-import db from '../../../utils/db.ts'
+import db from '../../../utils/db.ts';
+import bcrypt from 'bcrypt';
 
 
 const router = express.Router();
@@ -14,9 +15,17 @@ router.post('/login', async (req, res) => {
         return;
     }
 
-    const data = await db.checkUsername(username, password);
+    const data = await db.checkUsername(username);
 
     if (data === null) {
+        res.status(401).json({ error: 'Invalid username or password' });
+        return;
+    }
+
+    // Check if the password is correct using the bcrypt compare function
+    const isValid = await bcrypt.compare(password, data.password);
+
+    if (!isValid) {
         res.status(401).json({ error: 'Invalid username or password' });
         return;
     }
@@ -78,13 +87,16 @@ router.post('/register', async (req, res) => {
         res.status(409).json({ error: 'Username already exists' });
     }
 
-    const status = await db.createUser(accountType, username, fName, mName, lName, password, companyID);
+    // Hash the password using bcrypt
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const status = await db.createUser(accountType, username, fName, lName, hashedPassword, companyID);
 
     if (!status) {
         res.status(500).json({ error: 'Failed to create user' });
     }
 
-    res.status(201).json({ message: 'User created' });
+    res.status(201).json({ message: 'User created', status });
 });
 
 // Get user route

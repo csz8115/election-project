@@ -8,6 +8,7 @@ interface UserState {
     fName: string | null;
     lName: string | null;
     companyID: string | null;
+    loggedIn: boolean;
 }
 
 // Define the initial state
@@ -17,6 +18,7 @@ const initialState: UserState = {
     fName: null,
     lName: null,
     companyID: null,
+    loggedIn: false,
 };
 
 // Create the slice
@@ -31,6 +33,7 @@ const userSlice = createSlice({
             state.fName = action.payload.fName;
             state.lName = action.payload.lName;
             state.companyID = action.payload.companyID;
+            state.loggedIn = true;
         },
         logout(state) {
             // Clear the attributes of the user
@@ -39,6 +42,7 @@ const userSlice = createSlice({
             state.fName = null;
             state.lName = null;
             state.companyID = null;
+            state.loggedIn = false;
         },
     },
 });
