@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from './../client.ts';
 
 async function getUser(userID: number): Promise<any> {
     return prisma.user.findUnique({
@@ -30,22 +28,26 @@ async function getUsersByCompany(companyID: number): Promise<any> {
     });
 }
 
-async function createUser(accountType: any, username: string, fName: string, lName: string, password: string, companyID: number): Promise<any> {
-    const user = prisma.user.create({
-        data: {
-            accountType: accountType,
-            username: username,
-            fName: fName,
-            lName: lName,
-            password: password,
-            company: {
-                connect: {
-                    companyID: Number(companyID),
-                },
-            }
-        },
-    });
-    return user;
+async function createUser(accountType: string, username: string, fName: string, lName: string, password: string, companyID: number): Promise<any> {
+    try {
+        const user = await prisma.user.create({
+            data: {
+                accountType: accountType,
+                username: username,
+                fName: fName,
+                lName: lName,
+                password: password,
+                company: {
+                    connect: {
+                        companyID: Number(companyID),
+                    },
+                }
+            },
+        });
+        return user;
+    } catch (error) {
+        throw new Error("Unknown error during user creation");
+    }
 }
 
 async function checkUsername(username: string): Promise<any> {
