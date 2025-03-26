@@ -2,11 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import userRoutes from './routes/userRoutes.ts';
-import pino from 'pino';
-import { decrypt } from '../../utils/session.ts';
+import logger from '../../logger.ts';
+import pinoHttp from 'pino-http';
 
 const app = express();
-const logger = pino();
 
 // Middleware setup
 app.use(cors({
@@ -16,6 +15,10 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser()); // Add cookie parser middleware
+
+
+// Logger middleware
+app.use(pinoHttp({ logger }));
 
 // User routes
 app.use('/user', userRoutes);
@@ -41,7 +44,16 @@ app.use('/user', userRoutes);
 
 // start the server
 app.listen(3000, () => {
-  console.log('Server started on http://localhost:3000');
+  // log the time when the server starts
+  console.log('Server started at localhost:3000');
+  logger.info(`Server started`);
+
+});
+
+process.on('exit', () => {
+  // log the time when the server stops
+  logger.info(`Server stopped`);
+  logger.flush();
 });
 
 export default app;

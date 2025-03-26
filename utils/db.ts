@@ -1,6 +1,6 @@
 import prisma from './../client.ts';
-import { User } from '../types/user.ts';
-import { Company } from '../types/company.ts';
+import { User } from '../src/server/types/user.ts';
+import { Company } from '../src/server/types/company.ts';
 
 
 async function getUser(userID: number): Promise<User> {
@@ -119,7 +119,7 @@ async function checkUsername(username: string): Promise<User> {
                 lName: true,
                 companyID: true,
                 company: true,
-                // password field is omitted
+                password: true,
             },
         });
         return user;
@@ -248,79 +248,14 @@ async function createCompany(companyName: string): Promise<Company> {
     }
 }
 
+async function createVote(userID: number, ballotID: number, positionID: number, candidateID: number) {
+    // start transaction
+    await prisma.$transaction([
+        // insert into votes table
+    ]);
+    // end transaction
 
-
-// async function createVote(userID: number, ballotID: number, voteID: number, initiativeVotes: any, positionsVotes: any) {
-//     // start transaction
-//     await prisma.$transaction([
-//         // insert into votes table
-//         prisma.votes.create({
-//             data: {
-//                 userID: userID,
-//                 ballotID: ballotID,
-//                 voteID: voteID,
-//             },
-//         }),
-//         // loop through initiativeVotes and insert into initiative_votes table
-//         ...initiativeVotes.map((initVote: any) =>
-//             prisma.initiativeVotes.create({
-//                 data: {
-//                     voteID: voteID,
-//                     initiativeID: initVote.initiativeID,
-//                     responseID: initVote.responseID,
-//                     vote: initVote.vote,
-//                     initiative: initVote.initiative,
-//                     response: initVote.response,
-//                 },
-//             })
-//         ),
-//         // loop through positionsVotes and insert into positions_votes table
-//         ...positionsVotes.map((posVote: any) => {
-//             // Check if it's a write-in candidate
-//             if (posVote.name !== null) {
-//                 // Check if name does not already exists
-//                 if (posVote.nameID === null) {
-//                     // Insert into names table
-//                     prisma.writeInNames.create({
-//                         data: {
-//                             fName: posVote.name.fName,
-//                             lName: posVote.name.lName,
-//                         },
-//                     });
-
-//                 }
-//                 prisma.positionVotes.create({
-//                     data: {
-//                         voteID: voteID,
-//                         positionID: posVote.positionID,
-//                         voteNum: posVote.voteNum,
-//                         candidateID: posVote.candidateID,
-//                         nameID: posVote.nameID,
-//                         vote: posVote.vote,
-//                         position: posVote.position,
-//                         candidate: posVote.candidate,
-//                         name: posVote.name,
-//                     },
-//                 });
-//                 // Proceed to insert into positions_votes table normally
-//             } else {
-//                 prisma.positionVotes.create({
-//                     data: {
-//                         voteID: voteID,
-//                         positionID: posVote.positionID,
-//                         voteNum: posVote.voteNum,
-//                         candidateID: posVote.candidateID,
-//                         vote: posVote.vote,
-//                         position: posVote.position,
-//                         candidate: posVote.candidate,
-//                     },
-//                 });
-//             }
-//         }),
-//     ]);
-//     // end transaction
-
-// }
+}
 
 // async function getBallot(ballotID: number): Promise<any> {
 //     return prisma.ballots.findUnique({
