@@ -2,32 +2,31 @@ import express from 'express';
 import { createSession } from '../../../utils/session.ts';
 import db from '../../../utils/db.ts';
 import bcrypt from 'bcrypt';
+import { User } from '../../../types/user.ts';
+import { Company } from '../../../types/company.ts';
 
 
 const router = express.Router();
 
 // User login route
-router.post('/login', async (req, res) => {
+router.post('/login', async (req, res): Promise<any> => {
     const { username, password } = req.body;
 
     if (!username || !password) {
-        res.status(400).json({ error: 'Invalid request' });
-        return;
+        return res.status(400).json({ error: 'Invalid request' });
     }
 
     const data = await db.checkUsername(username);
 
     if (data === null) {
-        res.status(401).json({ error: 'Invalid username or password' });
-        return;
+        return res.status(401).json({ error: 'Invalid username or password' });
     }
 
     // Check if the password is correct using the bcrypt compare function
     const isValid = await bcrypt.compare(password, data.password);
 
     if (!isValid) {
-        res.status(401).json({ error: 'Invalid username or password' });
-        return;
+        return res.status(401).json({ error: 'Invalid username or password' });
     }
 
     // Create a session
@@ -47,11 +46,11 @@ router.post('/login', async (req, res) => {
 
     // Set the username and account type in the response
 
-    res.status(200).json({ message: 'Login successful', data});
+    return res.status(200).json({ message: 'Login successful', data});
 });
 
 // User logout route
-router.post('/logout', async (req, res) => {
+router.post('/logout', async (req, res): Promise<any> => {
     try {
         // Clear the session cookie
         res.clearCookie('user_session', {
@@ -59,44 +58,52 @@ router.post('/logout', async (req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production'
         });
-        res.status(200).json({ message: 'Logout successful' });
+        return res.status(200).json({ message: 'Logout successful' });
     } catch (error) {
         console.error('Error during logout:', error);
-        res.status(500).json({ error: 'Failed to logout properly' });
+        return res.status(500).json({ error: 'Failed to logout properly' });
     }
 });
 
 // User register route
-router.post('/register', async (req, res) => {
+router.post('/register', async (req, res): Promise<any> => {
     const { accountType,
         username,
         fName,
-        mName,
         lName,
         password,
         companyID,
      } = req.body;
 
-    if (!username || !password) {
-        res.status(400).json({ error: 'Invalid request' });
+    if (!username || !password || !fName || !lName || !companyID || !accountType) {
+        return res.status(400).json({ error: 'Invalid request' });
     }
 
     const user = await db.getUserByUsername(username);
 
     if (user) {
-        res.status(409).json({ error: 'Username already exists' });
+        return res.status(409).json({ error: 'Username already exists' });
     }
 
     // Hash the password using bcrypt
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const status = await db.createUser(accountType, username, fName, lName, hashedPassword, companyID);
+    const newUser: User = {
+        accountType,
+        username,
+        fName,
+        lName,
+        password: hashedPassword,
+        companyID,
+    };
+
+    const status = await db.createUser(newUser);
 
     if (!status) {
-        res.status(500).json({ error: 'Failed to create user' });
+        return res.status(500).json({ error: 'Failed to create user' });
     }
 
-    res.status(201).json({ message: 'User created', status });
+    return res.status(201).json({ message: 'User created', status });
 });
 
 // Get user route
@@ -114,6 +121,22 @@ router.get('/getUser', async (req, res): Promise<any> => {
     }
 
     return res.status(200).json(user);
+});
+
+router.get(`/getEmployeeCompany`, async (req, res): Promise<any> => {
+    const { userID } = (req.query);
+
+    if (!userID) {
+        return res.status(400).json({ error: 'Invalid request' });
+    }
+
+    const company = await db.getEmployeeCompany(Number(userID));
+
+    if (!company) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.status(200).json(company);
 });
 
 export default router;

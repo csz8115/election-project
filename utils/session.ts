@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 
-export interface Session {
+interface Session {
     username: string;
     accountType: string;
     expiresAt: Date;

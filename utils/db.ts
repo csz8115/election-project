@@ -1,124 +1,254 @@
 import prisma from './../client.ts';
+import { User } from '../types/user.ts';
+import { Company } from '../types/company.ts';
 
-async function getUser(userID: number): Promise<any> {
-    return prisma.user.findUnique({
-        where: {
-            userID: userID,
-        },
-    });
-}
 
-async function getUserByUsername(username: string): Promise<any> {
-    const user = await prisma.user.findUnique({
-        where: {
-            username: username,
-        },
-    });
-    if (!user) {
-        return null;
-    }
-    return user;
-}
-
-async function getUsersByCompany(companyID: number): Promise<any> {
-    return prisma.user.findMany({
-        where: {
-            companyID: companyID,
-        },
-    });
-}
-
-async function createUser(accountType: string, username: string, fName: string, lName: string, password: string, companyID: number): Promise<any> {
+async function getUser(userID: number): Promise<User> {
     try {
-        const user = await prisma.user.create({
-            data: {
-                accountType: accountType,
+        const fetchUser = await prisma.user.findUnique({
+            where: {
+                userID: userID,
+            },
+            select: {
+                userID: true,
+                accountType: true,
+                username: true,
+                fName: true,
+                lName: true,
+                companyID: true,
+                company: true,
+                // password field is omitted
+            },
+        });
+        return fetchUser;
+    } catch (error) {
+        throw new Error("Unknown error during user retrieval");
+    }
+}
+
+async function getUserByUsername(username: string): Promise<User> {
+    try {
+        const fetchUser = await prisma.user.findUnique({
+            where: {
                 username: username,
-                fName: fName,
-                lName: lName,
-                password: password,
+            },
+            select: {
+                userID: true,
+                accountType: true,
+                username: true,
+                fName: true,
+                lName: true,
+                companyID: true,
+                company: true,
+                // password field is omitted
+            },
+
+        });
+        return fetchUser;
+    } catch (error) {
+        throw new Error("Unknown error during user retrieval");
+    }
+}
+
+async function getUsersByCompany(companyID: number): Promise<User[]> {
+    try {
+        const fetchUsers = await prisma.user.findMany({
+            where: {
+                companyID: companyID,
+            },
+            select: {
+                userID: true,
+                accountType: true,
+                username: true,
+                fName: true,
+                lName: true,
+                companyID: true,
+                company: true,
+                // password field is omitted
+            },
+        });
+        return fetchUsers;
+    } catch (error) {
+        throw new Error("Unknown error during users retrieval");
+    }
+}
+
+async function createUser(user: User): Promise<User> {
+    try {
+        const fetchUser = await prisma.user.create({
+            data: {
+                accountType: user.accountType,
+                username: user.username,
+                fName: user.fName,
+                lName: user.lName,
+                password: user.password,
                 company: {
                     connect: {
-                        companyID: Number(companyID),
+                        companyID: Number(user.companyID),
                     },
                 }
             },
+            select: {
+                userID: true,
+                accountType: true,
+                username: true,
+                fName: true,
+                lName: true,
+                companyID: true,
+                company: true,
+                // password field is omitted
+            },
         });
-        return user;
+        return fetchUser;
     } catch (error) {
         throw new Error("Unknown error during user creation");
     }
 }
 
-async function checkUsername(username: string): Promise<any> {
-    const user = await prisma.user.findUnique({
-        where: {
-            username: username,
-        },
-    });
-
-    return user;
-}
-
-async function updateUser(userID: number, accountType: any, username: string, fName: string, mName: string, lName) {
-    return prisma.user.update({
-        where: {
-            userID: userID,
-        },
-        data: {
-            accountType: accountType,
-            username: username,
-            fName: fName,
-            lName: lName,
-        },
-    });
-}
-
-async function removeUser(userID: number) {
-    return prisma.user.delete({
-        where: {
-            userID: userID,
-        },
-    });
-}
-
-async function getCompany(companyID: number): Promise<any> {
-    return prisma.company.findUnique({
-        where: {
-            companyID: companyID,
-        },
-    });
-}
-
-async function getCompanies(): Promise<any> {
-    return prisma.company.findMany();
-}
-
-async function getEmployeeCompany(userID: number): Promise<any> {
-    const user = await prisma.user.findUnique({
-        where: {
-            userID: userID,
-        },
-    });
-
-    if (!user) {
-        return null;
+async function checkUsername(username: string): Promise<User> {
+    try {
+        const user = await prisma.user.findUnique({
+            where: {
+                username: username,
+            },
+            select: {
+                userID: true,
+                accountType: true,
+                username: true,
+                fName: true,
+                lName: true,
+                companyID: true,
+                company: true,
+                // password field is omitted
+            },
+        });
+        return user;
+    } catch (error) {
+        throw new Error("Unknown error during username check");
     }
+}
 
-    return prisma.company.findUnique({
-        where: {
-            companyID: user.companyID,
-        },
-    });
+async function updateUser(user: User): Promise<User> {
+    try {
+        const fetchUser = await prisma.user.update({
+            where: {
+                userID: user.userID,
+            },
+            data: {
+                accountType: user.accountType,
+                username: user.username,
+                fName: user.fName,
+                lName: user.lName,
+            },
+            select: {
+                userID: true,
+                accountType: true,
+                username: true,
+                fName: true,
+                lName: true,
+                companyID: true,
+                company: true,
+                // password field is omitted
+            },
+        });
+        return fetchUser;
+    } catch (error) {
+        throw new Error("Unknown error during user update");
+    }
+}
+
+async function removeUser(userID: number): Promise<boolean> {
+    try {
+        const fetchUser = await prisma.user.delete({
+            where: {
+                userID: userID,
+            },
+            select: {
+                userID: true,
+                accountType: true,
+                username: true,
+                fName: true,
+                lName: true,
+                companyID: true,
+                company: true,
+                // password field is omitted
+            },
+        });
+        if (fetchUser) {
+            return true;
+        }
+    } catch (error) {
+        throw new Error("Unknown error during user deletion");
+    }
+}
+
+async function getCompany(companyID: number): Promise<Company> {
+    try {
+        const company = await prisma.company.findUnique({
+            where: {
+                companyID: companyID,
+            },
+        });
+        return company;
+    } catch (error) {
+        throw new Error("Unknown error during company retrieval");
+    }
+}
+
+async function getCompanies(): Promise<Company[]> {
+    try {
+        const companies = await prisma.company.findMany();
+        return companies;
+    } catch (error) {
+        throw new Error("Unknown error during companies retrieval");
+    }
+}
+
+async function getEmployeeCompany(userID: number): Promise<Company> {
+    try {
+        const user = await prisma.user.findUnique({
+            where: {
+                userID: Number(userID),
+            },
+            include: {
+                company: true,
+            },
+        });
+        return user.company;
+    } catch (error) {
+        throw new Error(`Unknown error during company retrieval for user ${userID}`);
+    }
 }
 
 async function removeCompany(companyID: number) {
-    return prisma.company.delete({
-        where: {
-            companyID: companyID,
-        },
-    });
+    try {
+        const company = await prisma.company.delete({
+            where: {
+                companyID: companyID,
+            },
+        });
+        if (company) {
+            return true;
+        }
+    } catch (error) {
+        throw new Error("Unknown error during company deletion");
+    }
 }
+
+async function createCompany(companyName: string): Promise<Company> {
+    try {
+        const newCompany = await prisma.company.create({
+            data: {
+                companyName: companyName,
+            },
+        });
+        return newCompany;
+    } catch (error) {
+        throw new Error("Unknown error during company creation");
+    }
+}
+
+
 
 // async function createVote(userID: number, ballotID: number, voteID: number, initiativeVotes: any, positionsVotes: any) {
 //     // start transaction
@@ -498,6 +628,7 @@ export default {
     getCompanies,
     getEmployeeCompany,
     removeCompany,
+    createCompany,
     // createVote,
     // getBallot,
     // getBallots,
