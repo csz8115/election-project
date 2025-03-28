@@ -1,9 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import userRoutes from './routes/userRoutes.ts';
-import logger from './logger.ts';
+import userRoutes from './src/server/routes/userRoutes.ts';
+import logger from './src/server/logger.ts';
 import pinoHttp from 'pino-http';
+import path from "path";
 
 const app = express();
 
@@ -41,6 +42,15 @@ app.use('/user', userRoutes);
 //     }
 //   }
 // });
+
+// Serve React App for all non-API routes
+app.use(express.static(path.join(__dirname, "./dist")));
+
+// ✅ Serve assets correctly
+app.use("/assets", express.static(path.join(__dirname, "./dist/assets")));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "./dist", "index.html"));
+});
 
 // start the server
 app.listen(3000, () => {
