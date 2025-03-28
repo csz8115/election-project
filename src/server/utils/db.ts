@@ -1,7 +1,7 @@
-import prisma from './../client.ts';
-import { User } from '../src/server/types/user.ts';
-import { Company } from '../src/server/types/company.ts';
-
+import prisma from '../../../client.ts';
+import { User } from '../types/user.ts';
+import { Company } from '../types/company.ts';
+import { Ballot } from '../types/ballot.ts';
 
 async function getUser(userID: number): Promise<User> {
     try {
@@ -235,11 +235,13 @@ async function removeCompany(companyID: number) {
     }
 }
 
-async function createCompany(companyName: string): Promise<Company> {
+async function createCompany(company: Company): Promise<Company> {
     try {
         const newCompany = await prisma.company.create({
             data: {
-                companyName: companyName,
+                companyName: company.companyName,
+                abbreviation: company.abbreviation,
+                category: company.category,
             },
         });
         return newCompany;
@@ -250,142 +252,139 @@ async function createCompany(companyName: string): Promise<Company> {
 
 async function createVote(userID: number, ballotID: number, positionID: number, candidateID: number) {
     // start transaction
-    await prisma.$transaction([
-        // insert into votes table
-    ]);
-    // end transaction
-
+    try {
+        // Using a transaction with sequentially executed operations
+        const result = await prisma.$transaction(async (tx) => {
+            // First insert into votes table and get the created vote
+            const newVote = await tx.votes.create({
+                data: {
+                    user: {
+                        connect: {
+                            userID: Number(userID),
+                        },
+                    },
+                    ballot: {
+                        connect: {
+                            ballotID: Number(ballotID),
+                        },
+                    }
+                },
+            });
+            
+            // Then insert into position_votes table using the new vote's ID
+            const positionVote = await tx.positionVotes.create({
+                data: {
+                    vote: {
+                        connect: {
+                            voteID: Number(newVote.voteID),
+                        },
+                    },
+                    position: {
+                        connect: {
+                            positionID: Number(positionID),
+                        },
+                    },
+                    candidate: {
+                        connect: {
+                            candidateID: Number(candidateID),
+                        },
+                    },
+                },
+            });
+            return true;
+        });
+        
+        return result;
+    } catch (error) {
+        throw new Error(error.message);
+    }
 }
 
-// async function getBallot(ballotID: number): Promise<any> {
-//     return prisma.ballots.findUnique({
-//         where: {
-//             ballotID: ballotID,
-//         },
-//     });
-// }
+async function getBallot(ballotID: number): Promise<any> {
+    return prisma.ballots.findUnique({
+        where: {
+            ballotID: ballotID,
+        },
+    });
+}
 
-// async function getBallots(): Promise<any> {
-//     return prisma.ballots.findMany();
-// }
+async function getBallots(): Promise<any> {
+    return prisma.ballots.findMany();
+}
 
-// async function getBallotsByCompany(companyID: number): Promise<any> {
-//     return prisma.ballots.findMany({
-//         where: {
-//             companyID: companyID,
-//         },
-//     });
-// }
+async function getBallotsByCompany(companyID: number): Promise<any> {
+    return prisma.ballots.findMany({
+        where: {
+            companyID: companyID,
+        },
+    });
+}
 
-// async function getActiveBallots(): Promise<any> {
-//     const now = new Date();
-//     return prisma.ballots.findMany({
-//         where: {
-//             startDate: {
-//                 lte: now
-//             },
-//             endDate: {
-//                 gte: now
-//             }
-//         },
-//     });
-// }
+async function getActiveBallots(): Promise<any> {
+    const now = new Date();
+    return prisma.ballots.findMany({
+        where: {
+            startDate: {
+                lte: now
+            },
+            endDate: {
+                gte: now
+            }
+        },
+    });
+}
 
-// async function getInactiveBallots(): Promise<any> {
-//     const now = new Date();
-//     return prisma.ballots.findMany({
-//         where: {
-//             startDate: {
-//                 gt: now
-//             }
-//         },
-//     });
-// }
+async function getInactiveBallots(): Promise<any> {
+    const now = new Date();
+    return prisma.ballots.findMany({
+        where: {
+            startDate: {
+                gt: now
+            }
+        },
+    });
+}
 
-// async function getFinishedBallots(): Promise<any> {
-//     const now = new Date();
-//     return prisma.ballots.findMany({
-//         where: {
-//             endDate: {
-//                 lt: now
-//             }
-//         },
-//     });
-// }
+async function getFinishedBallots(): Promise<any> {
+    const now = new Date();
+    return prisma.ballots.findMany({
+        where: {
+            endDate: {
+                lt: now
+            }
+        },
+    });
+}
 
-// async function createBallot(companyID: number, startDate: Date, endDate: Date, ballotName: string, ballotDescription: string, positions: any, initiatives: any) {
-//     await prisma.$transaction([
-//         // insert into ballots table
-//         prisma.ballots.create({
-//             data: {
-//                 companyID: companyID,
-//                 startDate: startDate,
-//                 endDate: endDate,
-//                 ballotName: ballotName,
-//                 description: ballotDescription,
-//             },
-//         }),
-//         // loop through positions and insert into positions table
-//         ...positions.map((pos: any) => {
-//             prisma.ballotPositions.create({
-//                 data: {
-//                     positionName: pos.positionName,
-//                     voteNum: pos.voteNum,
-//                     writeIn: pos.writeIn,
-//                     ballotID: pos.ballotID,
-//                     ballot: pos.ballot,
-//                     candidates: pos.candidates,
-//                     positionVotes: pos.positionVotes,
+async function createBallot(ballot: Ballot) {
+    try {
+            // First insert into ballots table and get the created ballot
+            const newBallot = await prisma.ballots.create({
+                data: {
+                    ballotName: ballot.ballotName,
+                    description: ballot.description,
+                    startDate: new Date(ballot.startDate),
+                    endDate: new Date(ballot.endDate),
+                    company: {
+                        connect: {
+                            companyID: ballot.companyID,
+                        },
+                    },
+                },
+            });
+            if (!newBallot) {
+                throw new Error("Ballot creation failed");
+            }
+            return newBallot;
+    } catch (error) {
+        if (error instanceof Error) {
+            throw new Error(error.message);
+        }
+        throw new Error("Unknown error during ballot creation");
+    }
 
-//                 },
-//             });
-//             // loop through candidates and insert into candidates table
-//             pos.candidates.map((candidate: any) => {
-//                 prisma.candidate.create({
-//                     data: {
-//                         fName: candidate.fName,
-//                         lName: candidate.lName,
-//                         titles: candidate.titles,
-//                         positions: candidate.positions,
-//                         description: candidate.description,
-//                         picture: candidate.picture,
-//                     },
-//                 });
-//                 // insert into ballot_candidates table
-//                 prisma.ballotCandidates.create({
-//                     data: {
-//                         positionID: pos.positionID,
-//                         candidateID: candidate.candidateID,
-//                     },
-//                 });
-//             });
-//         }),
-//         // loop through initiatives and insert into initiatives table
-//         ...initiatives.map((init: any) => {
-//             prisma.ballotInitiatives.create({
-//                 data: {
-//                     initiativeName: init.initiativeName,
-//                     description: init.description,
-//                     ballotID: init.ballotID,
-//                     ballot: init.ballot,
-//                     initiativeVotes: init.initiativeVotes,
-//                     responses: init.responses,
-//                 },
-//             });
-//             // loop through responses and insert into responses table
-//             init.responses.map((response: any) => {
-//                 prisma.initiativeResponses.create({
-//                     data: {
-//                         response: response.response,
-//                         initiativeID: init.initiativeID,
-//                     },
-//                 });
-//             });
-//         }),
-
-//     ]);
-//     // END OF TRANSACTION
-// }
+    // END OF TRANSACTION
+}
 
 // async function updateBallot(ballotID: number, startDate: Date, endDate: Date, ballotName: string, companyID: number, ballotDescription: string, positions: any, initiatives: any) {
 //     await prisma.$transaction([
@@ -474,82 +473,82 @@ async function createVote(userID: number, ballotID: number, positionID: number, 
 //     // END OF TRANSACTION
 // }
 
-// /**
-//  * Queries the database for the ballot & votes for that ballot based on the ballot, 
-//  * calculates the vote for each position & candidate; 
-//  * if successful returns ballotResults.
-//  * 
-//  * Throws error if there is no ballot or any sub-tables with that ID. 
-//  * Throws error message on a database error.
-//  *
-//  * @param ballotID - The ID of the ballot to tally
-//  * @returns ballotResults - The results of the ballot
-//  * 
-//  */
-// async function tallyBallot(ballotID: number) {
-//     const ballot = await prisma.ballots.findUnique({
-//         where: {
-//             ballotID: ballotID,
-//         },
-//     });
+/**
+ * Queries the database for the ballot & votes for that ballot based on the ballot, 
+ * calculates the vote for each position & candidate; 
+ * if successful returns ballotResults.
+ * 
+ * Throws error if there is no ballot or any sub-tables with that ID. 
+ * Throws error message on a database error.
+ *
+ * @param ballotID - The ID of the ballot to tally
+ * @returns ballotResults - The results of the ballot
+ * 
+ */
+async function tallyBallot(ballotID: number) {
+    const ballot = await prisma.ballots.findUnique({
+        where: {
+            ballotID: ballotID,
+        },
+    });
 
-//     if (!ballot) {
-//         throw new Error('No ballot with that ID');
-//     }
+    if (!ballot) {
+        throw new Error('No ballot with that ID');
+    }
 
-//     const positions = await prisma.ballotPositions.findMany({
-//         where: {
-//             ballotID: ballotID,
-//         },
-//     });
+    const positions = await prisma.ballotPositions.findMany({
+        where: {
+            ballotID: ballotID,
+        },
+    });
 
-//     if (!positions) {
-//         throw new Error('No positions with that ballot ID');
-//     }
+    if (!positions) {
+        throw new Error('No positions with that ballot ID');
+    }
 
-//     const initiatives = await prisma.ballotInitiatives.findMany({
-//         where: {
-//             ballotID: ballotID,
-//         },
-//     });
+    const initiatives = await prisma.ballotInitiatives.findMany({
+        where: {
+            ballotID: ballotID,
+        },
+    });
 
-//     if (!initiatives) {
-//         throw new Error('No initiatives with that ballot ID');
-//     }
+    if (!initiatives) {
+        throw new Error('No initiatives with that ballot ID');
+    }
 
-//     const votes = await prisma.votes.findMany({
-//         where: {
-//             ballotID: ballotID,
-//         },
-//     });
+    const votes = await prisma.votes.findMany({
+        where: {
+            ballotID: ballotID,
+        },
+    });
 
-//     if (!votes) {
-//         throw new Error('No votes with that ballot ID');
-//     }
+    if (!votes) {
+        throw new Error('No votes with that ballot ID');
+    }
 
-//     const ballotResults = {
-//         ballot: ballot,
-//         positions: positions,
-//         initiatives: initiatives,
-//         votes: votes,
-//     };
+    const ballotResults = {
+        ballot: ballot,
+        positions: positions,
+        initiatives: initiatives,
+        votes: votes,
+    };
 
-//     return ballotResults;
-// }
+    return ballotResults;
+}
 
-// /**
-//  * Queries the database for all the votes & their respective user for a ballot, 
-//  * as well as for all the users of that company that have not yet voted, 
-//  * compiles a list of all users that have voted and have not voted; 
-//  * if successful returns ballotVoters.
-//  * 
-//  * Throws error if there is no vote with that ID. 
-//  * Throws error message on a database error.
-//  *
-//  * @param ballotID - The ID of the ballot to tally
-//  */
-// async function tallyBallotVoters(ballotID) {
-// }
+/**
+ * Queries the database for all the votes & their respective user for a ballot, 
+ * as well as for all the users of that company that have not yet voted, 
+ * compiles a list of all users that have voted and have not voted; 
+ * if successful returns ballotVoters.
+ * 
+ * Throws error if there is no vote with that ID. 
+ * Throws error message on a database error.
+ *
+ * @param ballotID - The ID of the ballot to tally
+ */
+async function tallyBallotVoters(ballotID) {
+}
 
 export default {
     getUser,
@@ -564,15 +563,15 @@ export default {
     getEmployeeCompany,
     removeCompany,
     createCompany,
-    // createVote,
-    // getBallot,
-    // getBallots,
-    // getBallotsByCompany,
-    // getActiveBallots,
-    // getInactiveBallots,
-    // getFinishedBallots,
-    // createBallot,
+    createVote,
+    getBallot,
+    getBallots,
+    getBallotsByCompany,
+    getActiveBallots,
+    getInactiveBallots,
+    getFinishedBallots,
+    createBallot,
     // updateBallot,
-    // tallyBallot,
-    // tallyBallotVoters,
+    tallyBallot,
+    tallyBallotVoters,
 };

@@ -1,4 +1,4 @@
-import { prismaMock } from '../singleton.ts'
+import { prismaMock } from '../../../singleton.ts'
 import db from './db.ts'
 
 const user = {
@@ -48,17 +48,23 @@ const users = [
 
 const company = {
     companyID: 1,
-    companyName: 'Test Company'
+    companyName: 'Test Company',
+    abbreviation: 'TC',
+    category: 'Test Category'
 }
 
 const companies = [
     {
         companyID: 1,
-        companyName: 'Test Company'
+        companyName: 'Test Company',
+        abbreviation: 'TC',
+        category: 'Test Category'
     },
     {
         companyID: 2,
-        companyName: 'Test Company 2'
+        companyName: 'Test Company 2',
+        abbreviation: 'TC2',
+        category: 'Test Category 2'
     }
 ]
 
@@ -219,16 +225,16 @@ test('removeCompany should remove a company', async () => {
 test('createCompany should create a company', async () => {
     prismaMock.company.create.mockResolvedValue(company);
 
-    await expect(db.createCompany(company.companyName)).resolves.toEqual(company);
+    await expect(db.createCompany(company)).resolves.toEqual(company);
 });
 
 // Check if creating a company works when the company already exists
 test('createCompany should throw an error if the company already exists', async () => {
     prismaMock.company.create.mockResolvedValue(company);
 
-    await db.createCompany(company.companyName);
+    await db.createCompany(company);
 
     prismaMock.company.create.mockRejectedValue(new Error("Unknown error during company creation"));
 
-    await expect(db.createCompany(company.companyName)).rejects.toThrow("Unknown error during company creation");
+    await expect(db.createCompany(company)).rejects.toThrow("Unknown error during company creation");
 });

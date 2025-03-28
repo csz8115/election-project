@@ -1,6 +1,6 @@
 import express from 'express';
-import { createSession } from '../../../utils/session.ts';
-import db from '../../../utils/db.ts';
+import { createSession } from '../utils/session.ts';
+import db from '../utils/db.ts';
 import bcrypt from 'bcrypt';
 import { User } from '../types/user.ts';
 import { Company } from '../types/company.ts';
