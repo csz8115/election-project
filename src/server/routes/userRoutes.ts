@@ -139,4 +139,25 @@ router.get(`/getEmployeeCompany`, async (req, res): Promise<any> => {
     return res.status(200).json(company);
 });
 
+// Get ballot route
+router.get('/tallyBallot', async (req, res): Promise<any> => {
+    try {
+        const { ballotID } = req.query;
+
+        if (!ballotID) {
+            return res.status(400).json({ error: 'Invalid request' });
+        }
+
+        const ballot = await db.tallyBallot(Number(ballotID));
+
+        if (!ballot) {
+            return res.status(404).json({ error: 'Ballot not found' });
+        }
+
+        return res.status(200).json(ballot);
+    } catch (error) {
+        return res.status(500).json({ error: 'Failed to get ballot' });
+    }
+});
+
 export default router;

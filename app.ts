@@ -5,12 +5,13 @@ import userRoutes from './src/server/routes/userRoutes.ts';
 import logger from './src/server/logger.ts';
 import pinoHttp from 'pino-http';
 import path from "path";
-
+import dotenv from 'dotenv';
+dotenv.config();
 const app = express();
 
 // Middleware setup
 app.use(cors({
-  origin: 'http://localhost:2999', // Your frontend URL
+  origin: 'http://localhost:5173', // Your frontend URL
   credentials: true // Enable cookies with CORS
 }));
 app.use(express.json());
@@ -22,7 +23,7 @@ app.use(cookieParser()); // Add cookie parser middleware
 app.use(pinoHttp({ logger }));
 
 // User routes
-app.use('/user', userRoutes);
+app.use('/api', userRoutes);
 
 // auth middleware 
 // app.use(async (req, res, next) => {
@@ -44,13 +45,13 @@ app.use('/user', userRoutes);
 // });
 
 // Serve React App for all non-API routes
-app.use(express.static(path.join(__dirname, "./dist")));
+// app.use(express.static(path.join(__dirname, "./dist")));
 
 // ✅ Serve assets correctly
-app.use("/assets", express.static(path.join(__dirname, "./dist/assets")));
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "./dist", "index.html"));
-});
+// app.use("/assets", express.static(path.join(__dirname, "./dist/assets")));
+// app.get("*", (req, res) => {
+//   res.sendFile(path.join(__dirname, "./dist", "index.html"));
+// });
 
 // start the server
 app.listen(3000, () => {

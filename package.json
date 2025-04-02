@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "server": "nodemon --watch src --ext ts --exec ts-node src/server/app.ts",
+    "server": "nodemon --watch src --ext ts --exec ts-node app.ts",
     "client": "vite",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "build": "vite build",
