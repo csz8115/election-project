@@ -1,0 +1,48 @@
+body{
+    background-color: rgb(246, 243, 244);
+}
+
+.dashboard{
+    background-color: white;
+    margin: 5em;
+    padding: 3em;
+}
+
+.dashboardHeader{
+    font-size: 1.8em;
+}
+
+.dashboardBallotContainer {
+    display: block;
+    background-color: rgb(246, 243, 244);
+    padding: 2em;
+    border-radius: .5em;
+    box-shadow: rgba(0, 0, 0, 0.06) 0px 2px 4px 0px inset;
+}
+
+.dashboardBallotButton{
+    font-size: 1.5em;
+    margin-left: 2em;    
+    width: 8em;
+    aspect-ratio: 2/1;
+    padding: 1em;
+    background-color: white;
+    color:black;
+    text-align: center;
+    border-radius: .25em;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
+    box-sizing: border-box;
+    border-bottom: .1em solid transparent;
+    cursor: pointer;
+}
+
+.buttonDisabled {
+    background-color: lightgray;
+    color: gray;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.dashboardBallotButton:hover {
+    border-bottom: .1em solid lightblue;
+}
