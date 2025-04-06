@@ -1,9 +1,31 @@
 import React from 'react';
-import BallotVoteSection from './BallotVoteSection'
-import BallotInitiativeSection from './BallotInitiativeSection';
+import { useLocation, useNavigate } from 'react-router-dom';
+import BallotVoteSection from '../components/BallotVoteSection'
+import BallotInitiativeSection from '../components/BallotInitiativeSection';
+import '../components/Ballot.css';
 
 
 const Ballot = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    
+    if (!location.state) {
+        return (
+            <div className='ballot'>
+                <h1>Ballot Not Found</h1>
+                <p>Please go back to the dashboard and select a ballot.</p>
+            </div>
+        );
+    }
+
+    const ballotID = location.state;
+
+
+    const handleBackButton = () => {
+        navigate(-1);
+    }
+
     const ballotObject = {
         "ballotID": 2,
         "ballotName": "2001 Board Elections",
@@ -175,7 +197,7 @@ const Ballot = () => {
 
     return (
         <div className='ballot'>
-            <button className='backButton'>&lt; Back</button>
+            <button className='backButton' onClick={handleBackButton}>&lt; Back</button>
             <h1>{ballotObject.ballotName}</h1>
             <h3>{ballotObject.company.companyName}</h3>
             <p>{ballotObject.description}</p>

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import CandidateButton from './CandidateButton';
-import './CandidateButton.css'
 
 const BallotVoteSection = ({positionTitle, votingLimit, candidates}) => {
     const [selected, setSelected] = useState([]);

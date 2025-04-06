@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
+import { useNavigate } from "react-router-dom";
 import Logout from '../components/Logout';
 import BallotButton from '../components/BallotButton';
 
@@ -21,6 +22,11 @@ export default function Dashboard() {
     const getBallots = (json) => {
         const ballots = json["ballots"];
         return ballots;
+    }
+
+    const navigate = useNavigate();
+    const handleClick = (ballotID) => {
+        navigate('/Ballot',{state: {ballotID: 1}});
     }
 
     useEffect(() => {
@@ -56,7 +62,7 @@ export default function Dashboard() {
         ballots.map(ballot => {
  
             if (new Date(ballot.endDate) > new Date()) {
-                activeBallotComponents.push(<BallotButton key={ballot.ballotID} label={ballot.ballotName} onClick={null} disabled={false} />);
+                activeBallotComponents.push(<BallotButton key={ballot.ballotID} label={ballot.ballotName} onClick={() => handleClick(ballot.ballotID)} disabled={false} />);
             } else {
                 inactiveBallotComponents.push(<BallotButton key={ballot.id} label={ballot.ballotName} onClick={null} disabled={true} />);
             }
