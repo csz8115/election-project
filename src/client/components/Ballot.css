@@ -1,0 +1,216 @@
+body{
+    background-color: rgb(246, 243, 244);
+}
+
+/*===================================================================*/
+/*=========================  BALLOT STYLES  ========================*/
+/*===================================================================*/
+
+.ballot {
+    margin: 5em;
+    padding: 2em;
+    text-align: center;
+    background-color: white;
+    border-radius: .5em;
+    margin-bottom: 3em;
+    box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+}
+
+.ballotBody {
+    display: flex;
+    flex-direction: column;
+    gap: 2em;
+}
+
+.ballotVoteSectionDetails {
+    display: flex;
+    text-align: center;
+    justify-content:space-between;
+    align-items: center;
+    gap: 2em;
+    height: 4em;
+}
+
+.ballotAbstainButton {
+    background-color: red;
+    color:white;
+    font-weight:bold;
+    padding:.7em;
+    margin-left: auto;
+    border-radius: .25em;
+    cursor: pointer;
+    box-shadow: rgba(0, 0, 0, 0.06) 0px 2px 4px 0px ;
+
+}
+
+.ballotAbstainButton:hover {
+
+    transition: .25s;
+
+    background-color: white;
+    color:red;
+    box-shadow: rgba(0, 0, 0, 0.06) 0px 2px 4px 0px inset;
+
+}
+
+.ballotAbstainButtonOn{
+    background-color: white;
+    color:red;
+}
+
+.ballotVoteSectionDetails > h1 {
+    background-color: white;
+    padding: .2em;
+    padding-left: 1em;
+    padding-right: 1em;
+    width: max-content;
+}
+
+.candidateContainer {
+    position: relative;
+    display: flex;
+    border: .1em solid gray;
+    border-radius: .5em;
+    flex-wrap: wrap;
+    justify-content: left;
+    align-items: center;
+}
+
+.ballotVoteSection{
+    margin-bottom: 3em;
+    border-left: .3em solid rgb(246, 243, 244);
+    padding-left: 2em;
+}
+
+.overlay{
+    display: none;
+    background-color: rgba(0,0,0,0.5); 
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.overlay > p{
+    font-size: 2em;
+    max-width: max-content;
+    text-align: center;
+    margin: auto;
+    margin-top: 3em;
+    color: white;
+    border-bottom: .2em solid red;
+}
+
+.writeIn{
+    padding: .5em;
+    font-size: 1.5em;
+    text-align: left;
+}
+.writeIn > input {
+    font-size: inherit;
+    padding: .25em;
+}
+
+.ballotInitiativeSection{
+    margin-bottom: 3em;
+    border-left: .3em solid rgb(246, 243, 244);
+    padding-left: 2em;
+}
+.ballotInitiativeSection > p {
+    font-size: 1.5em;
+    
+}
+
+.initiativeOptions {
+    font-size: 1.75em;
+    display: flex;
+    justify-content: center;
+}
+
+.initiativeOptions > label {
+    padding: 1em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.initiativeOptions > label > input {
+    margin-bottom: 0.5em;
+}
+
+.backButton {
+    display: block;
+    font-size: 1.5em;
+    width: 5em;
+    border: none;
+    padding: .25em;
+    background-color: gray;
+    color:white;
+
+    cursor: pointer;
+}
+
+.backButton:hover {
+    display: block;
+    font-size: 1.5em;
+    width: 5em;
+    border: none;
+    padding: .25em;
+    background-color: whitesmoke;
+    color:gray;
+
+    cursor: pointer;
+}
+
+.submitBallot {
+    background-color: darkseagreen;
+    color: white;
+    border: none;
+    font-size: 1.25em;
+    font-weight: bold;
+    padding: .5em;
+}
+
+
+/*===================================================================*/
+/*================  BALLOT CANDIDATE BUTTON STYLES  =================*/
+/*===================================================================*/
+
+.candidateField {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    width: max-content;
+    padding: 1em;
+}
+
+.candidateField > p {
+    border-radius: .2em;
+    padding: .2em;
+    font-weight: bold;
+    font-size: 1.2em;
+    box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+
+}
+
+.candidateButton {
+    width: 15em;
+    aspect-ratio: 1/1;
+    border: none;
+    cursor: pointer;
+    border-radius: .5em;
+    box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+}
+
+.candidateButton:hover {
+    border: .3em solid lightblue;
+    transition: .25s;
+}
+
+.candidateButtonToggled {
+    border: .3em solid dodgerblue;
+    transition: 1s;
+}
+.candidateButtonToggled:hover {
+    border: .3em solid dodgerblue;
+    transition: 1s;
+}

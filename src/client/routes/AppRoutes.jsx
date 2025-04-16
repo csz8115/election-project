@@ -3,8 +3,10 @@ import {
   Routes,
   Route,
 } from "react-router-dom";
+
 import Login from "../pages/Login";
 import Dashboard from "../pages/Dashboard";
+import Ballot from "../pages/Ballot";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
 
@@ -17,6 +19,9 @@ const AppRoutes = () => {
       </Route>
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
+        </Route>
+        <Route element={<ProtectedRoute />}>
+          <Route path="/ballot" element={<Ballot />} />
         </Route>
         <Route element={<PublicRoute />}>
         <Route path="/login" element={<Login />} />
