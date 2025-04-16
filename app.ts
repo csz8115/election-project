@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import userRoutes from './src/server/routes/userRoutes.ts';
+import adminRoutes from './src/server/routes/adminRoutes.ts';
 import logger from './src/server/logger.ts';
 import pinoHttp from 'pino-http';
 import path from "path";
@@ -24,7 +25,7 @@ app.use(pinoHttp({ logger }));
 
 // User routes
 app.use('/api', userRoutes);
-
+app.use('/api', adminRoutes);
 // auth middleware 
 // app.use(async (req, res, next) => {
 //   // Check if the req is coming from login or register

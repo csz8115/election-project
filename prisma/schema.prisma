@@ -7,6 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum AccountType {
+  Member
+  Admin
+  Moderator
+}
+
 model company {
   companyID    Int       @id @default(autoincrement())
   companyName  String    @unique
@@ -28,6 +34,9 @@ model ballots {
   company         company             @relation(fields: [companyID], references: [companyID], onDelete: Cascade)
   votes           votes[]
   initiativeVotes initiativeVotes[]
+
+  @@index ([companyID, endDate], name: "company_end_date_index")
+  @@index ([companyID, startDate, endDate], name: "company_start_end_date_index")
 }
 
 model candidate {
@@ -37,13 +46,14 @@ model candidate {
   titles           String?
   description      String?
   picture          String?
+  writeIn          Boolean            @default(false)
   ballotCandidates ballotCandidates[]
   positionVotes    positionVotes[]
 }
 
 model user {
   userID          Int               @id @default(autoincrement())
-  accountType     String            @default("Member")
+  accountType     AccountType       @default(Member)
   username        String            @unique
   password        String
   fName           String
@@ -61,6 +71,8 @@ model votes {
   positionVotes positionVotes[]
   ballot        ballots         @relation(fields: [ballotID], references: [ballotID], onDelete: Cascade)
   user          user            @relation(fields: [userID], references: [userID], onDelete: Cascade)
+
+  @@index([ballotID, userID], name: "ballot_user_index")
 }
 
 model ballotInitiatives {
@@ -91,6 +103,8 @@ model initiativeVotes {
   response     initiativeResponses @relation(fields: [responseID], references: [responseID], onDelete: Cascade)
   user         user                @relation(fields: [userID], references: [userID], onDelete: Cascade)
   ballot       ballots             @relation(fields: [ballotID], references: [ballotID], onDelete: Cascade)
+
+  @@index([userID, initiativeID], name: "user_initiative_index")
 }
 
 model ballotPositions {
@@ -113,22 +127,15 @@ model ballotCandidates {
   @@id([candidateID, positionID])
 }
 
-model writeInNames {
-  nameID        Int             @id @default(autoincrement())
-  fName         String
-  lName         String
-  positionVotes positionVotes[]
-}
-
 model positionVotes {
   voteID      Int
   positionID  Int
   candidateID Int
   nameID      Int?
   candidate   candidate       @relation(fields: [candidateID], references: [candidateID], onDelete: Cascade)
-  name        writeInNames?   @relation(fields: [nameID], references: [nameID])
   position    ballotPositions @relation(fields: [positionID], references: [positionID], onDelete: Cascade)
   vote        votes           @relation(fields: [voteID], references: [voteID], onDelete: Cascade)
 
   @@id([voteID, positionID])
+  @@index([voteID, positionID], name: "vote_position_index")
 }

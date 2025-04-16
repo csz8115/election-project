@@ -2,6 +2,11 @@ import prisma from '../../../client.ts';
 import { User } from '../types/user.ts';
 import { Company } from '../types/company.ts';
 import { Ballot } from '../types/ballot.ts';
+import { Candidate } from '../types/candidate.ts';
+import { Vote } from '../types/vote.ts';
+import { ResponseVote } from '../types/response.ts';
+import { BallotPositions } from '../types/ballotPositions.ts';
+import { BallotInitiatives } from '../types/ballotInitiatives.ts';
 
 async function getUser(userID: number): Promise<User> {
     try {
@@ -73,6 +78,22 @@ async function getUsersByCompany(companyID: number): Promise<User[]> {
     }
 }
 
+async function getCandidate(candidateID: number): Promise<Candidate> {
+    try {
+        const fetchCandidate = await prisma.candidate.findUnique({
+            where: {
+                candidateID: candidateID,
+            },
+        });
+        if (!fetchCandidate) {
+            throw new Error("Candidate not found");
+        }
+        return fetchCandidate;
+    } catch (error) {
+        throw new Error("Unknown error during candidate retrieval");
+    }
+}
+
 async function createUser(user: User): Promise<User> {
     try {
         const fetchUser = await prisma.user.create({
@@ -102,6 +123,42 @@ async function createUser(user: User): Promise<User> {
         return fetchUser;
     } catch (error) {
         throw new Error("Unknown error during user creation");
+    }
+}
+
+async function createCandidate(fName: string, lName: string, titles: string, description: string, picture: string): Promise<any> {
+    try {
+        // insert into the candidates table
+        await prisma.candidate.create({
+            data: {
+                fName: fName,
+                lName: lName,
+                titles: titles,
+                description: description,
+                picture: picture ? picture : "https://i.pravatar.cc/250?u=mail@ashallendesign.co.uk"
+            }
+        })
+    } catch (error) {
+        throw new Error("Unknown error during candidate creation");
+    }
+}
+
+async function createWriteInCandidate(fName: string, lName: string) {
+    try {
+        const candidate = await prisma.candidate.create({
+            data: {
+                fName: fName,
+                lName: lName,
+                titles: "",
+                description: "",
+                picture: "https://i.pravatar.cc/250?u=mail@ashallendesign.co.uk"
+            }
+
+        });
+        // return the created candidate id 
+        return candidate.candidateID;
+    } catch (error) {
+        throw new Error("Unknown error during write-in candidate creation");
     }
 }
 
@@ -250,6 +307,110 @@ async function createCompany(company: Company): Promise<Company> {
     }
 }
 
+async function getCompanyStats(companyID: number): Promise<any> {
+    try {
+        const company = await prisma.company.findUnique({
+            where: {
+                companyID: companyID,
+            },
+            include: {
+                ballots: {
+                    include: {
+                        _count: {
+                            select: {
+                                votes: true,
+                                initiativeVotes: true,
+                            },
+                        },
+                    }
+                },
+                _count: {
+                    select: {
+                        users: true,
+                    }
+                }
+            }
+        });
+
+        if (!company) {
+            throw new Error("Company not found");
+        }
+        if (!company.ballots) {
+            throw new Error("No ballots found for this company");
+        }
+
+        const inactiveBallots = company.ballots.filter(ballot => {
+            const now = new Date();
+            return ballot.startDate < now;
+        });
+        const activeBallots = company.ballots.filter(ballot => {
+            const now = new Date();
+            return ballot.startDate <= now && ballot.endDate >= now;
+        });
+        const avg_votes_per_ballot = company.ballots.reduce((acc, ballot) => {
+            return acc + ballot._count.votes;
+        }, 0) / company.ballots.length;
+        const avg_initiative_votes_per_ballot = company.ballots.reduce((acc, ballot) => {
+            return acc + ballot._count.initiativeVotes;
+        }, 0) / company.ballots.length;
+        const total_votes = company.ballots.reduce((acc, ballot) => {
+            return acc + ballot._count.votes;
+        }, 0);
+        const total_initiative_votes = company.ballots.reduce((acc, ballot) => {
+            return acc + ballot._count.initiativeVotes;
+        }, 0);
+
+        const companyStats = {
+            inactive_ballots: {
+                count: inactiveBallots.length,
+                ballots: inactiveBallots.map(ballot => ({
+                    ballotID: ballot.ballotID,
+                    ballotName: ballot.ballotName,
+                    startDate: ballot.startDate,
+                    endDate: ballot.endDate,
+                }))
+            },
+            active_ballots: {
+                count: activeBallots.length,
+                ballots: activeBallots.map(ballot => ({
+                    ballotID: ballot.ballotID,
+                    ballotName: ballot.ballotName,
+                    startDate: ballot.startDate,
+                    endDate: ballot.endDate,
+                }))
+            },
+            total_members: company._count.users,
+            avg_votes_per_ballot: avg_votes_per_ballot,
+            avg_initiative_votes_per_ballot: avg_initiative_votes_per_ballot,
+            total_votes: total_votes,
+            total_initiative_votes: total_initiative_votes,
+        }
+        return companyStats;
+    } catch (error) {
+        throw new Error("Unknown error during company stats retrieval");
+    }
+}
+
+async function getBallotPosition(positionID: number): Promise<any> {
+    try {
+        const ballotPosition = await prisma.ballotPositions.findUnique({
+            where: {
+                positionID: positionID,
+            },
+        });
+        if (!ballotPosition) {
+            throw new Error("Ballot position not found");
+        }
+        if (ballotPosition) {
+            return true;
+        }
+        return false;
+    } catch (error) {
+        throw new Error("Unknown error during ballot position retrieval");
+    }
+}
+
+
 async function createVote(userID: number, ballotID: number, positionID: number, candidateID: number) {
     // start transaction
     try {
@@ -341,42 +502,18 @@ async function getBallot(ballotID: number): Promise<any> {
             include: {
                 company: true,
                 positions: {
-                    // count votes at position level
                     include: {
-                        _count: {
-                            select: {
-                                positionVotes: true
-                            }
-                        },
                         candidates: {
                             include: {
-                                candidate: {
-                                    include: {
-                                        _count: {
-                                            select: {
-                                                positionVotes: true
-                                            }
-                                        }
-                                    },
-                                },
+                                candidate: true,
                             },
                         },
-                    },
-                    orderBy: {
-                        positionVotes: {
-                            _count: 'desc'
-                        }
                     },
                 },
                 initiatives: {
                     include: {
-                        _count: {
-                            select: {
-                                initiativeVotes: true
-                            }
-                        },
-                        responses: true
-                    }
+                        responses: true,
+                    },
                 },
             }
         });
@@ -435,26 +572,342 @@ async function getFinishedBallots(): Promise<any> {
     });
 }
 
-async function createBallot(ballot: Ballot) {
+async function getActiveUserBallots(userID: number): Promise<any> {
     try {
-        // First insert into ballots table and get the created ballot
-        const newBallot = await prisma.ballots.create({
-            data: {
-                ballotName: ballot.ballotName,
-                description: ballot.description,
-                startDate: new Date(ballot.startDate),
-                endDate: new Date(ballot.endDate),
+        const user = await prisma.user.findUnique({
+            where: {
+                userID: userID,
+            },
+            include: {
                 company: {
-                    connect: {
-                        companyID: ballot.companyID,
+                    include: {
+                        ballots: {
+                            where: {
+                                startDate: {
+                                    lte: new Date(),
+                                },
+                                endDate: {
+                                    gte: new Date(),
+                                },
+                            },
+                            include: {
+                                votes: {
+                                    where: {
+                                        userID: userID
+                                    }
+                                }
+                            }
+                        },
                     },
                 },
             },
         });
-        if (!newBallot) {
-            throw new Error("Ballot creation failed");
+        // Transform the results to include a hasVoted field
+        if (user?.company?.ballots) {
+            user.company.ballots = user.company.ballots.map(ballot => ({
+                ...ballot,
+                hasVoted: ballot.votes.length > 0
+            }));
         }
-        return newBallot;
+        if (!user) {
+            throw new Error("User not found");
+        }
+        if (!user.company) {
+            throw new Error("Company not found");
+        }
+        if (user.company.ballots.length === 0) {
+            throw new Error("No active ballots found for this user");
+        }
+        return user.company.ballots;
+    } catch (error) {
+        if (error instanceof Error) {
+            throw new Error(error.message);
+        }
+        throw new Error("Unknown error during user ballot retrieval");
+    }
+}
+
+async function getInactiveUserBallots(userID: number): Promise<any> {
+    try {
+        const user = await prisma.user.findUnique({
+            where: {
+                userID: userID,
+            },
+            include: {
+                company: {
+                    include: {
+                        ballots: {
+                            where: {
+                                endDate: {
+                                    lte: new Date(),
+                                },
+                            },
+                            include: {
+                                votes: {
+                                    where: {
+                                        userID: userID
+                                    }
+                                }
+                            }
+                        },
+                    },
+                },
+            },
+        });
+        // Transform the results to include a hasVoted field
+        if (user?.company?.ballots) {
+            user.company.ballots = user.company.ballots.map(ballot => ({
+                ...ballot,
+                hasVoted: ballot.votes.length > 0
+            }));
+        }
+        if (!user) {
+            throw new Error("User not found");
+        }
+        if (!user.company) {
+            throw new Error("Company not found");
+        }
+        if (user.company.ballots.length === 0) {
+            throw new Error("No active ballots found for this user");
+        }
+        return user.company.ballots;
+    } catch (error) {
+        if (error instanceof Error) {
+            throw new Error(error.message);
+        }
+        throw new Error("Unknown error during user ballot retrieval");
+    }
+}
+
+async function getUserBallots(userID: number): Promise<any> {
+    try {
+        const user = await prisma.user.findUnique({
+            where: {
+                userID: userID,
+            },
+            include: {
+                company: {
+                    include: {
+                        ballots: {
+                            include: {
+                                votes: {
+                                    where: {
+                                        userID: userID
+                                    }
+                                }
+                            }
+                        },
+                    },
+                },
+            },
+        });
+        // Transform the results to include a hasVoted field
+        if (user?.company?.ballots) {
+            user.company.ballots = user.company.ballots.map(ballot => ({
+                ...ballot,
+                hasVoted: ballot.votes.length > 0
+            }));
+        }
+        if (!user) {
+            throw new Error("User not found");
+        }
+        if (!user.company) {
+            throw new Error("Company not found");
+        }
+        if (user.company.ballots.length === 0) {
+            throw new Error("No active ballots found for this user");
+        }
+        return user.company.ballots;
+    } catch (error) {
+        if (error instanceof Error) {
+            throw new Error(error.message);
+        }
+        throw new Error("Unknown error during user ballot retrieval");
+    }
+}
+
+async function getCompanyBallots(companyID: number): Promise<any> {
+    try {
+        const company = await prisma.company.findUnique({
+            where: {
+                companyID: companyID,
+            },
+            include: {
+                ballots: {
+                },
+            },
+        });
+        if (!company) {
+            throw new Error("Company not found");
+        }
+        if (!company.ballots) {
+            throw new Error("No ballots found for this company");
+        }
+        return company.ballots;
+    } catch (error) {
+        if (error instanceof Error) {
+            throw new Error(error.message);
+        }
+        throw new Error("Unknown error during company ballot retrieval");
+    }
+}
+
+async function getActiveCompanyBallots(companyID: number): Promise<any> {
+    try {
+        const company = await prisma.company.findUnique({
+            where: {
+                companyID: companyID,
+            },
+            include: {
+                ballots: {
+                    where: {
+                        startDate: {
+                            lte: new Date(),
+                        },
+                        endDate: {
+                            gte: new Date(),
+                        },
+                    },
+                },
+            },
+        });
+        if (!company) {
+            throw new Error("Company not found");
+        }
+        if (!company.ballots) {
+            throw new Error("No ballots found for this company");
+        }
+        return company.ballots;
+    } catch (error) {
+        if (error instanceof Error) {
+            throw new Error(error.message);
+        }
+        throw new Error("Unknown error during company ballot retrieval");
+    }
+}
+
+async function getInactiveCompanyBallots(companyID: number): Promise<any> {
+    try {
+        const company = await prisma.company.findUnique({
+            where: {
+                companyID: companyID,
+            },
+            include: {
+                ballots: {
+                    where: {
+                        endDate: {
+                            lte: new Date(),
+                        },
+                    },
+                },
+            },
+        });
+        if (!company) {
+            throw new Error("Company not found");
+        }
+        if (!company.ballots) {
+            throw new Error("No ballots found for this company");
+        }
+        return company.ballots;
+    } catch (error) {
+        if (error instanceof Error) {
+            throw new Error(error.message);
+        }
+        throw new Error("Unknown error during company ballot retrieval");
+    }
+}
+
+async function createBallot(ballot: Ballot, ballotPositions: BallotPositions[], ballotInitiatives: BallotInitiatives[]) {
+    try {
+        const result = await prisma.$transaction(async (tx) => {
+            // First insert into ballots table and get the created ballot
+            const newBallot = await prisma.ballots.create({
+                data: {
+                    ballotName: ballot.ballotName,
+                    description: ballot.description,
+                    startDate: new Date(ballot.startDate),
+                    endDate: new Date(ballot.endDate),
+                    company: {
+                        connect: {
+                            companyID: ballot.companyID,
+                        },
+                    },
+                },
+            });
+            if (!newBallot) {
+                throw new Error("Ballot creation failed");
+            }
+            // Then insert into ballot_positions table using the new ballot's ID
+            for (const position of ballotPositions) {
+                // Create the candidates 
+                tx.candidate.createMany({
+                    data: position.candidates.map((candidate) => ({
+                        fName: candidate.fName,
+                        lName: candidate.lName,
+                        titles: candidate.titles,
+                        description: candidate.description,
+                    })),
+                });
+                // Create the ballot position
+                const newPosition = await tx.ballotPositions.create({
+                    data: {
+                        positionName: position.positionName,
+                        allowedVotes: position.allowedVotes,
+                        writeIn: position.writeIn,
+                        ballot: {
+                            connect: {
+                                ballotID: newBallot.ballotID,
+                            },
+                        },
+                    },
+                });
+                // Create ballot candidates for each candidate
+                for (const candidate of position.candidates) {
+                    await tx.ballotCandidates.create({
+                        data: {
+                            position: {
+                                connect: {
+                                    positionID: newPosition.positionID,
+                                }
+                            },
+                            candidate: {
+                                connect: {
+                                    candidateID: candidate.candidateID,
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            // Then insert into ballot_initiatives table using the new ballot's ID
+            for (const initiative of ballotInitiatives) {
+                const newInitiative = await tx.ballotInitiatives.create({
+                    data: {
+                        initiativeName: initiative.initiativeName,
+                        description: initiative.description,
+                        ballot: {
+                            connect: {
+                                ballotID: newBallot.ballotID,
+                            },
+                        },
+                    },
+                });
+                // Create the responses for the initiative
+                for (const response of initiative.responses) {
+                    await tx.initiativeResponses.create({
+                        data: {
+                            response: response.response,
+                            initiative: {
+                                connect: {
+                                    initiativeID: newInitiative.initiativeID,
+                                },
+                            },
+                        },
+                    });
+                }
+            }
+
+        });
     } catch (error) {
         if (error instanceof Error) {
             throw new Error(error.message);
@@ -465,6 +918,12 @@ async function createBallot(ballot: Ballot) {
     // END OF TRANSACTION
 }
 
+/**
+ * Updates a ballot in the database.
+ * 
+ * @param ballotID - The ID of the ballot to update
+ * @param ballotData - The updated ballot data
+ */
 async function updateBallot() {
 
 }
@@ -530,7 +989,7 @@ async function tallyBallot(ballotID: number) {
                             include: {
                                 _count: {
                                     select: {
-                                        initiativeVotes : true
+                                        initiativeVotes: true
                                     }
                                 }
                             }
@@ -543,6 +1002,107 @@ async function tallyBallot(ballotID: number) {
         return ballot;
     } catch (error) {
         throw new Error("Unknown error during ballot retrieval");
+    }
+}
+
+async function submitBallot(candidateVotes: Vote[], responsesVotes: ResponseVote[]) {
+    try {
+        // Using a transaction with sequentially executed operations
+        const result = await prisma.$transaction(async (tx) => {
+            // First insert into votes table and get the created vote
+            for (const vote of candidateVotes) {
+
+                // First insert into votes table and get the created vote
+                const newVote = await tx.votes.create({
+                    data: {
+                        user: {
+                            connect: {
+                                userID: Number(vote.userID),
+                            },
+                        },
+                        ballot: {
+                            connect: {
+                                ballotID: Number(vote.ballotID),
+                            },
+                        }
+                    },
+                });
+
+                // Then insert into position_votes table using the new vote's ID
+                const positionVote = await tx.positionVotes.create({
+                    data: {
+                        vote: {
+                            connect: {
+                                voteID: Number(newVote.voteID),
+                            },
+                        },
+                        position: {
+                            connect: {
+                                positionID: Number(vote.positionID),
+                            },
+                        },
+                        candidate: {
+                            connect: {
+                                candidateID: Number(vote.candidateID),
+                            },
+                        },
+                    },
+                });
+            }
+            for (const responseVote of responsesVotes) {
+                const newVote = await tx.initiativeVotes.create({
+                    data: {
+                        user: {
+                            connect: {
+                                userID: Number(responseVote.userID),
+                            },
+                        },
+                        ballot: {
+                            connect: {
+                                ballotID: Number(responseVote.ballotID),
+                            },
+                        },
+                        initiative: {
+                            connect: {
+                                initiativeID: Number(responseVote.initiativeID),
+                            },
+                        },
+                        response: {
+                            connect: {
+                                responseID: Number(responseVote.responseID),
+                            },
+                        },
+                    },
+                });
+            }
+        });
+        return true;
+    } catch (error) {
+        throw new Error(error.message);
+    }
+}
+
+async function checkBallotVoter(ballotID: number, userID: number): Promise<boolean> {
+    try {
+        const ballot = await prisma.ballots.findUnique({
+            where: {
+                ballotID: ballotID,
+            },
+            include: {
+                votes: {
+                    where: {
+                        userID: userID,
+                    },
+                },
+            }
+        });
+        if (ballot.votes.length > 0) {
+            return true;
+        } else {
+            return false;
+        }
+    } catch (error) {
+        throw new Error("Unknown error during ballot voter check");
     }
 }
 
@@ -560,8 +1120,35 @@ async function tallyBallot(ballotID: number) {
 async function tallyBallotVoters(ballotID) {
 }
 
+async function getInitiative(initiativeID: number): Promise<any> {
+    try {
+        const initiative = await prisma.ballotInitiatives.findUnique({
+            where: {
+                initiativeID: initiativeID,
+            },
+        });
+        return initiative;
+    } catch (error) {
+        throw new Error("Unknown error during initiative retrieval");
+    }
+}
+
+async function getResponse(responseID: number): Promise<any> {
+    try {
+        const response = await prisma.initiativeResponses.findUnique({
+            where: {
+                responseID: responseID,
+            },
+        });
+        return response;
+    } catch (error) {
+        throw new Error("Unknown error during response retrieval");
+    }
+}
+
 export default {
     getUser,
+    getCandidate,
     getUserByUsername,
     getUsersByCompany,
     createUser,
@@ -581,8 +1168,22 @@ export default {
     getInactiveBallots,
     getFinishedBallots,
     createBallot,
+    createCandidate,
     // updateBallot,
+    getBallotPosition,
+    submitBallot,
+    checkBallotVoter,
     tallyBallot,
     tallyBallotVoters,
     createInitiativeVote,
+    createWriteInCandidate,
+    getInitiative,
+    getResponse,
+    getActiveUserBallots,
+    getInactiveUserBallots,
+    getUserBallots,
+    getCompanyBallots,
+    getActiveCompanyBallots,
+    getInactiveCompanyBallots,
+    getCompanyStats
 };

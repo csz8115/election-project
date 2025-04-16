@@ -9,14 +9,29 @@ if (!fs.existsSync(logDir)) {
 }
 
 // Correctly configure Pino logger
-const logger = pino(
-    {
-        level: 'info',
-        transport: process.env.NODE_ENV === 'development'
-            ? { target: 'pino-pretty', options: { colorize: true } }
-            : undefined,
+const logger = pino({
+    level: 'info', // Configurable log level
+    timestamp: pino.stdTimeFunctions.isoTime,
+    transport: process.env.NODE_ENV === 'development'
+        ? { target: 'pino-pretty', options: { colorize: true, translateTime: 'SYS:standard' } }
+        : undefined,
+    formatters: {
+        level: (label) => {
+            return { level: label };
+        },
+        // Add custom fields to all logs
+        bindings: (bindings) => {
+            return {
+                pid: bindings.pid,
+                hostname: bindings.hostname,
+                app: 'election-project',
+            };
+        },
     },
-    process.env.NODE_ENV === 'test' ? undefined : pino.destination({ dest: './log/db.log', sync: true }) // Use sync: true to avoid race conditions
+    // Redact sensitive information
+    redact: ['password', 'secret', 'authorization'],
+},
+process.env.NODE_ENV === 'test' ? undefined : pino.destination({ dest: './log/db.log', sync: true })
 );
 
 export default logger;

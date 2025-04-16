@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const UserSchema = z.object({
     userID: z.number(),
-    accountType: z.string(),
+    accountType: z.enum(["Member", "Admin", "Moderator"]),
     username: z.string().min(4).max(30),
     fName: z.string().min(2).max(50).regex(/^[a-zA-Z]+$/, "First name must contain only letters"),
     lName: z.string().min(2).max(50).regex(/^[a-zA-Z]+$/, "Last name must contain only letters"),
