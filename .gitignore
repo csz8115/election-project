@@ -1,3 +1,4 @@
 /node_modules
 /.env
 /dataFiles/*.json
+/log/*.log

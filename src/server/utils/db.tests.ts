@@ -1,9 +1,14 @@
 import { prismaMock } from '../../../singleton.ts'
 import db from './db.ts'
 
+enum AccountType {
+    ADMIN = 'admin',
+    USER = 'user'
+}
+
 const user = {
     userID: 1,
-    accountType: 'admin',
+    accountType: AccountType.ADMIN,
     username: 'testuser',
     fName: 'Test',
     lName: 'User',
@@ -13,7 +18,7 @@ const user = {
 
 const user2 = {
     userID: 1,
-    accountType: 'admin',
+    accountType: AccountType.ADMIN,
     username: 'testuser',
     fName: 'Test',
     lName: 'User',
@@ -28,7 +33,7 @@ const user2 = {
 const users = [
     {
         userID: 1,
-        accountType: 'admin',
+        accountType: AccountType.ADMIN,
         username: 'testuser',
         fName: 'Test',
         lName: 'User',
@@ -37,7 +42,7 @@ const users = [
     },
     {
         userID: 2,
-        accountType: 'user',
+        accountType: AccountType.ADMIN,
         username: 'testuser2',
         fName: 'Test',
         lName: 'User',
