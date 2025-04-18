@@ -27,7 +27,7 @@ const AppRoutes = () => {
         <Route element={<PublicRoute />}>
         <Route path="/login" element={<Login />} />
         </Route>
-        <Route element={<PublicRoute />}>
+        <Route element={<ProtectedRoute />}>
         <Route path="/createBallot" element={<CreateBallot />} />
         </Route>
       </Routes>

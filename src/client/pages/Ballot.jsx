@@ -62,12 +62,12 @@ const Ballot = () => {
 
     var positionSectionArray = [];
     ballotObject.positions.map(position => {
-        positionSectionArray.push(<BallotVoteSection
+        positionSectionArray.push(<BallotPositionSection
             key={ballotObject.ballotID+'_'+position.positionName} 
             positionTitle={position.positionName} 
             votingLimit={position.allowedVotes}
             candidates={position.candidates}>
-            </BallotVoteSection>);
+            </BallotPositionSection>);
     });
 
 

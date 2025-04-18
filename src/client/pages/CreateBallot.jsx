@@ -1,6 +1,7 @@
 import {React, useEffect, useState} from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import BallotSection from '../components/BallotPositionSection'
+import CreateBallotPositionSection from '../components/CreateBallotPositionSection';
 import BallotInitiativeSection from '../components/BallotInitiativeSection';
 import '../components/Ballot.css';
 
@@ -27,7 +28,9 @@ const Ballot = () => {
     }); */
 
     const addPositionField = () => {
-        
+        console.log("Adding position field");
+        const newPositionSection = <CreateBallotPositionSection key={positionSectionArray.length+1}/>
+        setPositionSectionArray((prevSections) => [...prevSections, newPositionSection]);
     }
 
 
@@ -39,8 +42,8 @@ const Ballot = () => {
                 <input className="ballotCreationTextInput" type="text" placeholder="Ballot Description" />
             </div>
             <div className='ballotBody'>
-                {/* positionSectionArray */}
-                <button className="addPosition" onClick={() => console.log('Add Position clicked')}>Add Position</button>
+                <CreateBallotPositionSection/>
+                <button className="addPosition" onClick={() => addPositionField()}>Add Position</button>
 
             </div>
             <button className='submitBallot'>Submit Ballot</button>

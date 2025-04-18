@@ -3,14 +3,33 @@ import db from './src/server/utils/db.ts';
 import bcrypt from 'bcrypt';
 import { User } from './src/server/types/user.ts';
 import { Ballot } from './src/server/types/ballot.ts';
+import { Company } from './src/server/types/company.ts';
 import { Candidate } from './src/server/types/candidate.ts';
 import { BallotPositions } from './src/server/types/ballotPositions.ts';
 import { BallotInitiatives } from './src/server/types/ballotInitiatives.ts';
+import { z } from 'zod';
 
 
 let companyID = 1;
 
 // run file with npx ts-node createDummyData.ts
+
+export const createCompany = async () => {
+
+  const newCompany: Company = {
+    companyID: 1,
+    companyName: "Tech Innovators Inc.",
+    abbreviation: "TII",
+    category: "Technology",
+  };
+
+  try {
+    const status = await db.createCompany(newCompany);
+    console.log('Company created:', status);
+  } catch (error) {
+    console.error('Error creating company:', error);
+  }
+};
 
 const createUser = async () => {
 
@@ -164,14 +183,14 @@ const createBallot = async () => {
 
   try {
 
-    //const createdBallot3 = await db.createBallot(dummyBallot3, dummyBallotPositions, dummyBallotInitiatives);
+    const createdBallot3 = await db.createBallot(dummyBallot3, dummyBallotPositions, dummyBallotInitiatives);
 
-
-    //console.log('Ballot created:', createdBallot3);
+    console.log('Ballot created:', createdBallot3);
   } catch (error) {
     console.error('Error creating ballot:', error);
   }
 }
 
+//createCompany();
 //createBallot();
-createUser();
+//createUser();
