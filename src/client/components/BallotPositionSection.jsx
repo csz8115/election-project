@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import CandidateButton from './CandidateButton';
 
-const BallotVoteSection = ({positionTitle, votingLimit, candidates}) => {
+const BallotPositionSection = ({positionTitle, votingLimit, candidates}) => {
     const [selected, setSelected] = useState([]);
     const [abstained, setAbstained] = useState(true);
     
@@ -73,4 +73,4 @@ const BallotVoteSection = ({positionTitle, votingLimit, candidates}) => {
     );
 };
 
-export default BallotVoteSection;
+export default BallotPositionSection;

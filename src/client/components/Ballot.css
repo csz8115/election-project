@@ -31,6 +31,8 @@ h3 {
 .ballotBody {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    margin-bottom: 2em;
     gap: 2em;
 }
 
@@ -225,4 +227,38 @@ h3 {
 .candidateButtonToggled:hover {
     border: .3em solid dodgerblue;
     transition: 1s;
+}
+
+/*===================================================================*/
+/*======================  CREATE BALLOT STYLES  =====================*/
+/*===================================================================*/
+
+.createCandidateButton{
+    background-color: red;
+}
+
+.ballotCreationTextInput {
+    font-size: 2em;
+    border: .1em solid gray;
+    border-radius: .25em;
+    width: max-content;
+}
+
+.ballotCreationHeader{
+    display: flex;
+    flex-direction: column;
+    gap: .5em;
+    margin-top: 1em;
+    justify-content: center;
+}
+
+.addPosition {
+    background-color: darkgray;
+    color: white;
+    border: none;
+    width: max-content;
+    font-size: 1.5em;
+    font-weight: bold;
+    padding: .5em;
+    cursor: pointer;
 }

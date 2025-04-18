@@ -1,6 +1,6 @@
 import {React, useEffect, useState} from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import BallotVoteSection from '../components/BallotVoteSection'
+import BallotPositionSection from '../components/BallotPositionSection'
 import BallotInitiativeSection from '../components/BallotInitiativeSection';
 import '../components/Ballot.css';
 
