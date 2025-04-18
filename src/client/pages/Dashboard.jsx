@@ -5,6 +5,7 @@ import Logout from '../components/Logout';
 import BallotButton from '../components/BallotButton';
 
 import '../components/Dashboard.css';
+import Error from '../components/ErrorMessage';
 
 export default function Dashboard() {
     const [ballots, setBallots] = useState(null);
