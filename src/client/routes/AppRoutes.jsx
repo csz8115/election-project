@@ -9,6 +9,7 @@ import Dashboard from "../pages/Dashboard";
 import Ballot from "../pages/Ballot";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
+import CreateBallot from "../pages/CreateBallot";
 
 const AppRoutes = () => {
   return (
@@ -25,6 +26,9 @@ const AppRoutes = () => {
         </Route>
         <Route element={<PublicRoute />}>
         <Route path="/login" element={<Login />} />
+        </Route>
+        <Route element={<ProtectedRoute />}>
+        <Route path="/createBallot" element={<CreateBallot />} />
         </Route>
       </Routes>
     </Router>

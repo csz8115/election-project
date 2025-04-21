@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { login } from "../store/userSlice.ts";
 import { useNavigate } from "react-router-dom";
+import ErrorMessage from "../components/ErrorMessage.jsx";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -33,15 +35,21 @@ export default function Login() {
       navigate("/dashboard");
     } else {
       console.error("Login failed");
+      console.log(response);
+      setError(response.json().error || "Login failed");
     }
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
+
       <form
         onSubmit={handleSubmit}
         className="p-8 bg-white rounded-lg shadow-md w-96"
       >
+      {error && (
+        <ErrorMessage message={error}></ErrorMessage>
+      )}
         <h1 className="mb-6 text-2xl font-bold text-center text-gray-800">
           Login
         </h1>

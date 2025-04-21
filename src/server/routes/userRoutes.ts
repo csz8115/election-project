@@ -21,6 +21,7 @@ router.post('/login', async (req, res): Promise<any> => {
         if (!username || !password) {
             throw new Error('Invalid request');
         }
+
         // Validate the input data
         usernameSchema.parse(username);
         passwordSchema.parse(password);
@@ -66,6 +67,7 @@ router.post('/login', async (req, res): Promise<any> => {
     } catch (error) {
         // Handle the Zod validation error
         if (error instanceof z.ZodError) {
+            console.log(error.errors);
             return res.status(400).json({ error: error.errors.map(e => e.message) });
         }
         // Handle invalid request error

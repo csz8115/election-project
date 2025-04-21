@@ -5,9 +5,10 @@ import Logout from '../components/Logout';
 import BallotButton from '../components/BallotButton';
 
 import '../components/Dashboard.css';
+import Error from '../components/ErrorMessage';
 
 export default function Dashboard() {
-    const [data, setData] = useState(null);
+    const [ballots, setBallots] = useState(null);
     const user = useSelector((state) => {
         return {
             username: state.username,
@@ -19,20 +20,15 @@ export default function Dashboard() {
         };
     });
 
-    const getBallots = (json) => {
-        const ballots = json["ballots"];
-        return ballots;
-    }
-
     const navigate = useNavigate();
     const handleClick = (ballotID) => {
-        navigate('/Ballot',{state: {ballotID: 1}});
+        navigate('/Ballot',{state: {ballotID: ballotID}});
     }
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch('../../../dataFiles/data.json', {
+                const response = await fetch(`http://localhost:3000/api/getCompanyBallots/?companyID=${user.companyID}`, {
                     method: 'GET',
                     credentials: 'include',
                 });
@@ -42,7 +38,8 @@ export default function Dashboard() {
                 }
 
                 const result = await response.json();
-                setData(result["companies"][0]);
+                console.log(result);
+                setBallots(result);
 
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -53,15 +50,12 @@ export default function Dashboard() {
     }
     , []);
 
-    if (data != null) {
-        let ballots = getBallots(data);
-        console.log(ballots);
+    if (ballots != null) {
         const activeBallotComponents = []
         const inactiveBallotComponents = []
 
         ballots.map(ballot => {
- 
-            if (new Date(ballot.endDate) > new Date()) {
+            if (new Date(ballot.endDate) > new Date() && new Date(ballot.startDate) < new Date()) {
                 activeBallotComponents.push(<BallotButton key={ballot.ballotID} label={ballot.ballotName} onClick={() => handleClick(ballot.ballotID)} disabled={false} />);
             } else {
                 inactiveBallotComponents.push(<BallotButton key={ballot.id} label={ballot.ballotName} onClick={null} disabled={true} />);

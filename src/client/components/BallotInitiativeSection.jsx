@@ -1,5 +1,5 @@
 import React from 'react';
-import './BallotVoteSection'
+import './BallotPositionSection'
 
 const BallotInitiativeSection = ({initiativeTitle, propositionDescription}) => {
     return (
