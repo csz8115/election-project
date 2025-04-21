@@ -2,6 +2,7 @@ import db from '../utils/db.ts';
 import express from 'express';
 import { z } from 'zod';
 import { User } from '../types/user.ts';
+import { getRedisClient } from '../utils/redis.ts';
 import bcrypt from 'bcrypt';
 
 const router = express.Router();
@@ -122,7 +123,31 @@ router.get(`/getCompanyStats`, async (req, res): Promise<any> => {
 
 router.get(`/getSystemStats`, async (req, res): Promise<any> => {
     try {
+        const keys = await getRedisClient().get('user:*');
+        if (!keys) {
+            throw new Error('Invalid request');
+        }
+        // Validate keys
+        const keysSchema = z.array(z.string().regex(/^user:\d+$/));
+        keysSchema.parse(keys);
+        // turn the keys into an array
+        const keysArray = keys.split(',');
+        return res.status(200).json({ keys: keysArray });
     } catch (error) {
+        // Handle the Zod validation error
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors.map(e => e.message) });
+        }
+        // Handle invalid request error
+        else if (error.message === 'Invalid request') {
+            return res.status(400).json({ error: 'Invalid request' });
+        }
+        // Handle stats not found error
+        else if (error.message === 'Stats not found') {
+            return res.status(404).json({ error: 'Stats not found' });
+        }
+        // Handle other errors
+        return res.status(500).json({ error: 'Failed to get stats' });
     }
 });
 

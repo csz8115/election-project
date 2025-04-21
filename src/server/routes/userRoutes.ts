@@ -5,6 +5,7 @@ import { decrypt } from '../utils/session.ts';
 import bcrypt from 'bcrypt';
 import { Ballot, BallotSchema } from '../types/ballot.ts';
 import { z } from 'zod';
+import { getRedisClient } from '../utils/redis.ts';
 
 const router = express.Router();
 
@@ -587,5 +588,44 @@ router.get(`/getInactiveCompanyBallots`, async (req, res): Promise<any> => {
         return res.status(500).json({ error: 'Failed to get ballots' });
     }
 });
+
+router.post(`/ping`, async (req, res): Promise<any> => {
+    try {
+        const { userID } = req.body;
+        const expSeconds = 120;
+        if (!userID) {
+            throw new Error('Invalid request');
+        }
+        // Validate userID
+        const userIDSchema = z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, {
+            message: 'User ID must be a positive number'
+        });
+        userIDSchema.parse(userID);
+        const user = await db.getUser(userID);
+        if (!user) {
+            throw new Error('User not found');
+        }
+        // ping
+        getRedisClient().set(`active:${userID}`, Date.now(), {EX: expSeconds});
+        // return the success message
+        return res.status(200).json({ message: 'Ping successful' });
+    } catch (error) {
+        // Handle the Zod validation error
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors.map(e => e.message) });
+        }
+        // Handle invalid request error
+        else if (error.message === 'Invalid request') {
+            return res.status(400).json({ error: 'Invalid request' });
+        }
+        // Handle user not found error
+        else if (error.message === 'User not found') {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        // Handle other errors
+        return res.status(500).json({ error: 'Failed to ping' });
+    }
+});
+
 
 export default router;
