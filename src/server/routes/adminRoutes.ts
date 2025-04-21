@@ -3,6 +3,7 @@ import express from 'express';
 import { z } from 'zod';
 import { User } from '../types/user.ts';
 import { getRedisClient } from '../utils/redis.ts';
+import { getHttpStats } from '../utils/systemStats.ts';
 import bcrypt from 'bcrypt';
 
 const router = express.Router();
@@ -10,10 +11,8 @@ const router = express.Router();
 const passwordSchema = z.string().min(8).regex(/[A-Z]/).regex(/[a-z]/).regex(/[0-9]/).regex(/[\W_]/);
 // username validation
 const usernameSchema = z.string().min(3).max(20).regex(/^[a-zA-Z0-9_]+$/);
-// companyID validation
-const companyIDSchema = z.number().int().positive();
 // accountType validation
-const accountTypeSchema = z.enum(['admin', 'member']);
+const accountTypeSchema = z.enum(['Admin', 'Member']);
 // fName validation
 const fNameSchema = z.string().min(1).max(50).regex(/^[a-zA-Z]+$/);
 // lName validation
@@ -35,7 +34,6 @@ router.post('/register', async (req, res): Promise<any> => {
         // Validate the input data
         usernameSchema.parse(username);
         passwordSchema.parse(password);
-        companyIDSchema.parse(companyID);
         accountTypeSchema.parse(accountType);
         fNameSchema.parse(fName);
         lNameSchema.parse(lName);
@@ -45,7 +43,7 @@ router.post('/register', async (req, res): Promise<any> => {
             throw new Error('Username already exists');
         }
         // Check if the company exists
-        const company = await db.getCompany(companyID);
+        const company = await db.getCompany(Number(companyID));
         if (!company) {
             throw new Error('Company does not exist');
         }
@@ -123,16 +121,45 @@ router.get(`/getCompanyStats`, async (req, res): Promise<any> => {
 
 router.get(`/getSystemStats`, async (req, res): Promise<any> => {
     try {
-        const keys = await getRedisClient().get('user:*');
-        if (!keys) {
-            throw new Error('Invalid request');
-        }
-        // Validate keys
-        const keysSchema = z.array(z.string().regex(/^user:\d+$/));
-        keysSchema.parse(keys);
-        // turn the keys into an array
-        const keysArray = keys.split(',');
-        return res.status(200).json({ keys: keysArray });
+        const keys = await getRedisClient().keys('*active:*');
+        const activeUsers = keys.length;
+        const activeElections = await db.getActiveBallots();
+        const inactiveElections = await db.getInactiveBallots();
+
+        const activeElectionsCount = activeElections.length;
+        const inactiveElectionsCount = inactiveElections.length;
+
+        const queryStats = await db.getQueryStats();
+        // Extract the stats object from the array
+        const systemStats = queryStats[0];
+
+        // Convert BigInt to Number for JSON serialization
+        const totalQueries = Number(systemStats.total_queries);
+
+        // Get http stats
+        const httpStats = await getHttpStats();
+
+        // Construct the response object with all system stats
+        const stats = {
+            activeUsers,
+            activeElectionsCount,
+            inactiveElectionsCount,
+            queryStats: {
+            totalQueries,
+            totalCalls: Number(systemStats.total_calls),
+            totalExecTimeMs: Number(systemStats.total_exec_time_ms.toFixed(2)),
+            avgQueryTimeMs: Number(systemStats.avg_query_time_ms.toFixed(2)),
+            maxAvgQueryTimeMs: Number(systemStats.max_avg_query_time_ms.toFixed(2))
+            },
+            httpStats: {
+            totalRequests: httpStats.totalRequests,
+            totalErrors: httpStats.totalErrors,
+            totalResponseTime: Number(httpStats.totalResponseTime.toFixed(2)),
+            avgResponseTime: Number(httpStats.avgResponseTime.toFixed(2)),
+            maxResponseTime: Number(httpStats.maxResponseTime.toFixed(2))
+            }
+        };
+        return res.status(200).json(stats);
     } catch (error) {
         // Handle the Zod validation error
         if (error instanceof z.ZodError) {
@@ -147,6 +174,7 @@ router.get(`/getSystemStats`, async (req, res): Promise<any> => {
             return res.status(404).json({ error: 'Stats not found' });
         }
         // Handle other errors
+        console.log(error);
         return res.status(500).json({ error: 'Failed to get stats' });
     }
 });

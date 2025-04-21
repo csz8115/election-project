@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from "react-router-dom";
 import Logout from '../components/Logout';
 import BallotButton from '../components/BallotButton';
-
+import { useHeartbeat } from "../hooks/useHeartbeat";
 import '../components/Dashboard.css';
 import Error from '../components/ErrorMessage';
 
@@ -19,7 +19,7 @@ export default function Dashboard() {
             companyName: state.companyName,
         };
     });
-
+    useHeartbeat(user.username);
     const navigate = useNavigate();
     const handleClick = (ballotID) => {
         navigate('/Ballot',{state: {ballotID: ballotID}});

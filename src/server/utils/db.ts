@@ -537,28 +537,36 @@ async function getBallotsByCompany(companyID: number): Promise<any> {
 }
 
 async function getActiveBallots(): Promise<any> {
-    const now = new Date();
-    return prisma.ballots.findMany({
-        where: {
-            startDate: {
-                lte: now
+    try {
+        const now = new Date();
+        return prisma.ballots.findMany({
+            where: {
+                startDate: {
+                    lte: now,
+                },
+                endDate: {
+                    gte: now,
+                },
             },
-            endDate: {
-                gte: now
-            }
-        },
-    });
+        });
+    } catch (error) {
+        throw new Error("Unknown error during active ballot retrieval");
+    }
 }
 
 async function getInactiveBallots(): Promise<any> {
-    const now = new Date();
-    return prisma.ballots.findMany({
-        where: {
-            startDate: {
-                gt: now
-            }
-        },
-    });
+    try {
+        const now = new Date();
+        return prisma.ballots.findMany({
+            where: {
+                endDate: {
+                    lt: now,
+                },
+            },
+        });
+    } catch (error) {
+        throw new Error("Unknown error during inactive ballot retrieval");
+    }
 }
 
 async function getFinishedBallots(): Promise<any> {
@@ -1146,10 +1154,34 @@ async function getResponse(responseID: number): Promise<any> {
     }
 }
 
+async function getQueryStats(): Promise<any> {
+    try {
+        const stats = await prisma.$queryRaw`
+    SELECT
+    COUNT(*) AS total_queries,
+    SUM(calls) AS total_calls,
+    ROUND(SUM(total_exec_time)::numeric, 2) AS total_exec_time_ms,
+    ROUND(AVG(mean_exec_time)::numeric, 2) AS avg_query_time_ms,
+    ROUND(MAX(mean_exec_time)::numeric, 2) AS max_avg_query_time_ms
+    FROM
+    pg_stat_statements`;
+        return stats;
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            throw new Error(`Error during query stats retrieval: ${error.message}`);
+        }
+        throw new Error(`Unknown error during query stats retrieval: ${String(error)}`);
+    }
+}
+
+
+
 export default {
     getUser,
     getCandidate,
     getUserByUsername,
+    getQueryStats,
     getUsersByCompany,
     createUser,
     checkUsername,

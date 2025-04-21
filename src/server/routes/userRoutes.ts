@@ -591,24 +591,23 @@ router.get(`/getInactiveCompanyBallots`, async (req, res): Promise<any> => {
     }
 });
 
-router.post(`/ping`, async (req, res): Promise<any> => {
+router.get(`/ping`, async (req, res): Promise<any> => {
     try {
-        const { userID } = req.body;
+        const { username } = req.query;
         const expSeconds = 120;
-        if (!userID) {
+        if (!username) {
             throw new Error('Invalid request');
         }
-        // Validate userID
-        const userIDSchema = z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, {
-            message: 'User ID must be a positive number'
-        });
-        userIDSchema.parse(userID);
-        const user = await db.getUser(userID);
+        // Validate username
+        const usernameSchema = z.string().min(3).max(20).regex(/^[a-zA-Z0-9_]+$/);
+        usernameSchema.parse(username);
+        const user = await db.getUserByUsername(username as string);
         if (!user) {
             throw new Error('User not found');
         }
         // ping
-        getRedisClient().set(`active:${userID}`, Date.now(), {EX: expSeconds});
+        console.log('Pinging user:', username);
+        getRedisClient().set(`active:${username}`, Date.now().toString(), {EX: expSeconds});
         // return the success message
         return res.status(200).json({ message: 'Ping successful' });
     } catch (error) {
@@ -629,5 +628,37 @@ router.post(`/ping`, async (req, res): Promise<any> => {
     }
 });
 
+router.get(`/getUserByUsername`, async (req, res): Promise<any> => {
+    try {
+        const { username } = req.query;
+        if (!username) {
+            throw new Error('Invalid request');
+        }
+        // Validate username
+        const usernameSchema = z.string().min(3).max(20).regex(/^[a-zA-Z0-9_]+$/);
+        usernameSchema.parse(username);
+        const user = await db.getUserByUsername(username as string);
+        if (!user) {
+            throw new Error('User not found');
+        }
+        // return the user
+        return res.status(200).json(user);
+    } catch (error) {
+        // Handle the Zod validation error
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors.map(e => e.message) });
+        }
+        // Handle invalid request error
+        else if (error.message === 'Invalid request') {
+            return res.status(400).json({ error: 'Invalid request' });
+        }
+        // Handle user not found error
+        else if (error.message === 'User not found') {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        // Handle other errors
+        return res.status(500).json({ error: 'Failed to get user' });
+    }
+});
 
 export default router;
