@@ -223,7 +223,7 @@ h3 {
 
 .candidateButtonToggled {
     border: .3em solid dodgerblue;
-    transition: 1s;
+    transition: .1s;
 }
 .candidateButtonToggled:hover {
     border: .3em solid dodgerblue;

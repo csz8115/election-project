@@ -7,6 +7,8 @@ import { useHeartbeat } from "../hooks/useHeartbeat";
 import '../components/Dashboard.css';
 import Error from '../components/ErrorMessage';
 
+import '../components/Dashboard.css';
+
 export default function Dashboard() {
     const [ballots, setBallots] = useState(null);
     const user = useSelector((state) => {

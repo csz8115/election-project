@@ -1,23 +1,55 @@
 import React from 'react';
+import { useState } from 'react';
 import './BallotPositionSection'
 
-const BallotInitiativeSection = ({initiativeTitle, propositionDescription}) => {
+const BallotInitiativeSection = ({initiativeObject, returnChoice}) => {
+
+    const handleChoice = (responseID) => {
+        if (responseID === "Abstain") {
+            setResponseChoice(null);
+            return;
+        }
+        const initiativeSubmissionObject = {
+            ballotID: initiativeObject.ballotID,
+            description: initiativeObject.description,
+            initiativeID: initiativeObject.initiativeID,
+            initiativeName: initiativeObject.initiativeName,
+            responses: {
+                initiativeID: initiativeObject.initiativeID,
+                responseID: responseID,
+                response: initiativeObject.responses.find(choice => choice.responseID === responseID).response,
+
+                
+            },
+        }
+        returnChoice(initiativeSubmissionObject);
+    }
+
+    var choicesInput = [];
+    initiativeObject.responses.map(choice => {
+        choicesInput.push(
+            <label key={choice.responseID}>
+                <input 
+                    type="radio" 
+                    name={`vote_${initiativeObject.initiativeID}`}
+                    value={choice.responseID} 
+                    onChange={() => handleChoice(choice.responseID)} 
+                />
+                {choice.response}
+            </label>
+        );
+    });
+    
+
     return (
 
-    <div className='ballotInitiativeSection'>
-        <h1>{initiativeTitle}</h1>
-        <p>{propositionDescription}</p>
+    <div className='ballotVoteSection ballotInitiativeSection'>
+        <h1>{initiativeObject.initiativeTitle}</h1>
+        <p>{initiativeObject.description}</p>
         <div className='initiativeOptions'>
+            {choicesInput}
             <label>
-                <input type="radio" name="vote" value="yes" />
-                Yes
-            </label>
-            <label>
-                <input type="radio" name="vote" value="no" />
-                No
-            </label>
-            <label>
-                <input type="radio" name="vote" value="abstain" />
+                <input type="radio" name="vote" value={"Abstain"} onChange={() => handleChoice("Abstain")} />
                 Abstain
             </label>
         </div>
