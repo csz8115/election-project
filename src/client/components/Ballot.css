@@ -119,10 +119,13 @@ h3 {
     padding: .5em;
     font-size: 1.5em;
     text-align: left;
+
 }
 .writeIn > input {
     font-size: inherit;
     padding: .25em;
+    border: .1em solid gray;
+    border-radius: .5em;
 }
 
 .ballotInitiativeSection{

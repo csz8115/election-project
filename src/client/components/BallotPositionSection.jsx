@@ -4,8 +4,7 @@ import CandidateButton from './CandidateButton';
 const BallotPositionSection = ({positionObject, returnSelected}) => {
     const [selected, setSelected] = useState({});
     const [abstained, setAbstained] = useState(false);
-    const {ballotID, candidates, positionID, positionName, writeIn } = positionObject;
-    const allowedVotes = 2;
+    const {ballotID, candidates, positionID, positionName, writeIn, allowedVotes } = positionObject;
 
     const handleToggle = (index) => {
         setSelected((prev) => {
@@ -56,6 +55,27 @@ const BallotPositionSection = ({positionObject, returnSelected}) => {
         });
     };
 
+    const handleWriteIn = (event) => {
+        const writeInValue = event.target.value.trim();
+        console.log(writeInValue)
+        const [fName, lName] = writeInValue.split(' ');
+
+        if (writeInValue) {
+            setSelected({
+                positionID: parseInt(positionID),
+                positionName,
+                allowedVotes,
+                writeIn: true,
+                candidateID: null,
+                fName: fName,
+                lName: lName,
+            });
+
+        } else {
+            setSelected({});
+        }
+    };
+
     const candidateButtons = candidates.map((candidateInfo) => (
         <CandidateButton key={candidateInfo.candidateID} index={candidateInfo.candidateID} details={candidateInfo.candidate} isSelected={!!selected[candidateInfo.candidateID]} onToggle={handleToggle} />
     ));
@@ -63,7 +83,13 @@ const BallotPositionSection = ({positionObject, returnSelected}) => {
     useEffect(() => {
         // Check if the user has abstained
         if (abstained) {
-            returnSelected('abstained', []);
+            returnSelected([]);
+            return;
+        }
+
+        // Check if the user has selected candidates
+        if (Object.keys(selected).length === 0) {
+            returnSelected(-1);
             return;
         }
 
@@ -72,6 +98,20 @@ const BallotPositionSection = ({positionObject, returnSelected}) => {
         const selectedCandidates = Object.keys(selected)
             .filter((key) => selected[key])
             .map((candidateID) => {
+
+            if (selected.writeIn === true) {
+                const writeInCandidate = {
+                    positionID: parseInt(positionID),
+                    positionName,
+                    allowedVotes,
+                    writeIn: true,
+                    candidateID: null,
+                    fName: selected.fName,
+                    lName: selected.lName,
+                };
+                returnSelected([writeInCandidate]);
+            }
+
             const candidate = candidates.find((c) => c.candidateID === parseInt(candidateID)); // Ensure candidateID is parsed as an integer
             return candidate
                 ? {
@@ -87,6 +127,7 @@ const BallotPositionSection = ({positionObject, returnSelected}) => {
             })
             .filter(Boolean);
         if (selectedCandidates.length !== 0) {
+            console.log(selectedCandidates)
             returnSelected(selectedCandidates);
             return;
         }
@@ -106,7 +147,7 @@ const BallotPositionSection = ({positionObject, returnSelected}) => {
             </div>
             <div className='writeIn' id={`${positionName}_writeIn`}>
                 <label htmlFor={`${positionName}_writeIn_field`}>Write in: </label>
-                <input id={`${positionName}_writeIn_field`} name={`${positionName}_writeIn`} type='text'></input>
+                <input id={`${positionName}_writeIn_field`} name={`${positionName}_writeIn`} type='text' onInput={handleWriteIn}></input>
             </div>
         </div>
     );

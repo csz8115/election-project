@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import logger from './prisma/dbLogger.ts'
 
 const prisma = new PrismaClient({
-    log: ['query', 'info', 'warn', 'error'],
+    log: ['info', 'warn', 'error'],
     errorFormat: 'pretty',
 })
 

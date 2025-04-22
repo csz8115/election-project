@@ -6,7 +6,7 @@ const BallotInitiativeSection = ({initiativeObject, returnChoice}) => {
 
     const handleChoice = (responseID) => {
         if (responseID === "Abstain") {
-            setResponseChoice(null);
+            returnChoice(null);
             return;
         }
         const initiativeSubmissionObject = {
@@ -42,7 +42,7 @@ const BallotInitiativeSection = ({initiativeObject, returnChoice}) => {
         <div className='initiativeOptions'>
             {choicesInput}
             <label>
-                <input type="radio" name="vote" value={"Abstain"} onChange={() => handleChoice("Abstain")} />
+                <input type="radio" name={`vote_${initiativeObject.initiativeID}`} value={"Abstain"} onChange={() => handleChoice("Abstain")} />
                 Abstain
             </label>
         </div>

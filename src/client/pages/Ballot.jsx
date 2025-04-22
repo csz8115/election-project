@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import BallotPositionSection from '../components/BallotPositionSection'
 import BallotInitiativeSection from '../components/BallotInitiativeSection';
-import SubmitBallot from '../components/SubmitBallot';
+import ErrorMessage from '../components/ErrorMessage'; // Import the Error component
 
 
 import '../components/Ballot.css';
@@ -11,7 +11,7 @@ import '../components/Ballot.css';
 
 const Ballot = () => {
     const [ballotObject, setBallotObject] = useState(null);
-    const [error, setError] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
     const [selectedPositions, setSelectedPositions] = useState([]);
     const [selectedInitiatives, setSelectedInitiatives] = useState([]);
     const [filledBallot, setFilledBallot] = useState({});
@@ -65,6 +65,11 @@ const Ballot = () => {
     };
 
     const handleSelectionInitiative = (initiativeSubmissionObject) => {
+        console.log("Initiative Submission Object: ", initiativeSubmissionObject);
+        if (initiativeSubmissionObject == null){
+            return; 
+        }
+
         setSelectedInitiatives(prevSelectedInitiatives => {
             const existingIndex = prevSelectedInitiatives.findIndex(
                 item => item.initiativeID === initiativeSubmissionObject.initiativeID
@@ -106,7 +111,7 @@ const Ballot = () => {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Network response was not ok');
+                throw Error(errorData.error || 'Network response was not ok');
             }
 
             const result = await response.json();
@@ -114,8 +119,9 @@ const Ballot = () => {
             alert("Ballot submitted successfully!");
             navigate('/dashboard'); // Redirect to dashboard after successful submission
         } catch (error) {
-            console.error("Error submitting ballot:", error);
-            setError(error.message || "Failed to submit ballot. Please try again.");
+
+            setErrorMessage(error.message || 'An unknown error occurred');
+
         }
     };
 
@@ -191,7 +197,10 @@ const Ballot = () => {
                 {positionSectionArray}
                 {initiativeSectionArray}
             </div>
-            <SubmitBallot ballotSubmission={submitBallot}/>
+            <div>
+                {errorMessage && <ErrorMessage message={errorMessage} />}
+                <button className={"submitBallot"}type="submitBallot" onClick={submitBallot}>Submit Ballot</button>
+            </div>
         </div>
     );
 };
