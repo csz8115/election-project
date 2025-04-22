@@ -151,7 +151,8 @@ async function createWriteInCandidate(fName: string, lName: string) {
                 lName: lName,
                 titles: "",
                 description: "",
-                picture: "https://i.pravatar.cc/250?u=mail@ashallendesign.co.uk"
+                picture: "https://i.pravatar.cc/250?u=mail@ashallendesign.co.uk",
+                writeIn: true
             }
 
         });

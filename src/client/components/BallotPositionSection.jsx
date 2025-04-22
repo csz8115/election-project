@@ -1,17 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import CandidateButton from './CandidateButton';
+import ErrorMessage from './ErrorMessage';
+import { set } from 'zod';
 
 const BallotPositionSection = ({positionObject, returnSelected}) => {
     const [selected, setSelected] = useState({});
     const [abstained, setAbstained] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [writeInPosition, setWriteInPosition] = useState('');
     const {ballotID, candidates, positionID, positionName, writeIn, allowedVotes } = positionObject;
 
     const handleToggle = (index) => {
+        setErrorMessage(''); // Clear error message on toggle
         setSelected((prev) => {
             const currentCount = Object.values(prev).filter(Boolean).length;
 
             if (currentCount >= allowedVotes && !prev[index]) {
-            return prev; // Return immediately if max allowed votes are reached and not already selected
+                console.log(index)
+                setErrorMessage(`You can only select ${allowedVotes} candidates.`);
+                return prev; // Return immediately if max allowed votes are reached and not already selected
             }
 
             const newSelected = { ...prev };
@@ -29,6 +36,7 @@ const BallotPositionSection = ({positionObject, returnSelected}) => {
 
     const abstain = () => {
         setSelected({});
+        setErrorMessage('');
         setAbstained((prevAbstained) => {
             const newAbstained = !prevAbstained;
 
@@ -56,11 +64,11 @@ const BallotPositionSection = ({positionObject, returnSelected}) => {
     };
 
     const handleWriteIn = (event) => {
-        const writeInValue = event.target.value.trim();
-        console.log(writeInValue)
-        const [fName, lName] = writeInValue.split(' ');
+        var writeInValue = event.target.value.trim();
+        setWriteInPosition(writeInValue);
 
-        if (writeInValue) {
+        const [fName, lName] = writeInValue.split(' ');
+        if (fName && lName) {
             setSelected({
                 positionID: parseInt(positionID),
                 positionName,
@@ -70,8 +78,11 @@ const BallotPositionSection = ({positionObject, returnSelected}) => {
                 fName: fName,
                 lName: lName,
             });
-
+            setErrorMessage('');
         } else {
+            if (!selected.fName || !selected.lName) {
+                setErrorMessage("Please enter first and last name for write-in candidate.");
+            }
             setSelected({});
         }
     };
@@ -105,7 +116,6 @@ const BallotPositionSection = ({positionObject, returnSelected}) => {
                     positionName,
                     allowedVotes,
                     writeIn: true,
-                    candidateID: null,
                     fName: selected.fName,
                     lName: selected.lName,
                 };
@@ -131,7 +141,7 @@ const BallotPositionSection = ({positionObject, returnSelected}) => {
             returnSelected(selectedCandidates);
             return;
         }
-    }, [selected, abstained]); // Only run when `selected` and `abstained` changes
+    }, [selected, abstained, writeIn]); // Only run when `selected` and `abstained` changes
 
     return (
         <div className='ballotVoteSection'>
@@ -149,6 +159,7 @@ const BallotPositionSection = ({positionObject, returnSelected}) => {
                 <label htmlFor={`${positionName}_writeIn_field`}>Write in: </label>
                 <input id={`${positionName}_writeIn_field`} name={`${positionName}_writeIn`} type='text' onInput={handleWriteIn}></input>
             </div>
+            {errorMessage && <ErrorMessage message={errorMessage} />}
         </div>
     );
 };
