@@ -77,8 +77,9 @@ const BallotPositionSection = ({positionObject, returnSelected}) => {
                 ? {
                 positionID: parseInt(positionID),
                 positionName,
+                allowedVotes,
                 writeIn: candidate.candidate.writeIn,
-                candidateID,
+                candidateID: parseInt(candidate.candidateID),
                 fName: candidate.candidate.fName,
                 lName: candidate.candidate.lName,
                 }

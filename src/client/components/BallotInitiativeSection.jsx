@@ -10,17 +10,10 @@ const BallotInitiativeSection = ({initiativeObject, returnChoice}) => {
             return;
         }
         const initiativeSubmissionObject = {
-            ballotID: initiativeObject.ballotID,
-            description: initiativeObject.description,
             initiativeID: initiativeObject.initiativeID,
             initiativeName: initiativeObject.initiativeName,
-            responses: {
-                initiativeID: initiativeObject.initiativeID,
-                responseID: responseID,
-                response: initiativeObject.responses.find(choice => choice.responseID === responseID).response,
-
-                
-            },
+            description: initiativeObject.description,
+            responseID: responseID,
         }
         returnChoice(initiativeSubmissionObject);
     }

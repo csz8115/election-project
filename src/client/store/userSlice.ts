@@ -3,6 +3,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 // Define the initial state type for the user
 interface UserState {
+    userID: number | null;
     username: string | null;
     accountType: string | null;
     fName: string | null;
@@ -13,6 +14,7 @@ interface UserState {
 
 // Define the initial state
 const initialState: UserState = {
+    userID: null,
     username: null,
     accountType: null,
     fName: null,
@@ -28,6 +30,7 @@ const userSlice = createSlice({
     reducers: {
         login(state, action: PayloadAction<UserState>) {
             // Set the attributes of the user
+            state.userID = action.payload.userID;
             state.username = action.payload.username;
             state.accountType = action.payload.accountType;
             state.fName = action.payload.fName;
@@ -37,6 +40,7 @@ const userSlice = createSlice({
         },
         logout(state) {
             // Clear the attributes of the user
+            state.userID = null;
             state.username = null;
             state.accountType = null;
             state.fName = null;

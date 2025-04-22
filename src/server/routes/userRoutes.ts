@@ -375,6 +375,8 @@ router.post(`/submitBallot`, async (req, res): Promise<any> => {
         if (!ballot) {
             throw new Error('Invalid request');
         }
+        console.log(ballot)
+
 
         // Validate the ballot data
         BallotSchema.parse(ballot);
@@ -491,6 +493,7 @@ router.post(`/submitBallot`, async (req, res): Promise<any> => {
 
 router.get(`/getCompanyBallots`, async (req, res): Promise<any> => {
     try {
+
         const { companyID } = req.query;
         if (!companyID) {
             throw new Error('Invalid request');

@@ -13,6 +13,7 @@ export default function Dashboard() {
     const [ballots, setBallots] = useState(null);
     const user = useSelector((state) => {
         return {
+            userID: state.userID,
             username: state.username,
             accountType: state.accountType,
             fName: state.fName,
@@ -21,6 +22,7 @@ export default function Dashboard() {
             companyName: state.companyName,
         };
     });
+    
     useHeartbeat(user.username);
     const navigate = useNavigate();
     const handleClick = (ballotID) => {

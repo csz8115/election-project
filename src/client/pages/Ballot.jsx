@@ -1,5 +1,6 @@
 import {React, useEffect, useState} from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import BallotPositionSection from '../components/BallotPositionSection'
 import BallotInitiativeSection from '../components/BallotInitiativeSection';
 import SubmitBallot from '../components/SubmitBallot';
@@ -15,6 +16,18 @@ const Ballot = () => {
     const [selectedInitiatives, setSelectedInitiatives] = useState([]);
     const [filledBallot, setFilledBallot] = useState({});
     
+    const user = useSelector((state) => {
+        return {
+            userID: state.userID,
+            username: state.username,
+            accountType: state.accountType,
+            fName: state.fName,
+            lName: state.lName,
+            companyID: state.companyID,
+            companyName: state.companyName,
+        };
+    });
+
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -70,29 +83,40 @@ const Ballot = () => {
     };
 
 
-    const submitBallot = () => {
-        console.log("Selected Positions: ", selectedPositions);
+    const submitBallot = async () => {
         const ballotSubmission = {
-            ...filledBallot, 
-            positions: selectedPositions,
-            initiatives: selectedInitiatives
+            ballot: {
+                ...filledBallot, 
+                positions: selectedPositions.flat(),
+                initiatives: selectedInitiatives
+            }   
         };
 
         console.log("Ballot Submission: ", ballotSubmission);
-/*         fetch('http://localhost:3000/api/submitBallot', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify(ballotSubmission),
-        })
-        .then(response => {
+
+        try {
+            const response = await fetch('http://localhost:3000/api/submitBallot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify(ballotSubmission),
+            });
+
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Network response was not ok');
             }
-            return response.json();
-        }) */
+
+            const result = await response.json();
+            console.log("Submission successful:", result);
+            alert("Ballot submitted successfully!");
+            navigate('/dashboard'); // Redirect to dashboard after successful submission
+        } catch (error) {
+            console.error("Error submitting ballot:", error);
+            setError(error.message || "Failed to submit ballot. Please try again.");
+        }
     };
 
     useEffect(() => {
@@ -108,11 +132,11 @@ const Ballot = () => {
                     }
     
                     const result = await response.json();
-                    console.log(result);
 
                     if (result) {
                         setFilledBallot({
                             ballotID: result.ballotID,
+                            userID: user.userID,
                             ballotName: result.ballotName,
                             description: result.description,
                             startDate: result.startDate,
@@ -120,6 +144,7 @@ const Ballot = () => {
                             companyID: result.companyID
                         });
                         setBallotObject(result);
+                        console.log(result)
                     }
     
                 } catch (error) {
@@ -130,14 +155,6 @@ const Ballot = () => {
             fetchData();
         }, []); 
         
-        useEffect(() => {
-            console.log("Selected Positions updated:", selectedPositions);
-        }, [selectedPositions]);
-        
-        useEffect(() => {
-            console.log("Selected Initiatives updated:", selectedInitiatives);
-        }, [selectedInitiatives]);
-
     if (ballotObject == null) {
         return (
             <div className='ballot'>
