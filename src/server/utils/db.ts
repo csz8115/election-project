@@ -1156,7 +1156,8 @@ async function getResponse(responseID: number): Promise<any> {
 
 async function getQueryStats(): Promise<any> {
     try {
-        const stats = await prisma.$queryRaw`
+        const stats = await prisma.$queryRaw
+    `
     SELECT
     COUNT(*) AS total_queries,
     SUM(calls) AS total_calls,

@@ -661,4 +661,42 @@ router.get(`/getUserByUsername`, async (req, res): Promise<any> => {
     }
 });
 
+router.get(`/didUserVote`, async (req, res): Promise<any> => {
+    try {
+        const { ballotID, userID } = req.query;
+        if (!ballotID || !userID) {
+            throw new Error('Invalid request');
+        }
+        // Validate ballotID and userID
+        const ballotIDSchema = z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, {
+            message: 'Ballot ID must be a positive number'
+        });
+        const userIDSchema = z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, {
+            message: 'User ID must be a positive number'
+        });
+        ballotIDSchema.parse(ballotID);
+        userIDSchema.parse(userID);
+        const didVote = await db.checkBallotVoter(Number(ballotID), Number(userID));
+        if (didVote === null) {
+            throw new Error('Ballot not found');
+        }
+        return res.status(200).json(didVote);
+    } catch (error) {
+        // Handle the Zod validation error
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors.map(e => e.message) });
+        }
+        // Handle invalid request error
+        else if (error.message === 'Invalid request') {
+            return res.status(400).json({ error: 'Invalid request' });
+        }
+        // Handle ballot not found error
+        else if (error.message === 'Ballot not found') {
+            return res.status(404).json({ error: 'Ballot not found' });
+        }
+        // Handle other errors
+        return res.status(500).json({ error: 'Failed to check if user voted' });
+    }
+});
+
 export default router;
