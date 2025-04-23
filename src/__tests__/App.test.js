@@ -42,5 +42,14 @@ describe('AppRoutes', () => {
         expect(screen.getByText(/Ballot Page/i)).toBeInTheDocument();
     });
 
+    test('renders Login on /login', () => {
+        render(
+            <MemoryRouter initialEntries={['/login']}>
+                <AppRoutes />
+            </MemoryRouter>
+        );
+        expect(screen.getByText(/Login Page/i)).toBeInTheDocument();
+    });
+
     
 });
