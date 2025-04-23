@@ -24,5 +24,12 @@ describe('AppRoutes', () => {
         expect(screen.getByText(/Dashboard Page/i)).toBeInTheDocument();
     });
 
-    
+    test('renders Dashboard on /dashboard', () => {
+        render(
+            <MemoryRouter initialEntries={['/dashboard']}>
+                <AppRoutes />
+            </MemoryRouter>
+        );
+        expect(screen.getByText(/Dashboard Page/i)).toBeInTheDocument();
+    });
 });
