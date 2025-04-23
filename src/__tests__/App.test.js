@@ -32,4 +32,15 @@ describe('AppRoutes', () => {
         );
         expect(screen.getByText(/Dashboard Page/i)).toBeInTheDocument();
     });
+
+    test('renders Ballot on /ballot', () => {
+        render(
+            <MemoryRouter initialEntries={['/ballot']}>
+                <AppRoutes />
+            </MemoryRouter>
+        );
+        expect(screen.getByText(/Ballot Page/i)).toBeInTheDocument();
+    });
+
+    
 });
