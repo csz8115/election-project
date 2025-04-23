@@ -7,10 +7,13 @@ import { useHeartbeat } from "../hooks/useHeartbeat";
 import '../components/Dashboard.css';
 import Error from '../components/ErrorMessage';
 
+import '../components/Dashboard.css';
+
 export default function Dashboard() {
     const [ballots, setBallots] = useState(null);
     const user = useSelector((state) => {
         return {
+            userID: state.userID,
             username: state.username,
             accountType: state.accountType,
             fName: state.fName,
@@ -19,6 +22,7 @@ export default function Dashboard() {
             companyName: state.companyName,
         };
     });
+    
     useHeartbeat(user.username);
     const navigate = useNavigate();
     const handleClick = (ballotID) => {

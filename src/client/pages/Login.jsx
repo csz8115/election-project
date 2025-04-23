@@ -25,6 +25,7 @@ export default function Login() {
       const res = await response.json(); // Process response if needed
       dispatch(
         login({
+          userID: res.data.userID,
           username: res.data.username,
           accountType: res.data.accountType,
           fName: res.data.fName,

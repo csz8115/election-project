@@ -13,14 +13,18 @@ export const Logout = () => {
     try {
       const response = await fetch('http://localhost:3000/api/logout', {
         method: 'POST',
+        headers: { "Content-Type": "application/json" },
         credentials: 'include',
       });
       if (response.ok) {
         // Dispatch a plain action to update the Redux state after successful logout
         dispatch(logout());
         navigate('/login');
+      } else if (response.status === 401) {
+        console.error('User not logged in');
+        setError("User not logged in");
       } else {
-        console.error('Logout failed');
+        console.error('Logout failed', response);
         setError("Logout failed");
       }
     } catch (error) {
