@@ -51,5 +51,12 @@ describe('AppRoutes', () => {
         expect(screen.getByText(/Login Page/i)).toBeInTheDocument();
     });
 
-    
+    test('renders CreateBallot on /createBallot', () => {
+        render(
+            <MemoryRouter initialEntries={['/createBallot']}>
+                <AppRoutes />
+            </MemoryRouter>
+        );
+        expect(screen.getByText(/Create Ballot Page/i)).toBeInTheDocument();
+    });
 });
