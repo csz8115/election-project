@@ -4,7 +4,7 @@ import ErrorMessage from './ErrorMessage';
 import { set } from 'zod';
 
 const BallotPositionSection = ({positionObject, returnSelected}) => {
-    const [selected, setSelected] = useState({});
+    const [selected, setSelected] = useState(-1);
     const [abstained, setAbstained] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [writeInPosition, setWriteInPosition] = useState('');
@@ -24,9 +24,9 @@ const BallotPositionSection = ({positionObject, returnSelected}) => {
             const newSelected = { ...prev };
 
             if (newSelected[index]) {
-            delete newSelected[index]; // Remove selection if already selected
+                delete newSelected[index]; // Remove selection if already selected
             } else {
-            newSelected[index] = true; // Add selection if within allowed votes
+                newSelected[index] = true; // Add selection if within allowed votes
             }
 
             return newSelected;
@@ -93,10 +93,12 @@ const BallotPositionSection = ({positionObject, returnSelected}) => {
 
     useEffect(() => {
         // Check if the user has abstained
+        console.log(abstained)
         if (abstained) {
             returnSelected([]);
             return;
         }
+        console.log(selected)
 
         // Check if the user has selected candidates
         if (Object.keys(selected).length === 0) {

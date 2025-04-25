@@ -12,7 +12,7 @@ import '../components/Ballot.css';
 const Ballot = () => {
     const [ballotObject, setBallotObject] = useState(null);
     const [errorMessage, setErrorMessage] = useState('');
-    const [selectedPositions, setSelectedPositions] = useState([]);
+    const [selectedPositions, setSelectedPositions] = useState(-1   );
     const [selectedInitiatives, setSelectedInitiatives] = useState([]);
     const [filledBallot, setFilledBallot] = useState({});
     
@@ -48,11 +48,27 @@ const Ballot = () => {
     }
 
     const handleSelectionPosition = (positionSubmissionArray) => {
+        console.log("Position Submission Array: ", positionSubmissionArray);
+        if (positionSubmissionArray === -1){
+            setSelectedPositions(-1);
+            return;
+        }
+        console.log("Selected Positions: ", selectedPositions);
         // positionSubmissionArray should be an array of selected candidates for one position (e.g., President)
-        if (!Array.isArray(positionSubmissionArray) || positionSubmissionArray.length === 0) return;
+        if (!Array.isArray(positionSubmissionArray) || positionSubmissionArray.length === 0){
+            setSelectedPositions([]);
+            return
+        };
+
     
         const targetPositionID = positionSubmissionArray[0].positionID;
     
+        if (selectedPositions === -1) {
+            // If no positions are selected, set the first selected position
+            setSelectedPositions([positionSubmissionArray]);
+            return;
+        }
+
         setSelectedPositions(prevSelectedPositions => {
             // Remove existing group for the same position
             const updated = prevSelectedPositions.filter(
@@ -89,6 +105,11 @@ const Ballot = () => {
 
 
     const submitBallot = async () => {
+        console.log("Selected Positions: ", selectedPositions);
+        if (selectedPositions == -1){
+            setErrorMessage("Select, write in, or abstain for all positions.")
+            return;
+        }
         const ballotSubmission = {
             ballot: {
                 ...filledBallot, 
