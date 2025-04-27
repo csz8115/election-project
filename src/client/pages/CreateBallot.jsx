@@ -1,7 +1,7 @@
 import {React, useEffect, useState} from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import CreateBallotPositionSection from '../components/CreateBallotPositionSection';
-import CreateBallotIniativeSection from '../components/CreateBallotInitiativeSection';
+import CreateBallotPositionSection from '../components/CreateBallotComponents/CreateBallotPositionSection';
+import CreateBallotIniativeSection from '../components/CreateBallotComponents/CreateBallotInitiativeSection';
 import '../components/Ballot.css';
 
 

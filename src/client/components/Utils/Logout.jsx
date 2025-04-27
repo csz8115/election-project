@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { logout } from "../store/userSlice.ts";
+import { logout } from "../../store/userSlice";
 import ErrorMessage from './ErrorMessage.jsx';
 export const Logout = () => {
   const [error, setError] = useState(null);

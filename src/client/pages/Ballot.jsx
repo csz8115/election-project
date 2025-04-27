@@ -1,9 +1,9 @@
 import {React, useEffect, useState} from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import BallotPositionSection from '../components/BallotPositionSection'
-import BallotInitiativeSection from '../components/BallotInitiativeSection';
-import ErrorMessage from '../components/ErrorMessage'; // Import the Error component
+import BallotPositionSection from '../components/BallotComponents/BallotPositionSection'
+import BallotInitiativeSection from '../components/BallotComponents/BallotInitiativeSection';
+import ErrorMessage from '../components/Utils/ErrorMessage'; // Import the Error component
 
 
 import '../components/Ballot.css';

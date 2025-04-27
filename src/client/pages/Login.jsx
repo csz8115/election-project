@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { login } from "../store/userSlice.ts";
 import { useNavigate } from "react-router-dom";
-import ErrorMessage from "../components/ErrorMessage.jsx";
+import ErrorMessage from "../components/Utils/ErrorMessage.jsx";
 
 export default function Login() {
   const [username, setUsername] = useState("");

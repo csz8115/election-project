@@ -1,6 +1,5 @@
 import React from 'react';
 import { useState } from 'react';
-import './BallotPositionSection'
 
 const BallotInitiativeSection = ({initiativeObject, returnChoice}) => {
 

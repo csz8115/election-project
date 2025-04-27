@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import CandidateButton from './CandidateButton';
-import ErrorMessage from './ErrorMessage';
+import ErrorMessage from '../Utils/ErrorMessage';
 import { set } from 'zod';
 
 const BallotPositionSection = ({positionObject, returnSelected}) => {

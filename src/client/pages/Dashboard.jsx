@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from "react-router-dom";
-import Logout from '../components/Logout';
-import BallotButton from '../components/BallotButton';
+import Logout from '../components/Utils/Logout';
+import BallotButton from '../components/BallotComponents/BallotButton';
 import { useHeartbeat } from "../hooks/useHeartbeat";
 import '../components/Dashboard.css';
-import Error from '../components/ErrorMessage';
+import Error from '../components/Utils/ErrorMessage';
 
 import '../components/Dashboard.css';
 
