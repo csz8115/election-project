@@ -244,12 +244,13 @@ h3 {
     border: none;
     cursor: pointer;
     border-radius: .5em;
+    margin: 2em;
     box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
 }
 
 .ballotCreationTextInput {
     font-size: 2em;
-    border: .1em solid gray;
+    border: .05em solid gray;
     border-radius: .25em;
     width: max-content;
 }
@@ -259,6 +260,7 @@ h3 {
     flex-direction: column;
     gap: .5em;
     margin-top: 1em;
+    margin-bottom: 2em;
 }
 
 .addPosition {
@@ -270,4 +272,21 @@ h3 {
     font-weight: bold;
     padding: .5em;
     cursor: pointer;
+}
+
+.addChoiceButton {
+    background-color: darkgray;
+    color: white;
+    border-radius: .5em;
+    font-size: .75em;
+    font-weight: bold;
+    cursor: pointer;
+    height: 100px;
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+}
+
+.initiativeTextbox {
+    border: .1em solid gray;
+    border-radius: .25em;
+    width: 50%;
 }

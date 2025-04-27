@@ -26,7 +26,7 @@ const CreateBallotInitiativeSection = ({ onSubmit }) => {
             {""}
             <label>
                 <input type="radio" name={""} value={"Abstain"} onChange={() => handleChoice("Abstain")} />
-                Abstain
+                <input type="text" className='initiativeTextbox'></input>
             </label>
             <button className={"addChoiceButton"} onClick={handleAddChoice}>Add Choice</button>
         </div>
