@@ -11,7 +11,7 @@ const CreateBallotPositionSection = forwardRef((props, ref) => {
     const [editCandidateIndex, setEditCandidateIndex] = useState(-1);
     const [ballotPosition, setBallotPosition] = useState({
         positionName: '',
-        votingLimit: '',
+        allowedVotes: '',
         writeIn: false,
         candidates: [],
     });
@@ -24,7 +24,7 @@ const CreateBallotPositionSection = forwardRef((props, ref) => {
                 setErrorMessage('Position Name is required.');
                 return null;
             }
-            if (!ballotPosition.votingLimit.trim() || isNaN(ballotPosition.votingLimit)) {
+            if (!ballotPosition.allowedVotes.trim() || isNaN(ballotPosition.allowedVotes)) {
                 setErrorMessage('Voting Limit is required and must be a number.');
                 return null;
             }
@@ -33,7 +33,7 @@ const CreateBallotPositionSection = forwardRef((props, ref) => {
                 return null;
             }
             setErrorMessage('');
-            return { ...ballotPosition, candidates: candidates };
+            return { ...ballotPosition, allowedVotes: parseInt(ballotPosition.allowedVotes), candidates: candidates };
         },
     }));
 
@@ -96,8 +96,8 @@ const CreateBallotPositionSection = forwardRef((props, ref) => {
                     className="ballotCreationTextInput"
                     type="number"
                     placeholder="Voting Limit *"
-                    value={ballotPosition.votingLimit}
-                    onChange={(e) => setBallotPosition({ ...ballotPosition, votingLimit: e.target.value })}
+                    value={ballotPosition.allowedVotes}
+                    onChange={(e) => setBallotPosition({ ...ballotPosition, allowedVotes: e.target.value })}
                 />
                 </div>
                 <div className='candidateContainer'>

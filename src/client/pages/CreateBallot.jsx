@@ -121,7 +121,7 @@ const CreateBallot = () => {
             setErrorMessage("End date must be after the current date.");
             return;
         }
-        
+
         if (positionArray.length === 0 && initiativeArray.length === 0) {
             setErrorMessage("At least one position or initiative is required.");
             return;
@@ -134,7 +134,7 @@ const CreateBallot = () => {
             return;
             }
 
-            if (position.votingLimit > position.candidates.length) {
+            if (position.allowedVotes > position.candidates.length) {
             setErrorMessage("Vote limit for a position cannot exceed the number of candidates.");
             return;
             }
@@ -169,16 +169,16 @@ const CreateBallot = () => {
 
             <div className='ballotCreationHeader'>
                 <div className='left'>
-                    <input className="ballotCreationTextInput" type="text" placeholder="Ballot Name" onChange={handleBallotNameChange}/>
-                    <input className="ballotCreationTextInput" type="text" placeholder="Ballot Description" onChange={handleDescriptionChange} />
+                    <input className="ballotCreationTextInput" type="text" placeholder="Ballot Name *" onChange={handleBallotNameChange}/>
+                    <input className="ballotCreationTextInput" type="text" placeholder="Ballot Description *" onChange={handleDescriptionChange} />
                 </div>
                 <div className="right">
                     <div>
-                        <label className="ballotLabel">Start Date:</label>
+                        <label className="ballotLabel">Start Date *:</label>
                         <input className="ballotCreationTextInput" type="date" onChange={handleStartDateChange} />
                     </div>
                     <div>
-                        <label className="ballotLabel">End Date:</label>
+                        <label className="ballotLabel">End Date *:</label>
                         <input className="ballotCreationTextInput" type="date" onChange={handleEndDateChange}/>
                     </div>
                 </div>

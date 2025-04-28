@@ -829,103 +829,103 @@ async function getInactiveCompanyBallots(companyID: number): Promise<any> {
 async function createBallot(ballot: Ballot, ballotPositions: BallotPositions[], ballotInitiatives: BallotInitiatives[]) {
     try {
         const result = await prisma.$transaction(async (tx) => {
-            // First insert into ballots table and get the created ballot
-            const newBallot = await prisma.ballots.create({
+            // Create the ballot
+            const newBallot = await tx.ballots.create({
                 data: {
                     ballotName: ballot.ballotName,
                     description: ballot.description,
                     startDate: new Date(ballot.startDate),
                     endDate: new Date(ballot.endDate),
                     company: {
-                        connect: {
-                            companyID: ballot.companyID,
-                        },
+                        connect: { companyID: ballot.companyID },
                     },
                 },
             });
+
             if (!newBallot) {
                 throw new Error("Ballot creation failed");
             }
-            // Then insert into ballot_positions table using the new ballot's ID
+
+            // Create the ballot positions and candidates
             for (const position of ballotPositions) {
-                // Create the candidates 
-                tx.candidate.createMany({
-                    data: position.candidates.map((candidate) => ({
-                        fName: candidate.fName,
-                        lName: candidate.lName,
-                        titles: candidate.titles,
-                        description: candidate.description,
-                    })),
-                });
-                // Create the ballot position
                 const newPosition = await tx.ballotPositions.create({
                     data: {
                         positionName: position.positionName,
                         allowedVotes: position.allowedVotes,
                         writeIn: position.writeIn,
                         ballot: {
-                            connect: {
-                                ballotID: newBallot.ballotID,
-                            },
+                            connect: { ballotID: newBallot.ballotID },
                         },
                     },
                 });
-                // Create ballot candidates for each candidate
+
+                // Create each candidate individually (NOT createMany)
+                const createdCandidates = [];
                 for (const candidate of position.candidates) {
+                    const createdCandidate = await tx.candidate.create({
+                        data: {
+                            fName: candidate.fName,
+                            lName: candidate.lName,
+                            titles: candidate.titles ?? "",  // Safe fallback if missing
+                            description: candidate.description ?? "",
+                            picture: candidate.picture ?? "",
+                        },
+                    });
+                    createdCandidates.push(createdCandidate);
+                }
+
+                // Now create the ballotCandidates linking candidates and position
+                for (const createdCandidate of createdCandidates) {
                     await tx.ballotCandidates.create({
                         data: {
                             position: {
-                                connect: {
-                                    positionID: newPosition.positionID,
-                                }
+                                connect: { positionID: newPosition.positionID },
                             },
                             candidate: {
-                                connect: {
-                                    candidateID: candidate.candidateID,
-                                }
-                            }
-                        }
+                                connect: { candidateID: createdCandidate.candidateID },
+                            },
+                        },
                     });
                 }
             }
-            // Then insert into ballot_initiatives table using the new ballot's ID
+
+            // Create ballot initiatives and their responses
             for (const initiative of ballotInitiatives) {
                 const newInitiative = await tx.ballotInitiatives.create({
                     data: {
                         initiativeName: initiative.initiativeName,
                         description: initiative.description,
                         ballot: {
-                            connect: {
-                                ballotID: newBallot.ballotID,
-                            },
+                            connect: { ballotID: newBallot.ballotID },
                         },
                     },
                 });
-                // Create the responses for the initiative
+
                 for (const response of initiative.responses) {
                     await tx.initiativeResponses.create({
                         data: {
                             response: response.response,
                             initiative: {
-                                connect: {
-                                    initiativeID: newInitiative.initiativeID,
-                                },
+                                connect: { initiativeID: newInitiative.initiativeID },
                             },
                         },
                     });
                 }
             }
 
+            return newBallot; // Return something useful if needed
         });
+
+        return result; // You can return the result if you want
+
     } catch (error) {
         if (error instanceof Error) {
             throw new Error(error.message);
         }
         throw new Error("Unknown error during ballot creation");
     }
-
-    // END OF TRANSACTION
 }
+
 
 /**
  * Updates a ballot in the database.

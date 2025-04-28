@@ -182,94 +182,75 @@ router.get(`/getSystemStats`, async (req, res): Promise<any> => {
     }
 });
 
+
 // Create ballot route
 router.post('/createBallot', async (req, res): Promise<any> => {
     try {
-        const { title, description, startDate, endDate, companyID, positions, initiatives } = req.body;
-        console.log('Received request to create ballot:', req.body);
-
-        if (!title || !description || !startDate || !endDate || !companyID) {
-            throw new Error('Invalid request');
-        }
-
-        // Validate input data
-        const titleSchema = z.string().min(1).max(100);
-        const descriptionSchema = z.string().min(1).max(500);
-        const dateSchema = z.string().refine(val => !isNaN(Date.parse(val)), {
-            message: 'Invalid date format'
-        });
-        const companyIDSchema = z.number().positive();
-
-        titleSchema.parse(title);
-        descriptionSchema.parse(description);
-        dateSchema.parse(startDate);
-        dateSchema.parse(endDate);
-        companyIDSchema.parse(Number(companyID));
-
-        // Validate positions and initiatives
-        BallotPositionsSchema.parse(positions);
-        BallotInitiativeSchema.parse(initiatives);
-
-        // Check if the company exists
-        const company = await db.getCompany(Number(companyID));
-        if (!company) {
-            throw new Error('Company does not exist');
-        }
-
-        // Check is start date is before end date
-        const startDateObj = new Date(startDate);
-        const endDateObj = new Date(endDate);
-        if (startDateObj >= endDateObj) {
-            throw new Error('Start date must be before end date');
-        }
-
-        // check if company ID exists
-        const companyExists = await db.getCompany(Number(companyID));
-        if (!companyExists) {
-            throw new Error('Company does not exist');
-        }
-
-        // Check if positions or initiatives are not empty
-        if (positions.length === 0 && initiatives.length === 0) {
-            throw new Error('At least one position or initiative must be provided');
-        }
-
-        // Create the ballot
-        const newBallot = await db.createBallot(
-            {
-                description,
-                startDate: new Date(startDate).toISOString(),
-                endDate: new Date(endDate).toISOString(),
-                companyID: Number(companyID),
-            },
-            positions,
-            initiatives
-        );
-
-        // Validate the created ballot against the BallotSchema
-        BallotSchema.parse(newBallot);
-
-        if (newBallot === undefined || newBallot === null) {
-            throw new Error('Failed to create ballot');
-        }
-
-        return res.status(201).json({ message: 'Ballot created successfully', ballot: newBallot });
-    } catch (error) {
-        // Handle the Zod validation error
-        if (error instanceof z.ZodError) {
-            return res.status(400).json({ error: error.errors.map(e => e.message) });
-        }
-        // Handle company does not exist error
-        else if (error.message === 'Company does not exist') {
-            return res.status(404).json({ error: 'Company does not exist' });
-        }
-        // Handle invalid request error
-        else if (error.message === 'Invalid request') {
-            return res.status(400).json({ error: 'Invalid request' });
-        }
-        // Handle other errors
-        return res.status(500).json({ error: 'Failed to create ballot' });
+      const { ballotName, description, startDate, endDate, companyID, positions, initiatives } = req.body;
+  
+      // Validate required fields
+      if (!ballotName || !description || !startDate || !endDate || !companyID || !positions) {
+        throw new Error('Invalid request');
+      }
+    
+      // Check company exists
+      const company = await db.getCompany(Number(companyID));
+      if (!company) {
+        throw new Error('Company does not exist');
+      }
+  
+      // Prepare data for Prisma
+      const ballotPositions = positions.map((position: any) => ({
+        positionName: position.positionName,
+        allowedVotes: position.allowedVotes,
+        writeIn: position.writeIn,
+        candidates: position.candidates.map((candidate: any) => ({
+          fName: candidate.fName,
+          lName: candidate.lName,
+          titles: candidate.titles ?? '',
+          description: candidate.description ?? '',
+          picture: candidate.picture ?? '',
+        })),
+      }));
+  
+      const ballotInitiatives = initiatives.map((initiative: any) => ({
+        initiativeName: initiative.initiativeName,
+        description: initiative.description ?? '',
+        picture: initiative.picture ?? '',
+        responses: initiative.responses.map((response: any) => ({
+          response: response.response,
+          votes: 0, // You might initialize votes to 0
+        })),
+      }));
+  
+      const ballot = {
+        ballotName,
+        description,
+        startDate,
+        endDate,
+        companyID: Number(companyID),
+        positions: ballotPositions,
+        initiatives: ballotInitiatives,
+      };
+  
+      // Create the ballot in DB
+      await db.createBallot(ballot, ballotPositions, ballotInitiatives);
+  
+      return res.status(201).json({ message: 'Ballot created successfully' });
+  
+    } catch (error: any) {
+      console.log('Error creating ballot:', error);
+  
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors.map(e => e.message) });
+      } else if (error.message === 'Company does not exist') {
+        return res.status(404).json({ error: 'Company does not exist' });
+      } else if (error.message === 'Invalid request') {
+        return res.status(400).json({ error: 'Invalid request' });
+      }
+      return res.status(500).json({ error: 'Failed to create ballot' });
     }
-});
+  });
+  
 
 export default router;

@@ -55,7 +55,7 @@ const CreateCandidateInfo = ({ candidateDetails, show, handleClose, handleSave, 
             />
             <input
                 type="text"
-                placeholder="Last Name *    "
+                placeholder="Last Name *"
                 value={lName}
                 onChange={(e) => setlName(e.target.value)}
             />
@@ -67,6 +67,7 @@ const CreateCandidateInfo = ({ candidateDetails, show, handleClose, handleSave, 
             <input
                 type="url"
                 placeholder="Image URL"
+                value={picture}
                 onChange={(e) => setPicture(e.target.value)}
             />
             {canDelete && (

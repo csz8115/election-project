@@ -1,16 +1,37 @@
 import React, { useState, useImperativeHandle, forwardRef } from 'react';
+import ErrorMessage from '../Utils/ErrorMessage';
 
 const CreateBallotInitiativeSection = forwardRef((props, ref) => {
     const [initiativeName, setInitiativeName] = useState('');
     const [description, setDescription] = useState('');
     const [responses, setResponses] = useState([]);
+    const [errorMessage, setErrorMessage] = useState('');
 
     useImperativeHandle(ref, () => ({
-        getValue: () => ({
-            initiativeName,
-            description,
-            responses,
-        }),
+        getValue: () => {
+            if (!initiativeName.trim()) {
+                setErrorMessage("Initiative name is required.");
+                return null;
+            }
+            if (!description.trim()) {
+                setErrorMessage("Description is required.");
+                return null;
+            }
+            if (responses.length === 0) {
+                setErrorMessage("At least one response is required.");
+                return null;
+            }
+            if (responses.some((choice) => !choice.response.trim())) {
+                setErrorMessage("All responses must have a value.");
+                return null;
+            }
+            setErrorMessage('');
+            return {
+                initiativeName,
+                description,
+                responses,
+            };
+        },
     }));
 
     console.log("Responses: ", responses);
@@ -58,6 +79,9 @@ const CreateBallotInitiativeSection = forwardRef((props, ref) => {
                 ))}
                 <button className={"addChoiceButton"} onClick={handleAddChoice}>Add Choice</button>
             </div>
+            {errorMessage && (
+                <ErrorMessage message={errorMessage} />
+            )}
         </div>
     );
 });
