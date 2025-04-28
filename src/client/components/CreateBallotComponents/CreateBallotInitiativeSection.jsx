@@ -1,24 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useImperativeHandle, forwardRef } from 'react';
 
-const CreateBallotInitiativeSection = ({ onSubmit }) => {
-    const [title, setTitle] = useState('');
+const CreateBallotInitiativeSection = forwardRef((props, ref) => {
+    const [initiativeName, setInitiativeName] = useState('');
     const [description, setDescription] = useState('');
-    const [choices, setChoices] = useState([]);
+    const [responses, setResponses] = useState([]);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (title && description) {
-            onSubmit({ title, description });
-            setTitle('');
-            setDescription('');
-        }
-    };
+    useImperativeHandle(ref, () => ({
+        getValue: () => ({
+            initiativeName,
+            description,
+            responses,
+        }),
+    }));
+
+    console.log("Responses: ", responses);
 
     const handleAddChoice = () => {
         // Logic to add a choice to the initiative
         console.log("Adding choice");
         const newChoice = {response: ''}
-        setChoices((prevChoices) => [...prevChoices, newChoice]);
+        setResponses((prevChoices) => [...prevChoices, newChoice]);
         
     }
 
@@ -27,9 +28,9 @@ const CreateBallotInitiativeSection = ({ onSubmit }) => {
             <input
                 type='text'
                 className='ballotCreationTextInput'
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter title"
+                value={initiativeName}
+                onChange={(e) => setInitiativeName(e.target.value)}
+                placeholder="Enter initiativeName"
             />
             <input
                 type='text'
@@ -39,7 +40,7 @@ const CreateBallotInitiativeSection = ({ onSubmit }) => {
                 placeholder="Enter description"
             />
             <div className='initiativeOptions'>
-                {choices.map((choice, index) => (
+                {responses.map((choice, index) => (
                     <label key={index} className='createInitiativeOption'>
                         <input type="radio" name="initiativeChoice" value={choice} />
                         <input
@@ -47,9 +48,9 @@ const CreateBallotInitiativeSection = ({ onSubmit }) => {
                             className='initiativeTextbox'
                             value={choice.response}
                             onChange={(e) => {
-                                const newChoices = [...choices];
+                                const newChoices = [...responses];
                                 newChoices[index].response = e.target.value;
-                                setChoices(newChoices);
+                                setResponses(newChoices);
                             }}
                             placeholder={`Choice ${index + 1}`}
                         />
@@ -59,6 +60,6 @@ const CreateBallotInitiativeSection = ({ onSubmit }) => {
             </div>
         </div>
     );
-};
+});
 
 export default CreateBallotInitiativeSection;

@@ -1,17 +1,19 @@
-import {React, useEffect, useState} from 'react';
+import {React, useEffect, useState, useRef, createRef} from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import CreateBallotPositionSection from '../components/CreateBallotComponents/CreateBallotPositionSection';
 import CreateBallotIniativeSection from '../components/CreateBallotComponents/CreateBallotInitiativeSection';
+import ErrorMessage from '../components/Utils/ErrorMessage';
 import '../components/Ballot.css';
+import { set } from 'zod';
 
 
 const CreateBallot = () => {
     const [ballot, setBallot] = useState(null);
-    const [ballotName, setBallotName] = useState({
-        ballotName: '',
-        description: '',
-        startDate: '',
-        endDate: '',
+    const [ballotName, setBallotName] = useState('');
+
+    const stateCompanyID = useSelector((state) => {
+        return state.companyID;
     });
 
     const [description, setDescription] = useState('');
@@ -19,33 +21,47 @@ const CreateBallot = () => {
     const [endDate, setEndDate] = useState('');
     const [positionArray, setPositionArray] = useState([]);
     const [initiativeArray, setInitiativeArray] = useState([]);
+    const [companyID, setCompanyID] = useState(stateCompanyID);
     const location = useLocation();
+    const positionRefs = useRef([]);
+    const initiativeRefs = useRef([]);
+    const [errorMessage, setErrorMessage] = useState('');
+
+    if (positionRefs.current.length !== positionArray.length) {
+        positionRefs.current = Array(positionArray.length)
+            .fill()
+            .map((_, i) => positionRefs.current[i] || createRef());
+    }
+
+    if (initiativeRefs.current.length !== initiativeArray.length) {
+        initiativeRefs.current = Array(initiativeArray.length)
+            .fill()
+            .map((_, i) => initiativeRefs.current[i] || createRef());
+    }
+
     const navigate = useNavigate();
 
     const handleBackButton = () => {
         navigate(-1);
     }
 
+
     const positionSectionArray = positionArray.map((position, index) => (
-        <CreateBallotPositionSection key={index} />
+        <CreateBallotPositionSection key={index} ref={positionRefs.current[index]} />
     ));
 
     const initiativeSectionArray = initiativeArray.map((initiative, index) => (
-        <CreateBallotIniativeSection key={index} />
+        <CreateBallotIniativeSection key={index} ref={initiativeRefs.current[index]} />
     ));
 
     const addPositionField = () => {
         console.log("Adding position field");
-        const newPositionSection = <CreateBallotPositionSection key={positionSectionArray.length+1}/>
-        setPositionArray((prevPositions) => [...prevPositions, newPositionSection]);
-        console.log(positionSectionArray);
+        setPositionArray((prevPositions) => [...prevPositions, {}]);
     }
 
     const addInitiativeField = () => {
         console.log("Adding initiative field");
-        const newInitiativeSection = <CreateBallotIniativeSection key={initiativeSectionArray.length+1}/>
-        setInitiativeArray((prevInitiatives) => [...prevInitiatives, newInitiativeSection]);
-        console.log(initiativeSectionArray);
+        setInitiativeArray((prevInitiatives) => [...prevInitiatives, {}]);
     }
 
     const handleBallotNameChange = (event) => {
@@ -67,16 +83,85 @@ const CreateBallot = () => {
         setEndDate(date);
     }
 
-    const handleBallotSubmit = () => {
+    const submitBallot = async () => {
         const ballotObject = {
             ballotName: ballotName,
             description: description,
             startDate: startDate,
             endDate: endDate,
-            positions: positionArray,
-            initiatives: initiativeArray,
+            companyID: companyID,
+            positions: positionRefs.current.map(ref => ref.current?.getValue()),
+            initiatives: initiativeRefs.current.map(ref => ref.current?.getValue()),
+        };
+
+        console.log("Ballot object: ", ballotObject);
+
+        if (!ballotObject.ballotName) {
+            setErrorMessage("Ballot name is required.");
+            return;
         }
-    }
+        if (!ballotObject.description) {
+            setErrorMessage("Ballot description is required.");
+            return;
+        }
+        if (!ballotObject.startDate) {
+            setErrorMessage("Start date is required.");
+            return;
+        }
+        if (!ballotObject.endDate) {
+            setErrorMessage("End date is required.");
+            return;
+        }
+        if (new Date(ballotObject.startDate) >= new Date(ballotObject.endDate)) {
+            setErrorMessage("End date must be after start date.");
+            return;
+        }
+
+        if (new Date(ballotObject.endDate) <= new Date()) {
+            setErrorMessage("End date must be after the current date.");
+            return;
+        }
+        
+        if (positionArray.length === 0 && initiativeArray.length === 0) {
+            setErrorMessage("At least one position or initiative is required.");
+            return;
+        }
+
+
+        for (const position of ballotObject.positions) {
+            if (!position || !position.candidates || position.candidates.length === 0) {
+            setErrorMessage("Each position must have at least one candidate.");
+            return;
+            }
+
+            if (position.votingLimit > position.candidates.length) {
+            setErrorMessage("Vote limit for a position cannot exceed the number of candidates.");
+            return;
+            }
+        }
+
+        setErrorMessage('');
+
+        try {
+            const response = await fetch(`http://localhost:3000/api/createBallot`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(ballotObject),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log("Ballot submitted successfully: ", data);
+            } else {
+                console.error("Failed to submit ballot: ", response.statusText);
+            }
+        } catch (error) {
+            console.error("Error submitting ballot: ", error);
+            alert("An error occurred while submitting the ballot.");
+        }
+    };
 
     return (
         <div className='ballot'>
@@ -104,7 +189,8 @@ const CreateBallot = () => {
                 {initiativeSectionArray}
                 <button className="addPosition" onClick={() => addInitiativeField()}>Add Initiative</button>
             </div>
-            <button className='submitBallot'>Create Ballot</button>
+            {errorMessage && <ErrorMessage message={errorMessage} />}
+            <button className='submitBallot' onClick={submitBallot}>Create Ballot</button>
         </div>
     );
 };

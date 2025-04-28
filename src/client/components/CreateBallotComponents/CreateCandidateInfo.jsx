@@ -1,33 +1,44 @@
 import {React, useState, useEffect } from 'react';
+import ErrorMessage from '../Utils/ErrorMessage';
 
 const CreateCandidateInfo = ({ candidateDetails, show, handleClose, handleSave, handleDelete }) => {
 
     const [fName, setfName] = useState('');
     const [lName, setlName] = useState('');
     const [description, setDescription] = useState('');
-    const [imageUrl, setImageUrl] = useState('');
+    const [picture, setPicture] = useState('');
     const [canDelete, setCanDelete] = useState(false);
-    
-    console.log("Candidate Details: ", candidateDetails);
-    
+    const [errorMessage, setErrorMessage] = useState('');
+        
 
     useEffect(() => {
         if (candidateDetails) {
-            const { fName, lName, description, imageUrl } = candidateDetails;
+            const { fName, lName, description, picture, titles } = candidateDetails;
             setfName(fName);
             setlName(lName);
             setDescription(description);
-            setImageUrl(imageUrl);
+            setPicture(picture);
             setCanDelete(true);
         }
     }, [candidateDetails]);
 
 
     const onSave = () => {
-        handleSave({ fName, lName, description, imageUrl });
+
+        if (!fName) {
+            setErrorMessage('Please include first name.');
+            return;
+        }
+        if (!lName) {
+            setErrorMessage('Please include last name.');
+            return;
+        }
+
+        handleSave({ fName, lName, description, picture });
         setfName('');
         setlName('');
         setDescription('');
+        setPicture('');
         handleClose();
     };
 
@@ -38,13 +49,13 @@ const CreateCandidateInfo = ({ candidateDetails, show, handleClose, handleSave, 
             <h1>Create Candidate Info</h1>
             <input
                 type="text"
-                placeholder="First Name"
+                placeholder="First Name *"
                 value={fName}
                 onChange={(e) => setfName(e.target.value)}
             />
             <input
                 type="text"
-                placeholder="Last Name"
+                placeholder="Last Name *    "
                 value={lName}
                 onChange={(e) => setlName(e.target.value)}
             />
@@ -56,11 +67,12 @@ const CreateCandidateInfo = ({ candidateDetails, show, handleClose, handleSave, 
             <input
                 type="url"
                 placeholder="Image URL"
-                onChange={(e) => setImageUrl(e.target.value)}
+                onChange={(e) => setPicture(e.target.value)}
             />
             {canDelete && (
                 <button className="candidateInfoModalButton deleteButton" onClick={() => handleDelete(candidateDetails)}>Delete</button>
             )}
+            {errorMessage && <ErrorMessage message={errorMessage} />}
             <button className="candidateInfoModalButton saveButton" onClick={onSave}>Save</button>
             <button onClick={handleClose}>Cancel</button>
         </div>

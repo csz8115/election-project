@@ -186,6 +186,7 @@ router.get(`/getSystemStats`, async (req, res): Promise<any> => {
 router.post('/createBallot', async (req, res): Promise<any> => {
     try {
         const { title, description, startDate, endDate, companyID, positions, initiatives } = req.body;
+        console.log('Received request to create ballot:', req.body);
 
         if (!title || !description || !startDate || !endDate || !companyID) {
             throw new Error('Invalid request');
@@ -213,6 +214,24 @@ router.post('/createBallot', async (req, res): Promise<any> => {
         const company = await db.getCompany(Number(companyID));
         if (!company) {
             throw new Error('Company does not exist');
+        }
+
+        // Check is start date is before end date
+        const startDateObj = new Date(startDate);
+        const endDateObj = new Date(endDate);
+        if (startDateObj >= endDateObj) {
+            throw new Error('Start date must be before end date');
+        }
+
+        // check if company ID exists
+        const companyExists = await db.getCompany(Number(companyID));
+        if (!companyExists) {
+            throw new Error('Company does not exist');
+        }
+
+        // Check if positions or initiatives are not empty
+        if (positions.length === 0 && initiatives.length === 0) {
+            throw new Error('At least one position or initiative must be provided');
         }
 
         // Create the ballot
