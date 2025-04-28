@@ -6,6 +6,17 @@ import '../components/Ballot.css';
 
 
 const CreateBallot = () => {
+    const [ballot, setBallot] = useState(null);
+    const [ballotName, setBallotName] = useState({
+        ballotName: '',
+        description: '',
+        startDate: '',
+        endDate: '',
+    });
+
+    const [description, setDescription] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [positionArray, setPositionArray] = useState([]);
     const [initiativeArray, setInitiativeArray] = useState([]);
     const location = useLocation();
@@ -37,12 +48,55 @@ const CreateBallot = () => {
         console.log(initiativeSectionArray);
     }
 
+    const handleBallotNameChange = (event) => {
+        const name = event.target.value;
+        console.log("Ballot name: ", name);
+        setBallotName(name);
+    }
+    const handleDescriptionChange = (event) => {
+        const description = event.target.value;
+        setDescription(description);
+    }
+    const handleStartDateChange = (event) => {
+        const date = event.target.value;
+        setStartDate(date);
+    }
+    const handleEndDateChange = (event) => {
+        const date = event.target.value;
+        console.log("End date: ", date);
+        setEndDate(date);
+    }
+
+    const handleBallotSubmit = () => {
+        const ballotObject = {
+            ballotName: ballotName,
+            description: description,
+            startDate: startDate,
+            endDate: endDate,
+            positions: positionArray,
+            initiatives: initiativeArray,
+        }
+    }
+
     return (
         <div className='ballot'>
+            <button className='backButton' onClick={handleBackButton}>&lt; Back</button>
+
             <div className='ballotCreationHeader'>
-                <button className='backButton' onClick={handleBackButton}>&lt; Back</button>
-                <input className="ballotCreationTextInput" type="text" placeholder="Ballot Name" />
-                <input className="ballotCreationTextInput" type="text" placeholder="Ballot Description" />
+                <div className='left'>
+                    <input className="ballotCreationTextInput" type="text" placeholder="Ballot Name" onChange={handleBallotNameChange}/>
+                    <input className="ballotCreationTextInput" type="text" placeholder="Ballot Description" onChange={handleDescriptionChange} />
+                </div>
+                <div className="right">
+                    <div>
+                        <label className="ballotLabel">Start Date:</label>
+                        <input className="ballotCreationTextInput" type="date" onChange={handleStartDateChange} />
+                    </div>
+                    <div>
+                        <label className="ballotLabel">End Date:</label>
+                        <input className="ballotCreationTextInput" type="date" onChange={handleEndDateChange}/>
+                    </div>
+                </div>
             </div>
             <div className='ballotBody'>
                 {positionSectionArray}

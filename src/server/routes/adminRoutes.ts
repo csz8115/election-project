@@ -4,7 +4,10 @@ import { z } from 'zod';
 import { User } from '../types/user.ts';
 import { getRedisClient } from '../utils/redis.ts';
 import { getHttpStats } from '../utils/systemStats.ts';
+import { BallotPositions, BallotPositionsSchema } from '../types/ballotPositions.ts';
+import { BallotInitiatives, BallotInitiativeSchema } from '../types/ballotInitiatives.ts';
 import bcrypt from 'bcrypt';
+import { BallotSchema } from '../types/ballot.ts';
 
 const router = express.Router();
 
@@ -176,6 +179,77 @@ router.get(`/getSystemStats`, async (req, res): Promise<any> => {
         // Handle other errors
         console.log(error);
         return res.status(500).json({ error: 'Failed to get stats' });
+    }
+});
+
+// Create ballot route
+router.post('/createBallot', async (req, res): Promise<any> => {
+    try {
+        const { title, description, startDate, endDate, companyID, positions, initiatives } = req.body;
+
+        if (!title || !description || !startDate || !endDate || !companyID) {
+            throw new Error('Invalid request');
+        }
+
+        // Validate input data
+        const titleSchema = z.string().min(1).max(100);
+        const descriptionSchema = z.string().min(1).max(500);
+        const dateSchema = z.string().refine(val => !isNaN(Date.parse(val)), {
+            message: 'Invalid date format'
+        });
+        const companyIDSchema = z.number().positive();
+
+        titleSchema.parse(title);
+        descriptionSchema.parse(description);
+        dateSchema.parse(startDate);
+        dateSchema.parse(endDate);
+        companyIDSchema.parse(Number(companyID));
+
+        // Validate positions and initiatives
+        BallotPositionsSchema.parse(positions);
+        BallotInitiativeSchema.parse(initiatives);
+
+        // Check if the company exists
+        const company = await db.getCompany(Number(companyID));
+        if (!company) {
+            throw new Error('Company does not exist');
+        }
+
+        // Create the ballot
+        const newBallot = await db.createBallot(
+            {
+                description,
+                startDate: new Date(startDate).toISOString(),
+                endDate: new Date(endDate).toISOString(),
+                companyID: Number(companyID),
+            },
+            positions,
+            initiatives
+        );
+
+        // Validate the created ballot against the BallotSchema
+        BallotSchema.parse(newBallot);
+
+        if (newBallot === undefined || newBallot === null) {
+            throw new Error('Failed to create ballot');
+        }
+
+        return res.status(201).json({ message: 'Ballot created successfully', ballot: newBallot });
+    } catch (error) {
+        // Handle the Zod validation error
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors.map(e => e.message) });
+        }
+        // Handle company does not exist error
+        else if (error.message === 'Company does not exist') {
+            return res.status(404).json({ error: 'Company does not exist' });
+        }
+        // Handle invalid request error
+        else if (error.message === 'Invalid request') {
+            return res.status(400).json({ error: 'Invalid request' });
+        }
+        // Handle other errors
+        return res.status(500).json({ error: 'Failed to create ballot' });
     }
 });
 
