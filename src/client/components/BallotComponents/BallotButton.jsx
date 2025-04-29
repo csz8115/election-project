@@ -1,24 +1,41 @@
 import React from 'react';
 
-const BallotButton = ({ label, onClick, disabled }) => {
+const BallotButton = ({ ballotName, ballotStartDate, ballotEndDate, handleClick, disabled }) => {
+
+
+    const formatDate = (date) => {
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return new Date(date).toLocaleDateString(undefined, options);
+    };
+
 
     if (disabled) {
         return (
             <button className="dashboardBallotButton buttonDisabled"
-                onClick={onClick} 
+                onClick={handleClick} 
                 disabled={disabled} 
             >
-                {label}
+            <p>{ballotName}</p>
+            <p style={{fontSize: ".6em"}}>
+                {ballotStartDate && ballotEndDate 
+                    ? `${formatDate(ballotStartDate)} - ${formatDate(ballotEndDate)}`
+                    : "Invalid date"}
+            </p>
             </button>
         );
     }
 
     return (
         <button className="dashboardBallotButton"
-            onClick={onClick} 
+            onClick={handleClick} 
             disabled={disabled} 
         >
-            {label}
+            <p>{ballotName}</p>
+            <p style={{fontSize: ".6em"}}>
+                {ballotStartDate && ballotEndDate 
+                    ? `${formatDate(ballotStartDate)} - ${formatDate(ballotEndDate)}`
+                    : "Invalid date"}
+            </p>
         </button>
     );
 };
