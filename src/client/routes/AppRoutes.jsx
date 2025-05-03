@@ -10,13 +10,25 @@ import Ballot from "../pages/Ballot";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
 import CreateBallot from "../pages/CreateBallot";
+import EmpDashboard from "../pages/EmpDashboard";
+import RoleBasedRedirect from "./RoleRedirect";
+import RoleBasedRoute from "./RoleBasedRoute";
+import SocietyStats from "../pages/SocietyStats";
+
 
 const AppRoutes = () => {
   return (
     <Router>
       <Routes>
+      <Route element={<RoleBasedRoute allowedRoles={["Admin", "Moderator"]}/>}>
+          <Route path="/empDashboard" element={<EmpDashboard/>}/>
+      </Route>
+      <Route element={<RoleBasedRoute allowedRoles={["Admin", "Moderator"]}/>}>
+          <Route path="/societyStats" element={<SocietyStats/>}/>
+      </Route>
+      {/* default route goes to dashboard for the appropriate role */}
       <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={<RoleBasedRedirect />} />
       </Route>
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />

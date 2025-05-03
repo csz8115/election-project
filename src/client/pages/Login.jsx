@@ -34,7 +34,15 @@ export default function Login() {
           companyName: res.data.companyName,
         })
       );
-      navigate("/dashboard");
+      //redirects to dashboards based on role
+      const accountType = res.data.accountType;
+      if(accountType === "Admin" || accountType === "Moderator"){
+        console.log("adminLogin");
+        navigate("/empDashboard", { replace: true });
+      }else{
+        console.log("memberLogin");
+        navigate("/dashboard");
+      }
     } else {
       console.error("Login failed");
       console.log(response);

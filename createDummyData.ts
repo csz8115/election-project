@@ -31,6 +31,47 @@ export const createCompany = async () => {
   }
 };
 
+//put create employee here
+//will also have to assign a company to employee with assignedcompanies table
+const createEmployee = async () => {
+
+  const password = "DummyPassword123!";
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const newUser: User = {
+    accountType: "Moderator",
+    username: "testEmp123",
+    fName: "Johnny",
+    lName: "Doeson",
+    password: hashedPassword,
+    companyID: Number(1),
+  };
+
+  const status = await db.createUser(newUser);
+  console.log('User created:', status);
+}
+
+
+const createAdmin = async () => {
+
+  const password = "DummyPassword123!";
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const newUser: User = {
+    accountType: "Admin",
+    username: "testAdmin123",
+    fName: "Johnny",
+    lName: "Doeson",
+    password: hashedPassword,
+    companyID: Number(1),
+  };
+
+  const status = await db.createUser(newUser);
+  console.log('User created:', status);
+}
+
 const createUser = async () => {
 
     const password = "DummyPassword123!";
@@ -194,3 +235,5 @@ const createBallot = async () => {
 //createCompany();
 //createBallot();
 //createUser();
+//createAdmin();
+createEmployee();

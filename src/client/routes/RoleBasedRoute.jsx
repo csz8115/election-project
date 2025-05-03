@@ -12,6 +12,11 @@ import { useSelector } from 'react-redux';
         };
     });
 
+    //regturns to login if not loggedIn, otherwise checks authorization
+        if(!user.loggedIn){
+            return <Navigate to="/login" />;
+        }
+
     return user.loggedIn && allowedRoles.includes(user.accountType) ? <Outlet /> : <Navigate to="/unauthorized" />;
 };
 
