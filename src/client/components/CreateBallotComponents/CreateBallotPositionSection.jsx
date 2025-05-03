@@ -5,26 +5,28 @@ import CreateCandidateInfo from './CreateCandidateInfo';
 import CreateCandidateTemplate from './CreateCandidateTemplate';
 import ErrorMessage from '../Utils/ErrorMessage';
 
-const CreateBallotPositionSection = forwardRef((props, ref) => {
+const CreateBallotPositionSection = forwardRef(({ details }, ref) => {
     
     const [showCreateCandidateInfo, setShowCreateCandidateInfo] = useState(false);
     const [editCandidateIndex, setEditCandidateIndex] = useState(-1);
     const [ballotPosition, setBallotPosition] = useState({
-        positionName: '',
-        allowedVotes: '',
-        writeIn: false,
-        candidates: [],
+        positionName: details?.positionName || '',
+        allowedVotes: details?.allowedVotes || '',
+        writeIn: details?.writeIn || false,
+        candidates: details?.candidates || [],
     });
-    const [candidates, setCandidates] = useState([]);
+    const [candidates, setCandidates] = useState(details?.candidates?.map(candidate => candidate.candidate || candidate) || []);
+    console.log("Candidates: ", candidates);
     const [errorMessage, setErrorMessage] = useState('');
+    
 
     useImperativeHandle(ref, () => ({
         getValue: () => {
-            if (!ballotPosition.positionName.trim()) {
-                setErrorMessage('Position Name is required.');
+            if (typeof ballotPosition.positionName !== 'string' || !ballotPosition.positionName.trim()) {
+                setErrorMessage('Position Name is required and must be a valid string.');
                 return null;
             }
-            if (!ballotPosition.allowedVotes.trim() || isNaN(ballotPosition.allowedVotes)) {
+            if (!ballotPosition.allowedVotes.toString().trim() || isNaN(ballotPosition.allowedVotes)) {
                 setErrorMessage('Voting Limit is required and must be a number.');
                 return null;
             }
@@ -105,8 +107,9 @@ const CreateBallotPositionSection = forwardRef((props, ref) => {
                         <CreateCandidateTemplate
                             index={index}
                             key={index}
-                            candidateDetails={candidate}
+                            candidateDetails={candidate.candidate || candidate}
                             onClick={() => handleCandidateAdd(index)}
+                            deleteTemplate={() => handleDelete(candidate)}
                         />
                     ))}
                     <CreateCandidateButton onClick={handleCandidateAdd}/>

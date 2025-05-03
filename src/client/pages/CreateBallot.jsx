@@ -8,24 +8,63 @@ import '../components/Ballot.css';
 import { set } from 'zod';
 
 
-const CreateBallot = () => {
+const CreateBallot = ({ballotID}) => {
+
     const [ballot, setBallot] = useState(null);
     const [ballotName, setBallotName] = useState('');
-
-    const stateCompanyID = useSelector((state) => {
-        return state.companyID;
-    });
-
     const [description, setDescription] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [positionArray, setPositionArray] = useState([]);
     const [initiativeArray, setInitiativeArray] = useState([]);
-    const [companyID, setCompanyID] = useState(stateCompanyID);
     const location = useLocation();
     const positionRefs = useRef([]);
     const initiativeRefs = useRef([]);
     const [errorMessage, setErrorMessage] = useState('');
+    const stateCompanyID = useSelector((state) => {
+        return state.companyID;
+    });
+    const [companyID, setCompanyID] = useState(stateCompanyID);
+
+
+    const editBallot = (ballotID) => {
+        console.log("Editing ballot: ", ballotID);
+        fetch(`http://localhost:3000/api/getBallot/?ballotID=${ballotID}`, {
+            method: 'GET',
+            credentials: 'include',
+        })
+        .then((response) => response.json())
+        .then((data) => {
+            console.log("Ballot data: ", data);
+            setBallot(data);
+            setBallotName(data.ballotName);
+            setDescription(data.description);
+            setStartDate(data.startDate);
+            setEndDate(data.endDate);
+            setPositionArray(data.positions);
+            setInitiativeArray(data.initiatives);
+        })
+        .catch((error) => {
+            console.error("Error fetching ballot data: ", error);
+        });
+    }
+
+    useEffect(() => {
+        if (ballotID) {
+            console.log("Editing ballot: ", ballotID);
+            editBallot(ballotID);
+        } else {
+            console.log("Creating new ballot");
+        }
+    }, [ballotID]);
+
+
+    /* if (ballotID) {
+        console.log("Editing ballot: ", ballotID);
+        editBallot(ballotID);
+    } */
+
+
 
     if (positionRefs.current.length !== positionArray.length) {
         positionRefs.current = Array(positionArray.length)
@@ -45,13 +84,17 @@ const CreateBallot = () => {
         navigate(-1);
     }
 
+    console.log("postion aray: ", positionArray)
 
     const positionSectionArray = positionArray.map((position, index) => (
-        <CreateBallotPositionSection key={index} ref={positionRefs.current[index]} />
+        console.log("Position: ", position),
+        <CreateBallotPositionSection key={index} details={position} ref={positionRefs.current[index]} />
     ));
 
+    console.log("initiative aray: ", initiativeArray)
+
     const initiativeSectionArray = initiativeArray.map((initiative, index) => (
-        <CreateBallotIniativeSection key={index} ref={initiativeRefs.current[index]} />
+        <CreateBallotIniativeSection key={index} details={initiative} ref={initiativeRefs.current[index]} />
     ));
 
     const addPositionField = () => {
@@ -142,6 +185,32 @@ const CreateBallot = () => {
 
         setErrorMessage('');
 
+        if (ballotID) {
+            try {
+                const response = await fetch(`http://localhost:3000/api/updateBallot/${ballotID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(ballotObject),
+                });
+
+                console.log("Response: ",ballotObject);
+    
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log("Ballot updated successfully: ", data);
+                } else {
+                    console.error("Failed to updated ballot: ", response.statusText);
+                }
+            } catch (error) {
+                console.error("Error updating ballot: ", error);
+                alert("An error occurred while submitting the ballot.");
+            }
+            return;
+        };
+
+
         try {
             const response = await fetch(`http://localhost:3000/api/createBallot`, {
                 method: 'POST',
@@ -169,17 +238,17 @@ const CreateBallot = () => {
 
             <div className='ballotCreationHeader'>
                 <div className='left'>
-                    <input className="ballotCreationTextInput" type="text" placeholder="Ballot Name *" onChange={handleBallotNameChange}/>
-                    <input className="ballotCreationTextInput" type="text" placeholder="Ballot Description *" onChange={handleDescriptionChange} />
+                    <input className="ballotCreationTextInput" type="text" placeholder="Ballot Name *" onChange={handleBallotNameChange} value={ballotName}/>
+                    <input className="ballotCreationTextInput" type="text" placeholder="Ballot Description *" onChange={handleDescriptionChange} value={description}/>
                 </div>
                 <div className="right">
                     <div>
                         <label className="ballotLabel">Start Date *:</label>
-                        <input className="ballotCreationTextInput" type="date" onChange={handleStartDateChange} />
+                        <input className="ballotCreationTextInput" type="date" onChange={handleStartDateChange} value={startDate.slice(0, 10)}/>
                     </div>
                     <div>
                         <label className="ballotLabel">End Date *:</label>
-                        <input className="ballotCreationTextInput" type="date" onChange={handleEndDateChange}/>
+                        <input className="ballotCreationTextInput" type="date" onChange={handleEndDateChange} value={endDate.slice(0, 10)}/>
                     </div>
                 </div>
             </div>

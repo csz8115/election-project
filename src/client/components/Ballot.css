@@ -38,11 +38,12 @@ h3 {
 
 .ballotVoteSectionDetails {
     display: flex;
+    flex-wrap: wrap;
     text-align: center;
     justify-content:space-between;
     align-items: center;
     gap: 2em;
-    height: 4em;
+    margin-bottom: 1em;
 }
 
 .ballotAbstainButton {
@@ -257,6 +258,7 @@ h3 {
 
 .ballotCreationHeader {
     display: flex;
+    flex-wrap: wrap;
     flex-direction: row;
     justify-content: space-between;
     gap: .5em;
@@ -374,4 +376,11 @@ h3 {
 .editImage {
     width: 3em;
     margin: auto;
+}
+.deleteImage {
+    width: 2em;
+    position: relative;
+    left: 80%;
+    top: -3em;
+
 }

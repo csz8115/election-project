@@ -1,11 +1,11 @@
 import React from 'react';
-import editImage from './edit.svg';
 
-const CreateCandidateTemplate = ({index, candidateDetails, onClick }) => {
+const CreateCandidateTemplate = ({index, candidateDetails, onClick, deleteTemplate }) => {
     return (
-        <button onClick={() => onClick(index)} className="createCandidateButton">
+        <button className="createCandidateButton">
+            <img src='/images/delete.svg' className="deleteImage" alt="delete button" onClick={deleteTemplate}/>
             {candidateDetails.fName} {candidateDetails.lName}
-            <img src={editImage} className="editImage" alt="edit button"/>
+            <img src='/images/edit.svg' className="editImage" alt="edit button" onClick={() => onClick(index)}/>
         </button>
     );
 };

@@ -28,7 +28,7 @@ const AppRoutes = () => {
         <Route path="/login" element={<Login />} />
         </Route>
         <Route element={<ProtectedRoute />}>
-        <Route path="/createBallot" element={<CreateBallot />} />
+        <Route path="/createBallot" element={<CreateBallot ballotID={14} />} />
         </Route>
       </Routes>
     </Router>

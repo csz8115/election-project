@@ -70,9 +70,6 @@ const CreateCandidateInfo = ({ candidateDetails, show, handleClose, handleSave, 
                 value={picture}
                 onChange={(e) => setPicture(e.target.value)}
             />
-            {canDelete && (
-                <button className="candidateInfoModalButton deleteButton" onClick={() => handleDelete(candidateDetails)}>Delete</button>
-            )}
             {errorMessage && <ErrorMessage message={errorMessage} />}
             <button className="candidateInfoModalButton saveButton" onClick={onSave}>Save</button>
             <button onClick={handleClose}>Cancel</button>

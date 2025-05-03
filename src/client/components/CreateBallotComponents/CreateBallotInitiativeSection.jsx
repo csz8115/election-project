@@ -1,10 +1,10 @@
 import React, { useState, useImperativeHandle, forwardRef } from 'react';
 import ErrorMessage from '../Utils/ErrorMessage';
 
-const CreateBallotInitiativeSection = forwardRef((props, ref) => {
-    const [initiativeName, setInitiativeName] = useState('');
-    const [description, setDescription] = useState('');
-    const [responses, setResponses] = useState([]);
+const CreateBallotInitiativeSection = forwardRef(({ details }, ref) => {
+    const [initiativeName, setInitiativeName] = useState(details?.initiativeName || '');
+    const [description, setDescription] = useState(details?.description || '');
+    const [responses, setResponses] = useState(details?.responses || []);
     const [errorMessage, setErrorMessage] = useState('');
 
     useImperativeHandle(ref, () => ({
@@ -34,15 +34,10 @@ const CreateBallotInitiativeSection = forwardRef((props, ref) => {
         },
     }));
 
-    console.log("Responses: ", responses);
-
     const handleAddChoice = () => {
-        // Logic to add a choice to the initiative
-        console.log("Adding choice");
-        const newChoice = {response: ''}
+        const newChoice = { response: '' };
         setResponses((prevChoices) => [...prevChoices, newChoice]);
-        
-    }
+    };
 
     return (
         <div className='ballotVoteSection ballotInitiativeSection outline'>

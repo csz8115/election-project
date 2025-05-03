@@ -94,6 +94,19 @@ async function getCandidate(candidateID: number): Promise<Candidate> {
     }
 }
 
+async function deleteCandidate(candidateID: number): Promise<boolean> {
+    try {
+        const deletedCandidate = await prisma.candidate.delete({
+            where: {
+                candidateID: candidateID,
+            },
+        });
+        return !!deletedCandidate;
+    } catch (error) {
+        throw new Error("Unknown error during candidate deletion");
+    }
+}
+
 async function createUser(user: User): Promise<User> {
     try {
         const fetchUser = await prisma.user.create({
@@ -933,9 +946,35 @@ async function createBallot(ballot: Ballot, ballotPositions: BallotPositions[], 
  * @param ballotID - The ID of the ballot to update
  * @param ballotData - The updated ballot data
  */
-async function updateBallot() {
-
+async function updateBallot(ballotID: number, ballotData: Partial<Ballot>): Promise<Ballot> {
+    console.log("Updating ballot with ID:", ballotID);
+    try {
+        const updatedBallot = await prisma.ballots.update({
+            where: {
+                ballotID: ballotID,
+            },
+            data: {
+                ballotName: ballotData.ballotName,
+                description: ballotData.description,
+                startDate: ballotData.startDate ? new Date(ballotData.startDate) : undefined,
+                endDate: ballotData.endDate ? new Date(ballotData.endDate) : undefined,
+                company: ballotData.companyID
+                    ? {
+                            connect: { companyID: ballotData.companyID },
+                        }
+                    : undefined,
+            },
+        });
+        return {
+            ...updatedBallot,
+            startDate: updatedBallot.startDate.toISOString(),
+            endDate: updatedBallot.endDate.toISOString(),
+        };
+    } catch (error) {
+        throw new Error("Unknown error during ballot update");
+    }
 }
+
 
 /**
  * Queries the database for the ballot & votes for that ballot based on the ballot, 
@@ -1181,6 +1220,7 @@ async function getQueryStats(): Promise<any> {
 export default {
     getUser,
     getCandidate,
+    deleteCandidate,
     getUserByUsername,
     getQueryStats,
     getUsersByCompany,
@@ -1202,7 +1242,7 @@ export default {
     getFinishedBallots,
     createBallot,
     createCandidate,
-    // updateBallot,
+    updateBallot,
     getBallotPosition,
     submitBallot,
     checkBallotVoter,

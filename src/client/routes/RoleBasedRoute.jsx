@@ -12,7 +12,7 @@ import { useSelector } from 'react-redux';
         };
     });
 
-    return user.loggedIN && allowedRoles.includes(user.accountType) ? <Outlet /> : <Navigate to="/unauthorized" />;
+    return user.loggedIn && allowedRoles.includes(user.accountType) ? <Outlet /> : <Navigate to="/unauthorized" />;
 };
 
 export default RoleBasedRoute;

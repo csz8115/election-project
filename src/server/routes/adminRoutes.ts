@@ -251,6 +251,126 @@ router.post('/createBallot', async (req, res): Promise<any> => {
       return res.status(500).json({ error: 'Failed to create ballot' });
     }
   });
+
+
+// Update ballot route
+router.put('/updateBallot/:ballotID', async (req, res): Promise<any> => {
+
+    console.log('Update ballot route called');
+    try {
+        const { ballotID } = req.params;
+        const { ballotName, description, startDate, endDate, companyID, positions, initiatives } = req.body;
+
+        // Validate required fields
+        if (!ballotID || !ballotName || !description || !startDate || !endDate || !companyID || !positions) {
+            throw new Error('Invalid request');
+        }
+
+        // Check if the ballot exists
+        const existingBallot = await db.getBallot(Number(ballotID));
+        if (!existingBallot) {
+            throw new Error('Ballot does not exist');
+        }
+
+        // Check if the company exists
+        const company = await db.getCompany(Number(companyID));
+        if (!company) {
+            throw new Error('Company does not exist');
+        }
+
+        // Check for candidates to remove
+        const originalPositions = existingBallot.positions;
+
+
+        // Check for candidates to remove
+        for (const originalPosition of originalPositions) {
+            for (const originalCandidate of originalPosition.candidates) {
+
+            // Check if the candidate still exists in the updated positions
+            const candidateStillExists = positions.some((updatedPosition: any) =>
+                updatedPosition.candidates.some((updatedCandidate: any) =>
+                updatedCandidate.candidateID === originalCandidate.candidateID
+                )
+            );
+
+            //If the candidate does not exist in the updated positions, remove it from the database
+            if (!candidateStillExists) {
+                console.log('Removing candidate:', originalCandidate);
+                await db.deleteCandidate(originalCandidate.candidateID);
+            }}
+        }
+
+        // Check if candidates exist for each position
+        for (const position of positions) {
+            for (const candidate of position.candidates) {
+            console.log('Checking candidate:', candidate);
+            if (!candidate.candidateID) {
+                // Create the candidate if it doesn't exist
+                await db.createCandidate(candidate.fName, candidate.lName, candidate.titles ?? '', candidate.description ?? '', candidate.picture ?? '');
+            }
+            }
+        }
+
+        // Prepare data for update
+        const updatedPositions = positions.map((position: any) => ({
+            positionName: position.positionName,
+            allowedVotes: position.allowedVotes,
+            writeIn: position.writeIn,
+            candidates: position.candidates.map((candidate: any) => ({
+                fName: candidate.fName,
+                lName: candidate.lName,
+                titles: candidate.titles ?? '',
+                description: candidate.description ?? '',
+                picture: candidate.picture ?? '',
+            })),
+        }));
+
+
+
+        updatedPositions.forEach((position: any) => {
+            console.log('Updated candidates for position:', position.positionName, position.candidates);
+        });
+
+        const updatedInitiatives = initiatives.map((initiative: any) => ({
+            initiativeName: initiative.initiativeName,
+            description: initiative.description ?? '',
+            picture: initiative.picture ?? '',
+            responses: initiative.responses.map((response: any) => ({
+                response: response.response,
+                votes: response.votes ?? 0,
+            })),
+        }));
+
+        const updatedBallot = {
+            ballotName,
+            description,
+            startDate,
+            endDate,
+            companyID: Number(companyID),
+            positions: updatedPositions,
+            initiatives: updatedInitiatives,
+        };
+
+        // Update the ballot in DB
+        await db.updateBallot(Number(ballotID), updatedBallot);
+
+        return res.status(200).json({ message: 'Ballot updated successfully' });
+
+    } catch (error: any) {
+        console.log('Error updating ballot:', error);
+
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors.map(e => e.message) });
+        } else if (error.message === 'Ballot does not exist') {
+            return res.status(404).json({ error: 'Ballot does not exist' });
+        } else if (error.message === 'Company does not exist') {
+            return res.status(404).json({ error: 'Company does not exist' });
+        } else if (error.message === 'Invalid request') {
+            return res.status(400).json({ error: 'Invalid request' });
+        }
+        return res.status(500).json({ error: 'Failed to update ballot' });
+    }
+});
   
 
 export default router;
