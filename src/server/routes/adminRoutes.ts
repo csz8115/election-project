@@ -278,14 +278,39 @@ router.put('/updateBallot/:ballotID', async (req, res): Promise<any> => {
             throw new Error('Company does not exist');
         }
 
-        // Check for candidates to remove
+        
+
+        // Handle positions
         const originalPositions = existingBallot.positions;
 
+        for (const originalPosition of originalPositions) {
+            // Check if the position still exists in the updated positions
+            const positionStillExists = positions.some((updatedPosition: any) =>
+            updatedPosition.positionID === originalPosition.positionID
+            );
 
-        // Check for candidates to remove
+            // If the position does not exist in the updated positions, remove it from the database
+            if (!positionStillExists) {
+            console.log('Removing position:', originalPosition);
+            await db.deleteBallotPosition(originalPosition.positionID);
+            }
+        }
+
+        for (const position of positions) {
+            if (!position.positionID) {
+            // Create the position if it doesn't exist
+            const newPosition = await db.createBallotPosition({
+                ballotID: Number(ballotID),
+                positionName: position.positionName,
+                allowedVotes: position.allowedVotes,
+                writeIn: position.writeIn,
+            });
+            position.positionID = newPosition.positionID; // Assign the newly created position ID
+            }
+        }
+
         for (const originalPosition of originalPositions) {
             for (const originalCandidate of originalPosition.candidates) {
-
             // Check if the candidate still exists in the updated positions
             const candidateStillExists = positions.some((updatedPosition: any) =>
                 updatedPosition.candidates.some((updatedCandidate: any) =>
@@ -293,51 +318,88 @@ router.put('/updateBallot/:ballotID', async (req, res): Promise<any> => {
                 )
             );
 
-            //If the candidate does not exist in the updated positions, remove it from the database
+            // If the candidate does not exist in the updated positions, remove it from the database
             if (!candidateStillExists) {
                 console.log('Removing candidate:', originalCandidate);
                 await db.deleteCandidate(originalCandidate.candidateID);
-            }}
+            }
+            }
         }
 
-        // Check if candidates exist for each position
         for (const position of positions) {
+            console.log('Position:', position);
             for (const candidate of position.candidates) {
-            console.log('Checking candidate:', candidate);
             if (!candidate.candidateID) {
                 // Create the candidate if it doesn't exist
-                await db.createCandidate(candidate.fName, candidate.lName, candidate.titles ?? '', candidate.description ?? '', candidate.picture ?? '');
+                await db.createCandidate(
+                    position.positionID,
+                    candidate.fName,
+                    candidate.lName,
+                    candidate.titles ?? '',
+                    candidate.description ?? '',
+                    candidate.picture ?? ''
+                );
             }
             }
         }
 
-        // Prepare data for update
+
         const updatedPositions = positions.map((position: any) => ({
+            positionID: position.positionID,
             positionName: position.positionName,
             allowedVotes: position.allowedVotes,
             writeIn: position.writeIn,
             candidates: position.candidates.map((candidate: any) => ({
-                fName: candidate.fName,
-                lName: candidate.lName,
-                titles: candidate.titles ?? '',
-                description: candidate.description ?? '',
-                picture: candidate.picture ?? '',
+            candidateID: candidate.candidateID,
+            fName: candidate.fName,
+            lName: candidate.lName,
+            titles: candidate.titles ?? '',
+            description: candidate.description ?? '',
+            picture: candidate.picture ?? '',
             })),
         }));
 
+        // Handle initiatives
+        const originalInitiatives = existingBallot.initiatives;
 
+        for (const originalInitiative of originalInitiatives) {
+            // Check if the initiative still exists in the updated initiatives
+            const initiativeStillExists = initiatives.some((updatedInitiative: any) =>
+            updatedInitiative.initiativeID === originalInitiative.initiativeID
+            );
 
-        updatedPositions.forEach((position: any) => {
-            console.log('Updated candidates for position:', position.positionName, position.candidates);
-        });
+            // If the initiative does not exist in the updated initiatives, remove it from the database
+            if (!initiativeStillExists) {
+            console.log('Removing initiative:', originalInitiative);
+            await db.deleteInitiative(originalInitiative.initiativeID);
+            }
+        }
+
+        for (const initiative of initiatives) {
+            if (!initiative.initiativeID) {
+            // Create the initiative if it doesn't exist
+            await db.createInitiative({
+                ballotID: Number(ballotID),
+                initiativeName: initiative.initiativeName,
+                description: initiative.description ?? '',
+                picture: initiative.picture ?? '',
+                responses: initiative.responses.map((response: any) => ({
+                response: response.response,
+                votes: response.votes ?? 0,
+                })),
+            });
+            }
+        }
 
         const updatedInitiatives = initiatives.map((initiative: any) => ({
+            initiativeID: initiative.initiativeID,
             initiativeName: initiative.initiativeName,
             description: initiative.description ?? '',
             picture: initiative.picture ?? '',
             responses: initiative.responses.map((response: any) => ({
-                response: response.response,
-                votes: response.votes ?? 0,
+            responseID: response.responseID,
+            response: response.response,
+            votes: response.votes ?? 0,
             })),
         }));
 
@@ -351,6 +413,19 @@ router.put('/updateBallot/:ballotID', async (req, res): Promise<any> => {
             initiatives: updatedInitiatives,
         };
 
+        // Update existing positions in the database
+        for (const position of positions) {
+            if (position.positionID) {
+                await db.updateBallotPosition(
+                    position.positionID,
+                    {
+                        positionName: position.positionName,
+                        allowedVotes: position.allowedVotes,
+                        writeIn: position.writeIn,
+                    }
+                );
+            }
+        }
         // Update the ballot in DB
         await db.updateBallot(Number(ballotID), updatedBallot);
 

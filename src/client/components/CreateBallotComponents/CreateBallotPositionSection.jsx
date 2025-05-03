@@ -5,11 +5,12 @@ import CreateCandidateInfo from './CreateCandidateInfo';
 import CreateCandidateTemplate from './CreateCandidateTemplate';
 import ErrorMessage from '../Utils/ErrorMessage';
 
-const CreateBallotPositionSection = forwardRef(({ details }, ref) => {
-    
+const CreateBallotPositionSection = forwardRef(({ details, deleteEvent }, ref) => {
+    console.log("Details: ", details);
     const [showCreateCandidateInfo, setShowCreateCandidateInfo] = useState(false);
     const [editCandidateIndex, setEditCandidateIndex] = useState(-1);
     const [ballotPosition, setBallotPosition] = useState({
+        positionID: details?.positionID || '',
         positionName: details?.positionName || '',
         allowedVotes: details?.allowedVotes || '',
         writeIn: details?.writeIn || false,
@@ -87,6 +88,8 @@ const CreateBallotPositionSection = forwardRef(({ details }, ref) => {
             )}
             <div>
                 <div className='ballotVoteSectionDetails'>
+                <img src='/images/delete.svg' className='deletePosition' alt='Delete Position' onClick={deleteEvent}></img>
+
                 <input
                     className="ballotCreationTextInput"
                     type="text"

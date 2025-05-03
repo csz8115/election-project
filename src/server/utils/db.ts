@@ -139,20 +139,39 @@ async function createUser(user: User): Promise<User> {
     }
 }
 
-async function createCandidate(fName: string, lName: string, titles: string, description: string, picture: string): Promise<any> {
+async function createCandidate(positionID: number, fName: string, lName: string, titles: string, description: string, picture: string): Promise<any> {
     try {
-        // insert into the candidates table
-        await prisma.candidate.create({
-            data: {
-                fName: fName,
-                lName: lName,
-                titles: titles,
-                description: description,
-                picture: picture ? picture : "https://i.pravatar.cc/250?u=mail@ashallendesign.co.uk"
-            }
-        })
+        // Start a transaction to ensure both candidate creation and linking are successful
+        const result = await prisma.$transaction(async (tx) => {
+            // Insert into the candidates table
+            const newCandidate = await tx.candidate.create({
+                data: {
+                    fName: fName,
+                    lName: lName,
+                    titles: titles,
+                    description: description,
+                    picture: picture ? picture : "https://i.pravatar.cc/250?u=mail@ashallendesign.co.uk"
+                }
+            });
+
+            // Link the candidate to the position
+            await tx.ballotCandidates.create({
+                data: {
+                    candidate: {
+                        connect: { candidateID: newCandidate.candidateID },
+                    },
+                    position: {
+                        connect: { positionID: positionID },
+                    },
+                },
+            });
+
+            return newCandidate;
+        });
+
+        return result;
     } catch (error) {
-        throw new Error("Unknown error during candidate creation");
+        throw new Error("Unknown error during candidate creation and linking");
     }
 }
 
@@ -405,6 +424,72 @@ async function getCompanyStats(companyID: number): Promise<any> {
     }
 }
 
+async function createBallotPosition(position: BallotPositions): Promise<BallotPositions> {
+    try {
+        const result = await prisma.$transaction(async (tx) => {
+            // Create the ballot position
+            const newPosition = await tx.ballotPositions.create({
+                data: {
+                    positionName: position.positionName,
+                    allowedVotes: position.allowedVotes,
+                    writeIn: position.writeIn,
+                    ballot: {
+                        connect: { ballotID: position.ballotID },
+                    },
+                },
+            });
+
+            // Create candidates for the position
+            if (position.candidates && position.candidates.length > 0) {
+                for (const candidate of position.candidates) {
+                    const createdCandidate = await tx.candidate.create({
+                        data: {
+                            fName: candidate.fName,
+                            lName: candidate.lName,
+                            titles: candidate.titles ?? "",
+                            description: candidate.description ?? "",
+                            picture: candidate.picture ?? "",
+                        },
+                    });
+
+                    // Link the candidate to the position
+                    await tx.ballotCandidates.create({
+                        data: {
+                            position: {
+                                connect: { positionID: newPosition.positionID },
+                            },
+                            candidate: {
+                                connect: { candidateID: createdCandidate.candidateID },
+                            },
+                        },
+                    });
+                }
+            }
+
+            return newPosition;
+        });
+
+        return result;
+    } catch (error) {
+        throw new Error("Unknown error during ballot position creation");
+    }
+}
+
+
+
+async function deleteBallotPosition(positionID: number): Promise<boolean> {
+    try {
+        const deletedPosition = await prisma.ballotPositions.delete({
+            where: {
+                positionID: positionID,
+            },
+        });
+        return !!deletedPosition;
+    } catch (error) {
+        throw new Error("Unknown error during ballot position deletion");
+    }
+}
+
 async function getBallotPosition(positionID: number): Promise<any> {
     try {
         const ballotPosition = await prisma.ballotPositions.findUnique({
@@ -421,6 +506,24 @@ async function getBallotPosition(positionID: number): Promise<any> {
         return false;
     } catch (error) {
         throw new Error("Unknown error during ballot position retrieval");
+    }
+}
+
+async function updateBallotPosition(positionID: number, positionData: Partial<BallotPositions>): Promise<BallotPositions> {
+    try {
+        const updatedPosition = await prisma.ballotPositions.update({
+            where: {
+                positionID: positionID,
+            },
+            data: {
+                positionName: positionData.positionName,
+                allowedVotes: positionData.allowedVotes,
+                writeIn: positionData.writeIn,
+            },
+        });
+        return updatedPosition;
+    } catch (error) {
+        throw new Error("Unknown error during ballot position update");
     }
 }
 
@@ -535,6 +638,39 @@ async function getBallot(ballotID: number): Promise<any> {
         return ballot;
     } catch (error) {
         throw new Error("Unknown error during ballot retrieval");
+    }
+}
+
+async function createInitiative(initiative: BallotInitiatives): Promise<BallotInitiatives> {
+    try {
+        if (!initiative.ballotID) {
+            throw new Error("ballotID is required to create an initiative");
+        }
+        const newInitiative = await prisma.ballotInitiatives.create({
+            data: {
+                initiativeName: initiative.initiativeName,
+                description: initiative.description,
+                ballot: {
+                    connect: { ballotID: initiative.ballotID },
+                },
+            },
+        });
+
+        // Create responses for the initiative
+        for (const response of initiative.responses) {
+            await prisma.initiativeResponses.create({
+                data: {
+                    response: response.response,
+                    initiative: {
+                        connect: { initiativeID: newInitiative.initiativeID },
+                    },
+                },
+            });
+        }
+
+        return newInitiative;
+    } catch (error) {
+        throw new Error("Unknown error during initiative creation");
     }
 }
 
@@ -1181,6 +1317,19 @@ async function getInitiative(initiativeID: number): Promise<any> {
     }
 }
 
+async function deleteInitiative(initiativeID: number): Promise<boolean> {
+    try {
+        const deletedInitiative = await prisma.ballotInitiatives.delete({
+            where: {
+                initiativeID: initiativeID,
+            },
+        });
+        return !!deletedInitiative;
+    } catch (error) {
+        throw new Error("Unknown error during initiative deletion");
+    }
+}
+
 async function getResponse(responseID: number): Promise<any> {
     try {
         const response = await prisma.initiativeResponses.findUnique({
@@ -1191,6 +1340,19 @@ async function getResponse(responseID: number): Promise<any> {
         return response;
     } catch (error) {
         throw new Error("Unknown error during response retrieval");
+    }
+}
+
+async function deleteResponse(responseID: number): Promise<boolean> {
+    try {
+        const deletedResponse = await prisma.initiativeResponses.delete({
+            where: {
+                responseID: responseID,
+            },
+        });
+        return !!deletedResponse;
+    } catch (error) {
+        throw new Error("Unknown error during response deletion");
     }
 }
 
@@ -1243,6 +1405,9 @@ export default {
     createBallot,
     createCandidate,
     updateBallot,
+    updateBallotPosition,
+    createBallotPosition,
+    deleteBallotPosition,
     getBallotPosition,
     submitBallot,
     checkBallotVoter,
@@ -1250,8 +1415,11 @@ export default {
     tallyBallotVoters,
     createInitiativeVote,
     createWriteInCandidate,
+    createInitiative,
     getInitiative,
+    deleteInitiative,
     getResponse,
+    deleteResponse,
     getActiveUserBallots,
     getInactiveUserBallots,
     getUserBallots,

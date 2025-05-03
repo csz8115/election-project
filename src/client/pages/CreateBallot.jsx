@@ -2,7 +2,7 @@ import {React, useEffect, useState, useRef, createRef} from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import CreateBallotPositionSection from '../components/CreateBallotComponents/CreateBallotPositionSection';
-import CreateBallotIniativeSection from '../components/CreateBallotComponents/CreateBallotInitiativeSection';
+import CreateBallotInitiativeSection from '../components/CreateBallotComponents/CreateBallotInitiativeSection';
 import ErrorMessage from '../components/Utils/ErrorMessage';
 import '../components/Ballot.css';
 import { set } from 'zod';
@@ -84,32 +84,52 @@ const CreateBallot = ({ballotID}) => {
         navigate(-1);
     }
 
-    console.log("postion aray: ", positionArray)
-
-    const positionSectionArray = positionArray.map((position, index) => (
-        console.log("Position: ", position),
-        <CreateBallotPositionSection key={index} details={position} ref={positionRefs.current[index]} />
-    ));
-
-    console.log("initiative aray: ", initiativeArray)
-
-    const initiativeSectionArray = initiativeArray.map((initiative, index) => (
-        <CreateBallotIniativeSection key={index} details={initiative} ref={initiativeRefs.current[index]} />
-    ));
-
     const addPositionField = () => {
-        console.log("Adding position field");
         setPositionArray((prevPositions) => [...prevPositions, {}]);
     }
 
+    const deletePositionField = (index) => {
+        console.log("Deleting position at index: ", index, positionArray[index]);
+        
+        setPositionArray(prev => {
+            const newArray = [...prev];
+            newArray.splice(index, 1);
+            return newArray;
+        });
+    
+        // Remove ref at index and re-align others
+        positionRefs.current.splice(index, 1);
+    };
+
     const addInitiativeField = () => {
-        console.log("Adding initiative field");
         setInitiativeArray((prevInitiatives) => [...prevInitiatives, {}]);
     }
 
+    const deleteInitiativeField = (index) => {
+        setInitiativeArray((prevInitiatives) => {
+            const newInitiatives = [...prevInitiatives];
+            newInitiatives.splice(index, 1);
+            return newInitiatives;
+        });
+        initiativeRefs.current.splice(index, 1);
+    }
+
+
+    const positionSectionArray = positionArray.map((position, index) => (
+        <CreateBallotPositionSection
+            key={index}
+            details={position}
+            deleteEvent={() => deletePositionField(index)}
+            ref={el => positionRefs.current[index] = el}
+        />
+    ));
+
+    const initiativeSectionArray = initiativeArray.map((initiative, index) => (
+        <CreateBallotInitiativeSection key={index} deleteEvent={() => deleteInitiativeField(index)} details={initiative} ref={(el) => initiativeRefs.current[index] = el} />
+    ));
+
     const handleBallotNameChange = (event) => {
         const name = event.target.value;
-        console.log("Ballot name: ", name);
         setBallotName(name);
     }
     const handleDescriptionChange = (event) => {
@@ -122,7 +142,6 @@ const CreateBallot = ({ballotID}) => {
     }
     const handleEndDateChange = (event) => {
         const date = event.target.value;
-        console.log("End date: ", date);
         setEndDate(date);
     }
 

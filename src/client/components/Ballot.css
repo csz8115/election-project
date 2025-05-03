@@ -149,7 +149,21 @@ h3 {
     font-size: 1.75em;
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
+}
+
+.deletePosition{
+    width: 3em;
+    cursor: pointer;
+}
+
+.deleteInitiative{
+    width: 4em;
+    cursor: pointer;
+}
+
+.deleteChoice{
+    width: 1.5em;
+    cursor: pointer;
 }
 
 .initiativeOptions > label {
@@ -310,6 +324,11 @@ h3 {
     cursor: pointer;
     height: 100px;
     box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+}
+
+.createInitiativeOptions {
+    background-color: red;
+
 }
 
 .initiativeTextbox {

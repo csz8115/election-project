@@ -1,7 +1,7 @@
 import React, { useState, useImperativeHandle, forwardRef } from 'react';
 import ErrorMessage from '../Utils/ErrorMessage';
 
-const CreateBallotInitiativeSection = forwardRef(({ details }, ref) => {
+const CreateBallotInitiativeSection = forwardRef(({ details, deleteEvent }, ref) => {
     const [initiativeName, setInitiativeName] = useState(details?.initiativeName || '');
     const [description, setDescription] = useState(details?.description || '');
     const [responses, setResponses] = useState(details?.responses || []);
@@ -41,6 +41,7 @@ const CreateBallotInitiativeSection = forwardRef(({ details }, ref) => {
 
     return (
         <div className='ballotVoteSection ballotInitiativeSection outline'>
+            <img src='/images/delete.svg' className='deleteInitiative' alt='Delete Position' onClick={deleteEvent}></img>
             <input
                 type='text'
                 className='ballotCreationTextInput'
@@ -55,6 +56,7 @@ const CreateBallotInitiativeSection = forwardRef(({ details }, ref) => {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter description"
             />
+            
             <div className='initiativeOptions'>
                 {responses.map((choice, index) => (
                     <label key={index} className='createInitiativeOption'>
@@ -69,6 +71,16 @@ const CreateBallotInitiativeSection = forwardRef(({ details }, ref) => {
                                 setResponses(newChoices);
                             }}
                             placeholder={`Choice ${index + 1}`}
+                        />
+                        <img
+                            className='deleteChoice'
+                            src='/images/delete.svg'
+                            alt='Delete choice'
+                            onClick={() => {
+                                const newChoices = [...responses];
+                                newChoices.splice(index, 1);
+                                setResponses(newChoices);
+                            }}
                         />
                     </label>
                 ))}
