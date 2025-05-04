@@ -3,7 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import userRoutes from './src/server/routes/userRoutes.ts';
 import adminRoutes from './src/server/routes/adminRoutes.ts';
-import employeeRoutes from './src/server/routes/employee.ts';
+import employeeRoutes from './src/server/routes/employeeRoutes.ts';
 import officerRoutes from './src/server/routes/officerRoutes.ts';
 import logger from './src/server/logger.ts';
 import pinoHttp from 'pino-http';
@@ -26,10 +26,6 @@ app.use(cookieParser()); // Add cookie parser middleware
 // Logger middleware
 app.use(pinoHttp({ logger }));
 
-// User routes
-app.use('/api/v1/user', userRoutes);
-app.use('/api/v1/admin', adminRoutes);
-app.use('/api/v1/officer', officerRoutes);
 // auth middleware 
 app.use(async (req, res, next) => {
   // Check if the req is coming from login or register
@@ -48,6 +44,11 @@ app.use(async (req, res, next) => {
     }
   }
 });
+
+// User routes
+app.use('/api/v1/member', userRoutes);
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/officer', officerRoutes);
 
 // Serve React App for all non-API routes
 // app.use(express.static(path.join(__dirname, "./dist")));
