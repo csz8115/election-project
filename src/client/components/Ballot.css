@@ -188,6 +188,45 @@ h3 {
 
     cursor: pointer;
 }
+.infoImage{
+    width: 3em;
+    position: relative;
+    left: 75%;
+    top: -14em;
+    color: white;
+    cursor: pointer;
+}
+
+.infoImage:hover{
+    background-color: orange;
+    border-radius: 100%;
+}
+
+.candidateInfo{
+    position: fixed;
+    display: flex;
+    background-color: white;
+    flex-direction: column;
+    align-items: center;
+    gap: 1em;
+    padding:5em;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: .5em;
+    box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+    z-index: 1000;
+    width: 50%;
+}
+
+.closeModal {
+    position: absolute;
+    top: 1em;
+    right: 1em;
+    width: 3em;
+    color: gray;
+    cursor: pointer;
+}
 
 .backButton:hover {
     display: block;

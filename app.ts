@@ -3,10 +3,13 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import userRoutes from './src/server/routes/userRoutes.ts';
 import adminRoutes from './src/server/routes/adminRoutes.ts';
+import employeeRoutes from './src/server/routes/employee.ts';
+import officerRoutes from './src/server/routes/officerRoutes.ts';
 import logger from './src/server/logger.ts';
 import pinoHttp from 'pino-http';
 import path from "path";
 import dotenv from 'dotenv';
+import { decrypt } from './src/server/utils/session.ts';
 dotenv.config();
 const app = express();
 
@@ -24,26 +27,27 @@ app.use(cookieParser()); // Add cookie parser middleware
 app.use(pinoHttp({ logger }));
 
 // User routes
-app.use('/api', userRoutes);
-app.use('/api', adminRoutes);
+app.use('/api/v1/user', userRoutes);
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/officer', officerRoutes);
 // auth middleware 
-// app.use(async (req, res, next) => {
-//   // Check if the req is coming from login or register
-//   if (req.path === '/user/login' || req.path === '/user/register') {
-//     next();
-//   }
-//   // Check if the user has a session
-//   else {
-//     const session = await decrypt(req.cookies.user_session);
-//     if (session) {
-//       res.locals.username = session.username;
-//       res.locals.accountType = session.accountType;
-//       next();
-//     } else {
-//       res.status(401).json({ error: 'Unauthorized' });
-//     }
-//   }
-// });
+app.use(async (req, res, next) => {
+  // Check if the req is coming from login or register
+  if (req.path === '/api/v1/user/login') {
+    next();
+  }
+  // Check if the user has a session
+  else {
+    const session = await decrypt(req.cookies.user_session);
+    if (session) {
+      res.locals.username = session.username;
+      res.locals.accountType = session.accountType;
+      next();
+    } else {
+      res.status(401).json({ error: 'Unauthorized' });
+    }
+  }
+});
 
 // Serve React App for all non-API routes
 // app.use(express.static(path.join(__dirname, "./dist")));
