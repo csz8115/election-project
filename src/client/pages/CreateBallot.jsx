@@ -270,7 +270,9 @@ const CreateBallot = ({ballotID}) => {
                 <button className="addPosition" onClick={() => addInitiativeField()}>Add Initiative</button>
             </div>
             {errorMessage && <ErrorMessage message={errorMessage} />}
-            <button className='submitBallot' onClick={submitBallot}>Create Ballot</button>
+            <button className='submitBallot' onClick={submitBallot}>
+                {ballotID ? "Update Ballot" : "Create Ballot"}
+                </button>
         </div>
     );
 };

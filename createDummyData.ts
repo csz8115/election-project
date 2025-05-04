@@ -40,7 +40,7 @@ const createEmployee = async () => {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const newUser: User = {
-    accountType: "Moderator",
+    accountType: "Officer",
     username: "testEmp123",
     fName: "Johnny",
     lName: "Doeson",
@@ -134,7 +134,7 @@ const createBallot = async () => {
   ];
 
   for (const candidate of dummyCandidates) {
-    await db.createCandidate(candidate.fName, candidate.lName, candidate.titles, candidate.description, candidate.picture || '');
+    await db.createCandidate(candidate.ballotID, candidate.fName, candidate.lName, candidate.titles, candidate.description, candidate.picture || '');
   } 
   const dummyBallotPositions: BallotPositions[] = [
     {
