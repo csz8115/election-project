@@ -160,7 +160,7 @@ router.get(`/getEmployeeCompany`, requireRole('Admin', 'Member', 'Officer', 'Emp
         });
         userIDSchema.parse(userID);
 
-        const company = await db.getEmployeeCompany(Number(userID));
+        const company = await db.getEmpAssignedCompanies(Number(userID));
 
         if (!company) {
             throw new Error('User not found');
@@ -330,7 +330,7 @@ router.get(`/getUserBallots`, requireRole('Admin', 'Member', 'Officer', 'Employe
 
 
 // Submit ballot route
-router.post(`/submitBallot`,requireRole('Employee', 'Officer'), async (req, res): Promise<any> => {
+router.post(`/submitBallot`,requireRole('Member', 'Officer'), async (req, res): Promise<any> => {
     try {
         const { ballot } = req.body as { ballot: Ballot };
 

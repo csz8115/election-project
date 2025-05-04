@@ -107,33 +107,88 @@ async function deleteCandidate(candidateID: number): Promise<boolean> {
     }
 }
 
-async function createUser(user: User): Promise<User> {
+async function createUser(user: User, assignedCompanies: number[] = []): Promise<any> {
     try {
-        const fetchUser = await prisma.user.create({
-            data: {
-                accountType: user.accountType,
-                username: user.username,
-                fName: user.fName,
-                lName: user.lName,
-                password: user.password,
-                company: {
-                    connect: {
-                        companyID: Number(user.companyID),
+        // Start a transaction to ensure both user creation and linking are successful
+        const result = await prisma.$transaction(async (tx) => {
+            // Check if the user is of type Employee
+            if (user.accountType === "Employee" || user.accountType === "Admin") {
+                // Get ID of American Dream Company
+                const company = await tx.company.findUnique({
+                    where: {
+                        companyName: "American Dream",
                     },
+                    select: {
+                        companyID: true,
+                    },
+                });
+
+                if (!company) {
+                    throw new Error("Company does not exist");
                 }
-            },
-            select: {
-                userID: true,
-                accountType: true,
-                username: true,
-                fName: true,
-                lName: true,
-                companyID: true,
-                company: true,
-                // password field is omitted
-            },
+
+                // Create the user
+                const newUser = await tx.user.create({
+                    data: {
+                        fName: user.fName,
+                        lName: user.lName,
+                        username: user.username,
+                        password: user.password,
+                        accountType: user.accountType,
+                        companyID: company.companyID,
+                    },
+                    select: {
+                        userID: true,
+                        accountType: true,
+                        username: true,
+                        fName: true,
+                        lName: true,
+                        companyID: true,
+                        company: true,
+                    },
+                });
+
+                // Check if user of type Employee
+                if (user.accountType === "Employee") {
+                    // Create the assigned companies entries
+                    for (const companyID of assignedCompanies) {
+                        await tx.employeeSocietyAssignment.create({
+                            data: {
+                                user: {
+                                    connect: { userID: newUser.userID },
+                                },
+                                company: {
+                                    connect: { companyID: companyID },
+                                },
+                            },
+                        });
+                    }
+                }
+            }
+            // Othewise, create the user without assigned companies
+            else {
+                const newUser = await tx.user.create({
+                    data: {
+                        fName: user.fName,
+                        lName: user.lName,
+                        username: user.username,
+                        password: user.password,
+                        accountType: user.accountType,
+                        companyID: user.companyID,
+                    },
+                    select: {
+                        userID: true,
+                        accountType: true,
+                        username: true,
+                        fName: true,
+                        lName: true,
+                        companyID: true,
+                        company: true,
+                    },
+                });
+            }
+            return "User created successfully";
         });
-        return fetchUser;
     } catch (error) {
         throw new Error("Unknown error during user creation");
     }
@@ -292,22 +347,6 @@ async function getCompanies(): Promise<Company[]> {
         return companies;
     } catch (error) {
         throw new Error("Unknown error during companies retrieval");
-    }
-}
-
-async function getEmployeeCompany(userID: number): Promise<Company> {
-    try {
-        const user = await prisma.user.findUnique({
-            where: {
-                userID: Number(userID),
-            },
-            include: {
-                company: true,
-            },
-        });
-        return user.company;
-    } catch (error) {
-        throw new Error(`Unknown error during company retrieval for user ${userID}`);
     }
 }
 
@@ -1097,8 +1136,8 @@ async function updateBallot(ballotID: number, ballotData: Partial<Ballot>): Prom
                 endDate: ballotData.endDate ? new Date(ballotData.endDate) : undefined,
                 company: ballotData.companyID
                     ? {
-                            connect: { companyID: ballotData.companyID },
-                        }
+                        connect: { companyID: ballotData.companyID },
+                    }
                     : undefined,
             },
         });
@@ -1379,6 +1418,44 @@ async function getBallotStatus(ballotID: number): Promise<any> {
     }
 }
 
+async function getEmpAssignedCompanies(userID: number): Promise<any> {
+    try {
+        const user = await prisma.user.findUnique({
+            where: {
+                userID: userID,
+            },
+            include: {
+                employeeSocieties: true,
+            },
+        });
+        return user.employeeSocieties;
+    } catch (error) {
+        if (error instanceof Error) {
+            throw new Error(error.message);
+        }
+        throw new Error("Unknown error during assigned companies retrieval");
+    }
+}
+
+async function getEmployeeCompany(userID: number): Promise<any> {
+    try {
+        const user = await prisma.user.findUnique({
+            where: {
+                userID: userID,
+            },
+            include: {
+                company: true,
+            },
+        });
+        return user.company;
+    } catch (error) {
+        if (error instanceof Error) {
+            throw new Error(error.message);
+        }
+        throw new Error("Unknown error during employee company retrieval");
+    }
+}
+
 export default {
     getUser,
     getCandidate,
@@ -1387,11 +1464,12 @@ export default {
     getUsersByCompany,
     createUser,
     checkUsername,
+    getEmployeeCompany,
     updateUser,
     removeUser,
     getCompany,
     getCompanies,
-    getEmployeeCompany,
+    getEmpAssignedCompanies,
     removeCompany,
     createCompany,
     createVote,

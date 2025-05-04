@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 
 export function requireRole(...allowedRoles: string[]) {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const userRole = res.locals.accountType;
 
     if (!userRole || !allowedRoles.includes(userRole)) {
