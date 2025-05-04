@@ -16,7 +16,6 @@ const BallotPositionSection = ({positionObject, returnSelected}) => {
             const currentCount = Object.values(prev).filter(Boolean).length;
 
             if (currentCount >= allowedVotes && !prev[index]) {
-                console.log(index)
                 setErrorMessage(`You can only select ${allowedVotes} candidates.`);
                 return prev; // Return immediately if max allowed votes are reached and not already selected
             }
@@ -93,12 +92,10 @@ const BallotPositionSection = ({positionObject, returnSelected}) => {
 
     useEffect(() => {
         // Check if the user has abstained
-        console.log(abstained)
         if (abstained) {
             returnSelected([]);
             return;
         }
-        console.log(selected)
 
         // Check if the user has selected candidates
         if (Object.keys(selected).length === 0) {
@@ -139,7 +136,6 @@ const BallotPositionSection = ({positionObject, returnSelected}) => {
             })
             .filter(Boolean);
         if (selectedCandidates.length !== 0) {
-            console.log(selectedCandidates)
             returnSelected(selectedCandidates);
             return;
         }

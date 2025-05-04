@@ -6,9 +6,7 @@ const CandidateButton = ({index, details, isSelected, onToggle}) => {
 
     const handleModal = () => {
         setIsToggled(!isToggled);
-        console.log("toggled", isToggled)
     };
-    console.log("CandidateButton details:", details);
     return (
         <div className='candidateField'>
             <button style={{background: `url(${details.picture})`}}

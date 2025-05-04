@@ -29,8 +29,31 @@ export default function Dashboard() {
     useHeartbeat(user.username);
     const navigate = useNavigate();
     const handleClick = (ballotID) => {
-        console.log("Ballot ID: ", ballotID);
-        navigate('/Ballot',{state: {ballotID: ballotID}});
+        const checkIfVoted = async () => {
+            try {
+                const response = await fetch(`http://localhost:3000/api/v1/member/voterStatus/?userID=${user.userID}&ballotID=${ballotID}`, {
+                    method: 'GET',
+                    credentials: 'include',
+                });
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const result = await response.json();
+                if (result.voterStatus) {
+                    setErrorMessage('You have already submitted your vote for this ballot.');
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error('Error checking vote status:', error);
+                return false;
+            }
+        };
+        checkIfVoted().then((hasVoted) => {
+            if (!hasVoted) {
+                navigate('/Ballot',{state: {ballotID: ballotID}});
+            }
+        });
     }
 
     useEffect(() => {
@@ -46,7 +69,6 @@ export default function Dashboard() {
                 }
 
                 const result = await response.json();
-                console.log(result);
                 setActiveBallots(result);
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -63,7 +85,6 @@ export default function Dashboard() {
                 }
 
                 const result = await response.json();
-                console.log(result);
                 setInactiveBallots(result);
             }
             catch (error) {
@@ -122,6 +143,9 @@ export default function Dashboard() {
                         <h3>No Active Ballots</h3>
                     )}
                 </div>
+                {errorMessage && (
+                    <ErrorMessage message={errorMessage} />
+                )}
             </div>
             <div>
                 <h1 className='dashboardHeader'>Inactive Ballots</h1>

@@ -30,30 +30,18 @@ const Ballot = () => {
 
     const location = useLocation();
     const navigate = useNavigate();
-
-    
-    if (!location.state) {
-        return (
-            <div className='ballot'>
-                <h1>Ballot Not Found</h1>
-                <p>Please go back to the dashboard and select a ballot.</p>
-            </div>
-        );
-    }
-
     const ballotID = location.state;
+
 
     const handleBackButton = () => {
         navigate(-1);
     }
 
     const handleSelectionPosition = (positionSubmissionArray) => {
-        console.log("Position Submission Array: ", positionSubmissionArray);
         if (positionSubmissionArray === -1){
             setSelectedPositions(-1);
             return;
         }
-        console.log("Selected Positions: ", selectedPositions);
         // positionSubmissionArray should be an array of selected candidates for one position (e.g., President)
         if (!Array.isArray(positionSubmissionArray) || positionSubmissionArray.length === 0){
             setSelectedPositions([]);
@@ -81,7 +69,6 @@ const Ballot = () => {
     };
 
     const handleSelectionInitiative = (initiativeSubmissionObject) => {
-        console.log("Initiative Submission Object: ", initiativeSubmissionObject);
         if (initiativeSubmissionObject == null){
             return; 
         }
@@ -105,7 +92,6 @@ const Ballot = () => {
 
 
     const submitBallot = async () => {
-        console.log("Selected Positions: ", selectedPositions);
         if (selectedPositions == -1){
             setErrorMessage("Select, write in, or abstain for all positions.")
             return;
@@ -118,7 +104,6 @@ const Ballot = () => {
             }   
         };
 
-        console.log("Ballot Submission: ", ballotSubmission);
 
         try {
             const response = await fetch('http://localhost:3000/api/v1/member/submitBallot', {
@@ -136,7 +121,6 @@ const Ballot = () => {
             }
 
             const result = await response.json();
-            console.log("Submission successful:", result);
             alert("Ballot submitted successfully!");
             navigate('/dashboard'); // Redirect to dashboard after successful submission
         } catch (error) {
@@ -171,7 +155,6 @@ const Ballot = () => {
                             companyID: result.companyID
                         });
                         setBallotObject(result);
-                        console.log(result)
                     }
     
                 } catch (error) {
