@@ -1,12 +1,14 @@
 import db from '../utils/db.ts';
 import express from 'express';
 import { z } from 'zod';
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcrypt';
+import { requireRole } from '../utils/requireRole.ts';
+
 
 const router = express.Router();
 
 // Create ballot route
-router.post('/createBallot', async (req, res): Promise<any> => {
+router.post('/createBallot', requireRole('Employee', 'Admin'), async (req, res): Promise<any> => {
     try {
         const { ballotName, description, startDate, endDate, companyID, positions, initiatives } = req.body;
 
@@ -76,7 +78,7 @@ router.post('/createBallot', async (req, res): Promise<any> => {
 
 
 // Update ballot route
-router.put('/updateBallot', async (req, res): Promise<any> => {
+router.put('/updateBallot', requireRole('Employee', 'Admin'), async (req, res): Promise<any> => {
 
     console.log('Update ballot route called');
     try {

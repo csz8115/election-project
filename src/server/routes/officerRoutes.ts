@@ -2,6 +2,7 @@ import db from '../utils/db.ts';
 import express from 'express';
 import { z } from 'zod';
 import bcrypt from 'bcrypt'
+import { requireRole } from '../utils/requireRole.ts';
 
 const router = express.Router();
 
@@ -9,7 +10,7 @@ const ID_SCHEMA = z.string().refine(val => !isNaN(Number(val)) && Number(val) > 
     message: 'Ballot ID must be a positive number'
 });
 
-router.get('/getCompanyUsers', async (req, res): Promise<any> => {
+router.get('/getCompanyUsers', requireRole('Officer', 'Employee', 'Admin'), async (req, res): Promise<any> => {
     try {
         const { companyID } = req.query;
 
@@ -36,7 +37,7 @@ router.get('/getCompanyUsers', async (req, res): Promise<any> => {
     }
 });
 
-router.get(`/getBallotStatus`, async (req, res): Promise<any> => {
+router.get(`/getBallotStatus`, requireRole('Officer', 'Employee', 'Admin'), async (req, res): Promise<any> => {
     try {
         const { ballotID } = req.query;
         if (!ballotID) {
@@ -65,7 +66,7 @@ router.get(`/getBallotStatus`, async (req, res): Promise<any> => {
 });
 
 // Get ballot route
-router.get('/viewBallotResults', async (req, res): Promise<any> => {
+router.get('/viewBallotResults', requireRole('Officer', 'Employee', 'Admin'), async (req, res): Promise<any> => {
     try {
         const { ballotID } = req.query;
 
@@ -104,7 +105,7 @@ router.get('/viewBallotResults', async (req, res): Promise<any> => {
     }
 });
 
-router.get(`/getCompanyStats`, async (req, res): Promise<any> => {
+router.get(`/getCompanyStats`, requireRole('Officer', 'Employee', 'Admin'), async (req, res): Promise<any> => {
     try {
         const { companyID } = req.query;
         if (!companyID) {

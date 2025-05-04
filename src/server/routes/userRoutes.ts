@@ -6,6 +6,7 @@ import bcrypt from 'bcrypt';
 import { Ballot, BallotSchema } from '../types/ballot.ts';
 import { z } from 'zod';
 import { getRedisClient } from '../utils/redis.ts';
+import { requireRole } from '../utils/requireRole.ts';
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ const passwordSchema = z.string().min(8).regex(/[A-Z]/).regex(/[a-z]/).regex(/[0
 const usernameSchema = z.string().min(3).max(20).regex(/^[a-zA-Z0-9_]+$/);
 
 // User login route
-router.post('/login', async (req, res): Promise<any> => {
+router.post('/login', requireRole('Admin', 'Member', 'Officer', 'Employee'), async (req, res): Promise<any> => {
     try {
         const { username, password } = req.body;
         // throw an error if the username or password is not provided
@@ -84,7 +85,7 @@ router.post('/login', async (req, res): Promise<any> => {
 });
 
 // User logout route
-router.post('/logout', async (req, res): Promise<any> => {
+router.post('/logout', requireRole('Admin', 'Member', 'Officer', 'Employee'), async (req, res): Promise<any> => {
     try {
         // Check if the user has a session
         const session = await req.cookies.user_session;
@@ -145,7 +146,7 @@ router.get('/getUser', async (req, res): Promise<any> => {
     }
 });
 
-router.get(`/getEmployeeCompany`, async (req, res): Promise<any> => {
+router.get(`/getEmployeeCompany`, requireRole('Admin', 'Member', 'Officer', 'Employee'), async (req, res): Promise<any> => {
     try {
         const { userID } = req.query;
 
@@ -184,7 +185,7 @@ router.get(`/getEmployeeCompany`, async (req, res): Promise<any> => {
     }
 });
 
-router.get(`/getBallot`, async (req, res): Promise<any> => {
+router.get(`/getBallot`, requireRole('Admin', 'Member', 'Officer', 'Employee'), async (req, res): Promise<any> => {
     try {
         const { ballotID } = req.query;
 
@@ -223,7 +224,7 @@ router.get(`/getBallot`, async (req, res): Promise<any> => {
     }
 })
 
-router.get(`/getActiveUserBallots`, async (req, res): Promise<any> => {
+router.get(`/getActiveUserBallots`, requireRole('Admin', 'Member', 'Officer', 'Employee'), async (req, res): Promise<any> => {
     try {
         const { userID } = req.query;
 
@@ -258,7 +259,7 @@ router.get(`/getActiveUserBallots`, async (req, res): Promise<any> => {
     }
 });
 
-router.get(`/getInactiveUserBallots`, async (req, res): Promise<any> => {
+router.get(`/getInactiveUserBallots`, requireRole('Admin', 'Member', 'Officer', 'Employee'), async (req, res): Promise<any> => {
     try {
         const { userID } = req.query;
         if (!userID) {
@@ -292,7 +293,7 @@ router.get(`/getInactiveUserBallots`, async (req, res): Promise<any> => {
     }
 });
 
-router.get(`/getUserBallots`, async (req, res): Promise<any> => {
+router.get(`/getUserBallots`, requireRole('Admin', 'Member', 'Officer', 'Employee'), async (req, res): Promise<any> => {
     try {
         const { userID } = req.query;
         if (!userID) {
@@ -329,7 +330,7 @@ router.get(`/getUserBallots`, async (req, res): Promise<any> => {
 
 
 // Submit ballot route
-router.post(`/submitBallot`, async (req, res): Promise<any> => {
+router.post(`/submitBallot`,requireRole('Employee', 'Officer'), async (req, res): Promise<any> => {
     try {
         const { ballot } = req.body as { ballot: Ballot };
 
@@ -452,7 +453,7 @@ router.post(`/submitBallot`, async (req, res): Promise<any> => {
     }
 });
 
-router.get(`/getCompanyBallots`, async (req, res): Promise<any> => {
+router.get(`/getCompanyBallots`, requireRole('Admin', 'Member', 'Officer', 'Employee'), async (req, res): Promise<any> => {
     try {
 
         const { companyID } = req.query;
@@ -487,7 +488,7 @@ router.get(`/getCompanyBallots`, async (req, res): Promise<any> => {
     }
 });
 
-router.get(`/getActiveCompanyBallots`, async (req, res): Promise<any> => {
+router.get(`/getActiveCompanyBallots`, requireRole('Admin', 'Member', 'Officer', 'Employee'), async (req, res): Promise<any> => {
     try {
         const { companyID } = req.query;
         if (!companyID) {
@@ -521,7 +522,7 @@ router.get(`/getActiveCompanyBallots`, async (req, res): Promise<any> => {
     }
 });
 
-router.get(`/getInactiveCompanyBallots`, async (req, res): Promise<any> => {
+router.get(`/getInactiveCompanyBallots`, requireRole('Admin', 'Member', 'Officer', 'Employee'), async (req, res): Promise<any> => {
     try {
         const { companyID } = req.query;
         if (!companyID) {
@@ -555,7 +556,7 @@ router.get(`/getInactiveCompanyBallots`, async (req, res): Promise<any> => {
     }
 });
 
-router.get(`/ping`, async (req, res): Promise<any> => {
+router.get(`/ping`, requireRole('Admin', 'Member', 'Officer', 'Employee'), async (req, res): Promise<any> => {
     try {
         const { username } = req.query;
         const expSeconds = 120;
@@ -592,7 +593,7 @@ router.get(`/ping`, async (req, res): Promise<any> => {
     }
 });
 
-router.get(`/getUserByUsername`, async (req, res): Promise<any> => {
+router.get(`/getUserByUsername`, requireRole('Admin', 'Member', 'Officer', 'Employee'), async (req, res): Promise<any> => {
     try {
         const { username } = req.query;
         if (!username) {
@@ -625,7 +626,7 @@ router.get(`/getUserByUsername`, async (req, res): Promise<any> => {
     }
 });
 
-router.get(`/voterStatus`, async (req, res): Promise<any> => {
+router.get(`/voterStatus`, requireRole('Member', 'Officer'), async (req, res): Promise<any> => {
     try {
         const { ballotID, userID } = req.query;
         if (!ballotID || !userID) {

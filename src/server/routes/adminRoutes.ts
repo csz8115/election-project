@@ -8,6 +8,8 @@ import { BallotPositions, BallotPositionsSchema } from '../types/ballotPositions
 import { BallotInitiatives, BallotInitiativeSchema } from '../types/ballotInitiatives.ts';
 import bcrypt from 'bcrypt';
 import { BallotSchema } from '../types/ballot.ts';
+import { requireRole } from '../utils/requireRole.ts';
+
 
 const router = express.Router();
 
@@ -15,14 +17,14 @@ const passwordSchema = z.string().min(8).regex(/[A-Z]/).regex(/[a-z]/).regex(/[0
 // username validation
 const usernameSchema = z.string().min(3).max(20).regex(/^[a-zA-Z0-9_]+$/);
 // accountType validation
-const accountTypeSchema = z.enum(['Admin', 'Member']);
+const accountTypeSchema = z.enum(['Admin', 'Member', 'Officer', 'Employee']);
 // fName validation
 const fNameSchema = z.string().min(1).max(50).regex(/^[a-zA-Z]+$/);
 // lName validation
 const lNameSchema = z.string().min(1).max(50).regex(/^[a-zA-Z]+$/);
 
 // User register route
-router.post('/createUser', async (req, res): Promise<any> => {
+router.post('/createUser', requireRole('Admin'), async (req, res): Promise<any> => {
     try {
         const { accountType,
             username,
@@ -88,7 +90,7 @@ router.post('/createUser', async (req, res): Promise<any> => {
     }
 });
 
-router.get(`/getSystemReport`, async (req, res): Promise<any> => {
+router.get(`/getSystemReport`, requireRole('Admin'), async (req, res): Promise<any> => {
     try {
         const keys = await getRedisClient().keys('*active:*');
         const activeUsers = keys.length;
@@ -142,7 +144,7 @@ router.get(`/getSystemReport`, async (req, res): Promise<any> => {
     }
 })
 
-router.get(`/getSocietyReport`, async (req, res): Promise<any> => {
+router.get(`/getSocietyReport`, requireRole('Admin'), async (req, res): Promise<any> => {
     try {
         const { companyID } = req.query;
         if (!companyID) {
