@@ -18,14 +18,13 @@ const CreateBallot = ({ballotID}) => {
     const [positionArray, setPositionArray] = useState([]);
     const [initiativeArray, setInitiativeArray] = useState([]);
     const location = useLocation();
-    const positionRefs = useRef([]);
-    const initiativeRefs = useRef([]);
+    const positionRefs = useRef(new Map());
+    const initiativeRefs = useRef(new Map());
     const [errorMessage, setErrorMessage] = useState('');
     const stateCompanyID = useSelector((state) => {
         return state.companyID;
     });
     const [companyID, setCompanyID] = useState(stateCompanyID);
-
 
     const editBallot = (ballotID) => {
         console.log("Editing ballot: ", ballotID);
@@ -59,25 +58,6 @@ const CreateBallot = ({ballotID}) => {
     }, [ballotID]);
 
 
-    /* if (ballotID) {
-        console.log("Editing ballot: ", ballotID);
-        editBallot(ballotID);
-    } */
-
-
-
-    if (positionRefs.current.length !== positionArray.length) {
-        positionRefs.current = Array(positionArray.length)
-            .fill()
-            .map((_, i) => positionRefs.current[i] || createRef());
-    }
-
-    if (initiativeRefs.current.length !== initiativeArray.length) {
-        initiativeRefs.current = Array(initiativeArray.length)
-            .fill()
-            .map((_, i) => initiativeRefs.current[i] || createRef());
-    }
-
     const navigate = useNavigate();
 
     const handleBackButton = () => {
@@ -85,47 +65,59 @@ const CreateBallot = ({ballotID}) => {
     }
 
     const addPositionField = () => {
-        setPositionArray((prevPositions) => [...prevPositions, {}]);
-    }
-
-    const deletePositionField = (index) => {
-        console.log("Deleting position at index: ", index, positionArray[index]);
-        
-        setPositionArray(prev => {
-            const newArray = [...prev];
-            newArray.splice(index, 1);
-            return newArray;
-        });
-    
-        // Remove ref at index and re-align others
-        positionRefs.current.splice(index, 1);
-    };
+        setPositionArray((prev) => [
+          ...prev,
+          { positionID: crypto.randomUUID(), title: '', candidates: [], allowedVotes: 1 }
+        ]);
+      };
 
     const addInitiativeField = () => {
-        setInitiativeArray((prevInitiatives) => [...prevInitiatives, {}]);
+        setInitiativeArray((prevInitiatives) => [
+            ...prevInitiatives,
+            { initiativeID: crypto.randomUUID(), title: '', description: '' }
+        ]);
     }
 
-    const deleteInitiativeField = (index) => {
-        setInitiativeArray((prevInitiatives) => {
-            const newInitiatives = [...prevInitiatives];
-            newInitiatives.splice(index, 1);
-            return newInitiatives;
-        });
-        initiativeRefs.current.splice(index, 1);
-    }
+    const deleteInitiativeField = (idToDelete) => {
+        console.log("Deleting initiative with ID: ", idToDelete);
+        setInitiativeArray((prev) => prev.filter((i) => i.initiativeID !== idToDelete));
+        initiativeRefs.current.delete(idToDelete);
+    };
 
+    const deletePositionField = (idToDelete) => {
+        console.log("Deleting position with ID: ", idToDelete);
+        setPositionArray((prev) => prev.filter((p) => p.positionID !== idToDelete));
+        positionRefs.current.delete(idToDelete);
+      };
 
     const positionSectionArray = positionArray.map((position, index) => (
         <CreateBallotPositionSection
-            key={index}
+            key={position.positionID}
             details={position}
-            deleteEvent={() => deletePositionField(index)}
-            ref={el => positionRefs.current[index] = el}
+            deleteEvent={() => deletePositionField(position.positionID)}
+            ref={(el) => {
+                if (el) {
+                positionRefs.current.set(position.positionID, el);
+                } else {
+                positionRefs.current.delete(position.positionID);
+                }
+            }}
         />
-    ));
+      ));
 
-    const initiativeSectionArray = initiativeArray.map((initiative, index) => (
-        <CreateBallotInitiativeSection key={index} deleteEvent={() => deleteInitiativeField(index)} details={initiative} ref={(el) => initiativeRefs.current[index] = el} />
+    const initiativeSectionArray = initiativeArray.map((initiative) => (
+        <CreateBallotInitiativeSection
+            key={initiative.initiativeID}
+            details={initiative}
+            deleteEvent={() => deleteInitiativeField(initiative.initiativeID)}
+            ref={(el) => {
+                if (el) {
+                    initiativeRefs.current.set(initiative.initiativeID, el);
+                } else {
+                    initiativeRefs.current.delete(initiative.initiativeID);
+                }
+            }}
+        />
     ));
 
     const handleBallotNameChange = (event) => {
@@ -152,8 +144,8 @@ const CreateBallot = ({ballotID}) => {
             startDate: startDate,
             endDate: endDate,
             companyID: companyID,
-            positions: positionRefs.current.map(ref => ref.current?.getValue()),
-            initiatives: initiativeRefs.current.map(ref => ref.current?.getValue()),
+            positions: Array.from(positionRefs.current.values()).map(ref => ref?.getValue()),
+            initiatives: Array.from(initiativeRefs.current.values()).map(ref => ref?.getValue()),
         };
 
         console.log("Ballot object: ", ballotObject);
