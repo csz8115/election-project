@@ -15,7 +15,7 @@ const passwordSchema = z.string().min(8).regex(/[A-Z]/).regex(/[a-z]/).regex(/[0
 const usernameSchema = z.string().min(3).max(20).regex(/^[a-zA-Z0-9_]+$/);
 
 // User login route
-router.post('/login', requireRole('Admin', 'Member', 'Officer', 'Employee'), async (req, res): Promise<any> => {
+router.post('/login', async (req, res): Promise<any> => {
     try {
         const { username, password } = req.body;
         // throw an error if the username or password is not provided

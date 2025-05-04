@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
 export function useHeartbeat(username, intervalMs = 30000) {
   const intervalRef = useRef(null);
@@ -7,9 +7,10 @@ export function useHeartbeat(username, intervalMs = 30000) {
     if (!username) return;
 
     const ping = () => {
-      fetch(`http://localhost:3000/api/ping?username=${username}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+      fetch(`http://localhost:3000/api/v1/member/ping?username=${username}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
       }).catch(console.error);
     };
 

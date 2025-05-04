@@ -15,7 +15,7 @@ export default function Login() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     // get API URL from environment variable
-    const response = await fetch(`http://localhost:3000/api/login`, {
+    const response = await fetch(`http://localhost:3000/api/v1/member/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
