@@ -40,3 +40,40 @@ export async function getHttpStats() {
     }
 }
 
+export async function getDbStats() {
+    const logFilePath = path.resolve('/Users/coryz/git/election-project-frontrow/log/db.log'); // Using absolute path
+    const stats = {
+        totalQueries: 0,
+        totalResponseTime: 0,
+        avgResponseTime: 0,
+        maxResponseTime: 0,
+    };
+
+    try {
+        const data = await fs.promises.readFile(logFilePath, 'utf-8');
+        const lines = data.split('\n');
+
+        for (const line of lines) {
+            if (line) {
+                const logEntry = JSON.parse(line);
+                // take ms off duration and convert to number
+                if (logEntry.duration) {
+                    logEntry.duration = Number(logEntry.duration.replace('ms', ''));
+                }
+                stats.totalQueries += 1;
+                stats.totalResponseTime += logEntry.duration || 0;
+                stats.maxResponseTime = logEntry.duration > stats.maxResponseTime ? logEntry.duration : stats.maxResponseTime;
+                stats.avgResponseTime = logEntry.duration > stats.avgResponseTime ? logEntry.duration : stats.avgResponseTime;
+            }
+        }
+
+        if (stats.totalQueries > 0) {
+            stats.avgResponseTime = stats.totalResponseTime / stats.totalQueries;
+        }
+
+        return stats;
+    } catch (error) {
+        console.error('Error reading log file:', error);
+        throw new Error('Failed to get DB stats');
+    }
+}

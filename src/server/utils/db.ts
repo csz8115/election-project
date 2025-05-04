@@ -126,6 +126,7 @@ async function createUser(user: User): Promise<User> {
     }
 }
 
+
 async function createCandidate(fName: string, lName: string, titles: string, description: string, picture: string): Promise<any> {
     try {
         // insert into the candidates table
@@ -186,11 +187,11 @@ async function checkUsername(username: string): Promise<User> {
     }
 }
 
-async function updateUser(user: User): Promise<User> {
+async function updateUser(userID: number, user: User): Promise<User> {
     try {
         const fetchUser = await prisma.user.update({
             where: {
-                userID: user.userID,
+                userID: userID,
             },
             data: {
                 accountType: user.accountType,
@@ -1116,10 +1117,9 @@ async function checkBallotVoter(ballotID: number, userID: number): Promise<boole
 }
 
 /**
- * Queries the database for all the votes & their respective user for a ballot, 
- * as well as for all the users of that company that have not yet voted, 
- * compiles a list of all users that have voted and have not voted; 
- * if successful returns ballotVoters.
+ * 
+ * Queries the database for the ballot & votes for that ballot based on the ballot,
+ * and returns the list of voters for that ballot.
  * 
  * Throws error if there is no vote with that ID. 
  * Throws error message on a database error.
@@ -1127,6 +1127,21 @@ async function checkBallotVoter(ballotID: number, userID: number): Promise<boole
  * @param ballotID - The ID of the ballot to tally
  */
 async function tallyBallotVoters(ballotID) {
+    try {
+        const ballotVoters = await prisma.$queryRaw`
+        SELECT
+        "fName",
+        "lName",
+        "username",
+        "userID",
+        "voted"
+        FROM user_voting_status
+        WHERE "ballotID" = ${ballotID}
+        ORDER BY voted DESC`;
+        return ballotVoters;
+    } catch (error) {
+        throw new Error("Unknown error during ballot voter tally");
+    }
 }
 
 async function getInitiative(initiativeID: number): Promise<any> {
@@ -1155,27 +1170,7 @@ async function getResponse(responseID: number): Promise<any> {
     }
 }
 
-async function getQueryStats(): Promise<any> {
-    try {
-        const stats = await prisma.$queryRaw
-    `
-    SELECT
-    COUNT(*) AS total_queries,
-    SUM(calls) AS total_calls,
-    ROUND(SUM(total_exec_time)::numeric, 2) AS total_exec_time_ms,
-    ROUND(AVG(mean_exec_time)::numeric, 2) AS avg_query_time_ms,
-    ROUND(MAX(mean_exec_time)::numeric, 2) AS max_avg_query_time_ms
-    FROM
-    pg_stat_statements`;
-        return stats;
-    }
-    catch (error) {
-        if (error instanceof Error) {
-            throw new Error(`Error during query stats retrieval: ${error.message}`);
-        }
-        throw new Error(`Unknown error during query stats retrieval: ${String(error)}`);
-    }
-}
+
 
 
 
@@ -1183,7 +1178,6 @@ export default {
     getUser,
     getCandidate,
     getUserByUsername,
-    getQueryStats,
     getUsersByCompany,
     createUser,
     checkUsername,

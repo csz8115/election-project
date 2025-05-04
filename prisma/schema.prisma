@@ -36,7 +36,7 @@ model ballots {
   initiativeVotes initiativeVotes[]
 
   @@index ([companyID, endDate], name: "company_end_date_index")
-  @@index ([companyID, startDate, endDate], name: "company_start_end_date_index")
+  @@index ([companyID, startDate], name: "company_start_end_date_index")
 }
 
 model candidate {
@@ -137,5 +137,5 @@ model positionVotes {
   vote        votes           @relation(fields: [voteID], references: [voteID], onDelete: Cascade)
 
   @@id([voteID, positionID])
-  @@index([voteID, positionID], name: "vote_position_index")
 }
+
