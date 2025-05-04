@@ -10,7 +10,8 @@ datasource db {
 enum AccountType {
   Member
   Admin
-  Moderator
+  Officer
+  Employee
 }
 
 model company {
@@ -20,6 +21,18 @@ model company {
   category     String?
   ballots      ballots[]
   users        user[]
+  employeeAssignments employeeSocietyAssignment[]
+}
+
+model employeeSocietyAssignment {
+  assignmentID Int      @id @default(autoincrement())
+  userID       Int
+  companyID    Int
+
+  user         user     @relation(fields: [userID], references: [userID], onDelete: Cascade)
+  company      company  @relation(fields: [companyID], references: [companyID], onDelete: Cascade)
+
+  @@unique([userID, companyID]) 
 }
 
 model ballots {
@@ -62,6 +75,7 @@ model user {
   company         company           @relation(fields: [companyID], references: [companyID], onDelete: Cascade)
   votes           votes[]
   initiativeVotes initiativeVotes[]
+  employeeSocieties employeeSocietyAssignment[]
 }
 
 model votes {

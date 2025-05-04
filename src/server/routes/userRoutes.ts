@@ -184,46 +184,6 @@ router.get(`/getEmployeeCompany`, async (req, res): Promise<any> => {
     }
 });
 
-// Get ballot route
-router.get('/tallyBallot', async (req, res): Promise<any> => {
-    try {
-        const { ballotID } = req.query;
-
-        if (!ballotID) {
-            throw new Error('Invalid request');
-        }
-
-        // Validate ballotID
-        const ballotIDSchema = z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, {
-            message: 'Ballot ID must be a positive number'
-        });
-        ballotIDSchema.parse(ballotID);
-
-        const ballot = await db.tallyBallot(Number(ballotID));
-
-        if (!ballot) {
-            throw new Error('Ballot not found');
-        }
-
-        return res.status(200).json(ballot);
-    } catch (error) {
-        // Handle the Zod validation error
-        if (error instanceof z.ZodError) {
-            return res.status(400).json({ error: error.errors.map(e => e.message) });
-        }
-        // Handle invalid request error
-        else if (error.message === 'Invalid request') {
-            return res.status(400).json({ error: 'Invalid request' });
-        }
-        // Handle ballot not found error
-        else if (error.message === 'Ballot not found') {
-            return res.status(404).json({ error: 'Ballot not found' });
-        }
-        // Handle other errors
-        return res.status(500).json({ error: 'Failed to get ballot' });
-    }
-});
-
 router.get(`/getBallot`, async (req, res): Promise<any> => {
     try {
         const { ballotID } = req.query;
@@ -266,6 +226,7 @@ router.get(`/getBallot`, async (req, res): Promise<any> => {
 router.get(`/getActiveUserBallots`, async (req, res): Promise<any> => {
     try {
         const { userID } = req.query;
+
         if (!userID) {
             throw new Error('Invalid request');
         }
@@ -324,7 +285,7 @@ router.get(`/getInactiveUserBallots`, async (req, res): Promise<any> => {
         }
         // Handle ballots not found error
         else if (error.message === 'No active ballots found for this user') {
-            return res.status(404).json({ error: 'No active ballots found' });
+            return res.status(200).json({ ballot: 'No inactive ballots found' });
         }
         // Handle other errors
         return res.status(500).json({ error: 'Failed to get ballots' });
@@ -408,7 +369,7 @@ router.post(`/submitBallot`, async (req, res): Promise<any> => {
             throw new Error('User is not part of the company');
         }
         // Check if the user has already submitted the ballot
-        const didUserSubmit = await db.checkBallotVoter(ballot.ballotID, ballot.userID);
+        const didUserSubmit = await db.checkVoterStatus(ballot.ballotID, ballot.userID);
 
         // Check if the ballot is already submitted
         if (didUserSubmit) {
@@ -664,7 +625,7 @@ router.get(`/getUserByUsername`, async (req, res): Promise<any> => {
     }
 });
 
-router.get(`/didUserVote`, async (req, res): Promise<any> => {
+router.get(`/voterStatus`, async (req, res): Promise<any> => {
     try {
         const { ballotID, userID } = req.query;
         if (!ballotID || !userID) {
@@ -679,11 +640,12 @@ router.get(`/didUserVote`, async (req, res): Promise<any> => {
         });
         ballotIDSchema.parse(ballotID);
         userIDSchema.parse(userID);
-        const didVote = await db.checkBallotVoter(Number(ballotID), Number(userID));
-        if (didVote === null) {
+        const didVote = await db.checkVoterStatus(Number(ballotID), Number(userID));
+        if (!didVote) {
             throw new Error('Ballot not found');
         }
-        return res.status(200).json(didVote);
+        // return the didVote
+        return res.status(200).json({voterStatus: didVote});
     } catch (error) {
         // Handle the Zod validation error
         if (error instanceof z.ZodError) {

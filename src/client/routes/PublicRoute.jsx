@@ -11,7 +11,7 @@ const PublicRoute = () => {
         };
     });
 
-    return user.loggedIn ? <Navigate to="/dashboard" replace /> : <Outlet />;
+    return user.loggedIn ? <Navigate to="/" replace /> : <Outlet />;
 };
 
 export default PublicRoute;

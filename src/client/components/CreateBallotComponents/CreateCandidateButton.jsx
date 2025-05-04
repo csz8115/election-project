@@ -2,7 +2,7 @@ import React from 'react';
 
 const CreateCandidateButton = ({ onClick }) => {
     return (
-        <button onClick={onClick} className="createCandidateButton">
+        <button onClick={() => onClick(-1)} className="createCandidateButton">
             Create Candidate
         </button>
     );

@@ -38,11 +38,12 @@ h3 {
 
 .ballotVoteSectionDetails {
     display: flex;
+    flex-wrap: wrap;
     text-align: center;
     justify-content:space-between;
     align-items: center;
     gap: 2em;
-    height: 4em;
+    margin-bottom: 1em;
 }
 
 .ballotAbstainButton {
@@ -132,16 +133,37 @@ h3 {
     margin-bottom: 3em;
     border-left: .3em solid rgb(246, 243, 244);
     padding-left: 2em;
+    padding: 2em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2em;
 }
 .ballotInitiativeSection > p {
     font-size: 1.5em;
+
     
 }
 
 .initiativeOptions {
     font-size: 1.75em;
     display: flex;
-    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.deletePosition{
+    width: 3em;
+    cursor: pointer;
+}
+
+.deleteInitiative{
+    width: 4em;
+    cursor: pointer;
+}
+
+.deleteChoice{
+    width: 1.5em;
+    cursor: pointer;
 }
 
 .initiativeOptions > label {
@@ -244,21 +266,42 @@ h3 {
     border: none;
     cursor: pointer;
     border-radius: .5em;
+    margin: 2em;
     box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+}
+
+.ballotCreationHeader {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: .5em;
+    margin-top: 1em;
+    margin-bottom: 2em;
+}
+
+.ballotCreationHeader .left {
+    display: flex;
+    flex-direction: column;
+    gap: .5em;
+}
+.ballotCreationHeader .right {
+    display: flex;
+    flex-direction: column;
+    gap: .5em;
+}
+
+.ballotLabel {
+    font-size: 1.5em;
+    text-align: center;
+    margin: 1em;    
 }
 
 .ballotCreationTextInput {
     font-size: 2em;
-    border: .1em solid gray;
+    border: .05em solid gray;
     border-radius: .25em;
     width: max-content;
-}
-
-.ballotCreationHeader{
-    display: flex;
-    flex-direction: column;
-    gap: .5em;
-    margin-top: 1em;
 }
 
 .addPosition {
@@ -270,4 +313,93 @@ h3 {
     font-weight: bold;
     padding: .5em;
     cursor: pointer;
+}
+
+.addChoiceButton {
+    background-color: darkgray;
+    color: white;
+    border-radius: .5em;
+    font-size: .75em;
+    font-weight: bold;
+    cursor: pointer;
+    height: 100px;
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+}
+
+.createInitiativeOptions {
+    background-color: red;
+
+}
+
+.initiativeTextbox {
+    border: .1em solid gray;
+    border-radius: .25em;
+    width: 5em;
+}
+
+.candidateInfoModal {
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1em;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    border-radius: .5em;
+    box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+    z-index: 1000;
+    width: 70%;
+    padding: 1em;
+    text-align: center;
+}
+
+.candidateInfoModal > input, 
+.candidateInfoModal > textarea {
+    font-size: 1.5em;
+    border: .1em solid gray;
+    border-radius: .5em;
+    padding: .5em;
+    width: 80%;
+}
+
+.candidateInfoModalButton {
+    border: none;
+    font-size: 1.5em;
+    font-weight: bold;
+    padding: .25em;
+    cursor: pointer;
+}
+
+.deleteButton {
+    background-color: red;
+    color: white;
+    border: none;
+    font-size: 1.5em;
+    font-weight: bold;
+    padding: .25em;
+    cursor: pointer;
+}
+.saveButton {
+    background-color: darkseagreen;
+    color: white;
+    border: none;
+    font-size: 1.5em;
+    font-weight: bold;
+    padding: .25em;
+    cursor: pointer;
+}
+
+.editImage {
+    width: 3em;
+    margin: auto;
+}
+.deleteImage {
+    width: 2em;
+    position: relative;
+    left: 80%;
+    top: -3em;
+
 }

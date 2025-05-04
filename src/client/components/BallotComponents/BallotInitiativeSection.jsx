@@ -1,6 +1,5 @@
 import React from 'react';
 import { useState } from 'react';
-import './BallotPositionSection'
 
 const BallotInitiativeSection = ({initiativeObject, returnChoice}) => {
 
@@ -37,7 +36,7 @@ const BallotInitiativeSection = ({initiativeObject, returnChoice}) => {
     return (
 
     <div className='ballotVoteSection ballotInitiativeSection'>
-        <h1>{initiativeObject.initiativeTitle}</h1>
+        <h1>{initiativeObject.initiativeName}</h1>
         <p>{initiativeObject.description}</p>
         <div className='initiativeOptions'>
             {choicesInput}

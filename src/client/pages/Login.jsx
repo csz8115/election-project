@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { login } from "../store/userSlice.ts";
 import { useNavigate } from "react-router-dom";
-import ErrorMessage from "../components/ErrorMessage.jsx";
+import ErrorMessage from "../components/Utils/ErrorMessage.jsx";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -34,7 +34,15 @@ export default function Login() {
           companyName: res.data.companyName,
         })
       );
-      navigate("/dashboard");
+      //redirects to dashboards based on role
+      const accountType = res.data.accountType;
+      if(accountType === "Admin" || accountType === "Moderator"){
+        console.log("adminLogin");
+        navigate("/empDashboard", { replace: true });
+      }else{
+        console.log("memberLogin");
+        navigate("/dashboard");
+      }
     } else {
       console.error("Login failed");
       console.log(response);
