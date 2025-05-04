@@ -14,12 +14,16 @@ import EmpDashboard from "../pages/EmpDashboard";
 import RoleBasedRedirect from "./RoleRedirect";
 import RoleBasedRoute from "./RoleBasedRoute";
 import SocietyStats from "../pages/SocietyStats";
+import FindUsers from "../pages/FindUsers";
 
 
 const AppRoutes = () => {
   return (
     <Router>
       <Routes>
+      <Route element={<RoleBasedRoute allowedRoles={["Admin"]}/>}>
+          <Route path="/findUsers" element={<FindUsers/>}/>
+      </Route>
       <Route element={<RoleBasedRoute allowedRoles={["Admin", "Moderator"]}/>}>
           <Route path="/empDashboard" element={<EmpDashboard/>}/>
       </Route>

@@ -22,6 +22,17 @@ export default function EmpDashboard() {
     useHeartbeat(user.username);
     const navigate = useNavigate();
 
+    const handleSocietyButton = (societyID, societyName) => {
+        console.log("Society ID: ", societyID, "Society Name: ", societyName);
+        navigate("/societyStats", {state: {societyID: societyID, societyName: societyName}});
+    }
+
+    const handleUsersButton = () => {
+        console.log("Navigating to user find/edit page");
+        navigate("/findUsers");
+    }
+
+
     //ADMIN DASHBOARD
     if(user.accountType === "Admin"){
 
@@ -40,13 +51,16 @@ export default function EmpDashboard() {
                 <div>
                     <h1 className='dashboardHeader'>All Societies</h1>
                     <div className='dashboardBallotContainer'>
-                        
+                        {/* put id in for each button when loaded data */}
+                        <button onClick={() => handleSocietyButton(1, "Tech Innovators Inc.")}>Test</button>
                     </div>
-                    <h1 className='dashboardHeader'>View/Edit Users</h1>
-                    {/*  button here */}
-                    
+                    {/* <h1 className='dashboardHeader'>View/Edit Users</h1> */}
+                    <div className='dashboardCenteredButtonContainer'>
+                        <button className="dashboardCenteredButton" onClick={() => handleUsersButton()}>View/Edit Users</button>
+                    </div>
 
                     <h1 className='dashboardHeader'>System Stats</h1>
+                    
                     <div className='dashboardBallotContainer'>
                         <SystemStats/>
                     </div>

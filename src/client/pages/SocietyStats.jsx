@@ -3,12 +3,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import ErrorMessage from '../components/Utils/ErrorMessage'; // Import the Error component
 
-import './Stats.css';
+import '../components/EmpDashboardComponents/Stats.css';
 
 
 
 const SocietyStats = () => {
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [stats, setStats] = useState(null);
 
@@ -29,6 +30,7 @@ const SocietyStats = () => {
         if (!location.state) {
             return (
                 <div className='company'>
+                    <button className='backButton' onClick={handleBackButton}>&lt; Back</button>
                     <h1>Company Not Found</h1>
                     <p>Please go back to the dashboard and select a company.</p>
                 </div>
@@ -40,7 +42,7 @@ const SocietyStats = () => {
         useEffect(() => {
                 const fetchData = async () => {
                     try {
-                        const response = await fetch(`http://localhost:3000/api/getCompanyStats?companyID=${company.companyID}`, {
+                        const response = await fetch(`http://localhost:3000/api/getCompanyStats?companyID=${company.societyID}`, {
                             method: 'GET',
                             credentials: 'include',
                         });
@@ -64,14 +66,14 @@ const SocietyStats = () => {
 
             if(stats != null){
                 return(
-                    <div class="statsPageContainer">
+                    <div className="statsPageContainer">
                         <button className='backButton' onClick={handleBackButton}>&lt; Back</button>
-                        <h2>Company Stats</h2>
+                        <h1>{company.societyName} Stats</h1>
                         <div className="statsContainer">
                             <div className="statsRow">
                                 <div className="statsColumn">
                                         <h4>Active Ballots Users</h4>
-                                        <h4>{stats.activeBallots.count}</h4>
+                                        <h4>{stats.active_ballots.count}</h4>
                                     </div>
                                 <div className="statsColumn">
                                         <h4>Inactive Ballots Users</h4>
@@ -101,7 +103,12 @@ const SocietyStats = () => {
                     </div>
                 );
             }else{
-                return (<h2>Stats not available</h2>);
+                return (
+                <div>
+                    <button className='backButton' onClick={handleBackButton}>&lt; Back</button>
+                    <h2>Stats not available</h2>
+                </div>
+                );
             }
 
 }
