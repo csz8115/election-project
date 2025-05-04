@@ -121,7 +121,7 @@ const Ballot = () => {
         console.log("Ballot Submission: ", ballotSubmission);
 
         try {
-            const response = await fetch('http://localhost:3000/api/submitBallot', {
+            const response = await fetch('http://localhost:3000/api/v1/member/submitBallot', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -149,7 +149,7 @@ const Ballot = () => {
     useEffect(() => {
             const fetchData = async () => {
                 try {
-                    const response = await fetch(`http://localhost:3000/api/getBallot/?ballotID=${ballotID.ballotID}`, {
+                    const response = await fetch(`http://localhost:3000/api/v1/member/getBallot/?ballotID=${ballotID.ballotID}`, {
                         method: 'GET',
                         credentials: 'include',
                     });

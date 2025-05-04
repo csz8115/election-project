@@ -36,7 +36,7 @@ export default function Dashboard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch(`http://localhost:3000/api/getActiveUserBallots/?userID=${user.userID}`, {
+                const response = await fetch(`http://localhost:3000/api/v1/member/getActiveUserBallots/?userID=${user.userID}`, {
                     method: 'GET',
                     credentials: 'include',
                 });
@@ -53,7 +53,7 @@ export default function Dashboard() {
             }
 
             try {
-                const response = await fetch(`http://localhost:3000/api/getInactiveUserBallots/?userID=${user.userID}`, {
+                const response = await fetch(`http://localhost:3000/api/v1/member/getInactiveUserBallots/?userID=${user.userID}`, {
                     method: 'GET',
                     credentials: 'include',
                 });
