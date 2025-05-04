@@ -26,14 +26,10 @@ app.use(cookieParser()); // Add cookie parser middleware
 // Logger middleware
 app.use(pinoHttp({ logger }));
 
-// User routes
-app.use('/api/v1/member', userRoutes);
-app.use('/api/v1/admin', adminRoutes);
-app.use('/api/v1/officer', officerRoutes);
 // auth middleware 
 app.use(async (req, res, next) => {
   // Check if the req is coming from login or register
-  if (req.path === '/api/v1/user/login') {
+  if (req.path.includes('login')) {
     next();
   }
   // Check if the user has a session
@@ -48,6 +44,13 @@ app.use(async (req, res, next) => {
     }
   }
 });
+
+// User routes
+app.use('/api/v1/member', userRoutes);
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/officer', officerRoutes);
+app.use('/api/v1/employee', employeeRoutes);
+
 
 // Serve React App for all non-API routes
 // app.use(express.static(path.join(__dirname, "./dist")));
