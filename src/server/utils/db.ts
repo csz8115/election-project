@@ -1368,7 +1368,7 @@ async function deleteResponse(responseID: number): Promise<boolean> {
 async function getBallotStatus(ballotID: number): Promise<any> {
     try {
         const ballotVoters = await prisma.$queryRaw`
-        SELECT * FROM get_ballot_voting_status(${ballotID}::INT) AS status`;
+        SELECT get_ballot_voting_status(${ballotID}::INT) AS status`;
         // Check if the ballotVoters is empty
         if (!ballotVoters) {
             throw new Error("No ballot status found");
