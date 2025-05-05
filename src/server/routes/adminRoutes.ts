@@ -182,11 +182,6 @@ router.get(`/getSocietyReport`, requireRole('Admin'), async (req, res): Promise<
 router.get(`/getAllCompanies`, requireRole('Admin'), async (req, res): Promise<any> => {
     try {
 
-        // Validate userID
-        const userIDSchema = z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, {
-            message: 'User ID must be a positive number'
-        });
-
         const companies = await db.getCompanies();
 
         if (!companies) {
@@ -213,6 +208,35 @@ router.get(`/getAllCompanies`, requireRole('Admin'), async (req, res): Promise<a
     }
 });
 
+router.get(`/getAllUsers`, requireRole('Admin'), async (req, res): Promise<any> => {
+    try {
 
+        const users = await db.getAllUsers();
+
+        if (!users) {
+            throw new Error('Users not found');
+        }
+
+        return res.status(200).json(users);
+    } catch (error) {
+        // Handle the Zod validation error
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors.map(e => e.message) });
+        }
+        // Handle invalid request error
+        else if (error.message === 'Invalid request') {
+            return res.status(400).json({ error: 'Invalid request' });
+        }
+        // Handle companies not found error
+        else if (error.message === 'Users not found') {
+            return res.status(404).json({ error: 'Users not found' });
+        }
+        // Handle other errors
+        console.log(error);
+        return res.status(500).json({ error: 'Failed to get users' });
+    }
+});
+
+//getAllUser
 
 export default router;

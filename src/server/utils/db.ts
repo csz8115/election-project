@@ -78,6 +78,26 @@ async function getUsersByCompany(companyID: number): Promise<User[]> {
     }
 }
 
+async function getAllUsers(): Promise<User[]> {
+    try {
+        const fetchUsers = await prisma.user.findMany({        
+            select: {
+                userID: true,
+                accountType: true,
+                username: true,
+                fName: true,
+                lName: true,
+                companyID: true,
+                company: true,
+                // password field is omitted
+            },
+        });
+        return fetchUsers;
+    } catch (error) {
+        throw new Error("Unknown error during users retrieval");
+    }
+}
+
 async function getCandidate(candidateID: number): Promise<Candidate> {
     try {
         const fetchCandidate = await prisma.candidate.findUnique({
@@ -1505,4 +1525,5 @@ export default {
     getInactiveCompanyBallots,
     getCompanyStats,
     getBallotStatus,
+    getAllUsers,
 };

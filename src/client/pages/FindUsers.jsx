@@ -58,7 +58,7 @@ const FindUsers = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch(`http://localhost:3000/api/v1/member/getUser/?username=${"testuser123"}`, {
+                const response = await fetch(`http://localhost:3000/api/v1/admin/getAllUsers`, {
                     method: 'GET',
                     credentials: 'include',
                 });
@@ -69,7 +69,7 @@ const FindUsers = () => {
 
                 const result = await response.json();
                 console.log(result);
-                setUserList([result, result, result, result, result, result, result, result]);
+                setUserList(result);
             }
             catch (error) {
                 console.error('Error fetching data:', error);

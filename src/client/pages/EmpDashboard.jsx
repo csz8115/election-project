@@ -116,6 +116,46 @@ export default function EmpDashboard() {
             );
     }else{
         //EMPLOYEE/MOD DASHBOARD
+        //getAssignedCompanies
+        useEffect(() => {
+            const fetchData = async () => {
+                try {
+                    const response = await fetch(`http://localhost:3000/api/v1/employee/getAssignedCompanies/?userID=${user.userID}`, {
+                        method: 'GET',
+                        credentials: 'include',
+                    });
+    
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+    
+                    const result = await response.json();
+                    console.log(result);
+                    setCompanyList(result);
+    
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                }
+            };
+    
+            fetchData();
+        }
+        , []);
+
+        const companyListComponents = [];
+        if(companyList != null){
+            companyList.map(company => {
+                companyListComponents.push(
+                    <CompanyButton 
+                    key={company.companyName}
+                    companyName={company.companyName}
+                    handleClick={() => handleSocietyButton(company.companyID, company.companyName)}
+                    />
+                );
+            });
+        }
+
+
         return( 
             <div className='dashboard'>
                 <div>
