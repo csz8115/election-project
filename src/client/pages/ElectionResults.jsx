@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import ErrorMessage from '../components/Utils/ErrorMessage';
 
@@ -9,7 +9,11 @@ const ElectionResults = () => {
     const navigate = useNavigate();
     const [results, setResults] = useState(null);
     const [errorMessage, setErrorMessage] = useState('');
-    const username = useSelector((state) => state.username);
+    const location = useLocation();
+
+    const handleBackButton = () => {
+        navigate(-1); // Navigate back to the previous page
+    };
 
     if (!location.state) {
         return (
@@ -49,9 +53,7 @@ const ElectionResults = () => {
         }
     }, [ballotID]);
 
-    const handleBackButton = () => {
-        navigate(-1); // Navigate back to the previous page
-    };
+    
 
     return (
         <div className="election-results">

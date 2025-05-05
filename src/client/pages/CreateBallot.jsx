@@ -10,7 +10,7 @@ const baseUrl = import.meta.env.VITE_API_BASE;
 
 
 
-const CreateBallot = ({ballotID}) => {
+const CreateBallot = () => {
 
     const [ballot, setBallot] = useState(null);
     const [ballotName, setBallotName] = useState('');
@@ -23,9 +23,24 @@ const CreateBallot = ({ballotID}) => {
     const positionRefs = useRef(new Map());
     const initiativeRefs = useRef(new Map());
     const [errorMessage, setErrorMessage] = useState('');
-    const stateCompanyID = useSelector((state) => {
-        return state.companyID;
+
+    const user = useSelector((state) => {
+        return {
+            userID: state.userID,
+            username: state.username,
+            accountType: state.accountType,
+            fName: state.fName,
+            lName: state.lName,
+            companyID: state.companyID,
+            companyName: state.companyName,
+        };
     });
+
+    /* const stateCompanyID = useSelector((state) => {
+        return state.companyID;
+    }); */
+    const stateCompanyID = location.state?.companyID || null;
+    const ballotID = location.state?.ballotID || null;
     const [companyID, setCompanyID] = useState(stateCompanyID);
 
     const editBallot = (ballotID) => {
@@ -148,6 +163,7 @@ const CreateBallot = ({ballotID}) => {
             companyID: companyID,
             positions: Array.from(positionRefs.current.values()).map(ref => ref?.getValue()),
             initiatives: Array.from(initiativeRefs.current.values()).map(ref => ref?.getValue()),
+            userID: user.userID
         };
 
         console.log("Ballot object: ", ballotObject);
@@ -225,12 +241,14 @@ const CreateBallot = ({ballotID}) => {
 
 
         try {
-            const response = await fetch(`${baseUrl}api/v1/employee/createBallot`, {
+            const response = await fetch(`${baseUrl}api/v1/employee/createBallotFromList`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                credentials: 'include',
                 body: JSON.stringify(ballotObject),
+                
             });
 
             if (response.ok) {

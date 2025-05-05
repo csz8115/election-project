@@ -281,15 +281,26 @@ router.get(`/getAssignedCompanies`, requireRole('Employee'), async (req, res): P
 
         // Validate userID
         const userIDSchema = z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, {
-            message: 'User ID must be a positive number'
+            message: 'User ID must be a positive number',
         });
 
         userIDSchema.parse(userID);
 
-        const companies = await db.getEmpAssignedCompanies(Number(userID));
+        // Fetch the list of assigned company objects
+        const assignments = await db.getEmpAssignedCompanies(Number(userID));
 
-        if (!companies) {
-            throw new Error('Companies not found');
+        if (!assignments || assignments.length === 0) {
+            throw new Error('No assigned companies found');
+        }
+
+        // Extract company IDs from the assignments
+        const companyIDs = assignments.map((assignment) => assignment.companyID);
+
+        // Fetch the company details using the list of IDs
+        const companies = await db.getCompaniesByIDs(companyIDs);
+
+        if (!companies || companies.length === 0) {
+            throw new Error('No company details found');
         }
 
         return res.status(200).json(companies);
@@ -302,13 +313,98 @@ router.get(`/getAssignedCompanies`, requireRole('Employee'), async (req, res): P
         else if (error.message === 'Invalid request') {
             return res.status(400).json({ error: 'Invalid request' });
         }
-        // Handle companies not found error
-        else if (error.message === 'Companies not found') {
-            return res.status(404).json({ error: 'Companies not found' });
+        // Handle no assigned companies found error
+        else if (error.message === 'No assigned companies found') {
+            return res.status(404).json({ error: 'No assigned companies found' });
+        }
+        // Handle no company details found error
+        else if (error.message === 'No company details found') {
+            return res.status(404).json({ error: 'No company details found' });
         }
         // Handle other errors
-        console.log(error);
-        return res.status(500).json({ error: 'Failed to get companies' });
+        console.error('Error in /getAssignedCompanies:', error);
+        return res.status(500).json({ error: 'Failed to get assigned companies' });
+    }
+});
+
+router.post('/createBallotFromList', requireRole('Employee', 'Admin'), async (req, res): Promise<any> => {
+    try {
+        const { ballotName, description, startDate, endDate, companyID, positions, initiatives, userID } = req.body;
+        //const userID = res.locals.userID; // Extract userID from session
+        console.log('User ID:', userID);
+
+        // Validate required fields
+        if (!ballotName || !description || !startDate || !endDate || !companyID || !positions) {
+            throw new Error('Invalid request');
+        }
+
+        // Fetch the list of assigned companies for the employee
+        const assignedCompanies = await db.getEmpAssignedCompanies(userID);
+        const assignedCompanyIDs: number[] = assignedCompanies.map((assignment: { companyID: number }) => assignment.companyID);
+
+        // Check if the provided companyID is in the list of assigned companies
+        if (!assignedCompanyIDs.includes(Number(companyID))) {
+            throw new Error('User is not authorized to create a ballot for this company');
+        }
+
+        // Check if the company exists
+        const company = await db.getCompany(Number(companyID));
+        if (!company) {
+            throw new Error('Company does not exist');
+        }
+
+        // Prepare data for Prisma
+        const ballotPositions = positions.map((position: any) => ({
+            positionName: position.positionName,
+            allowedVotes: position.allowedVotes,
+            writeIn: position.writeIn,
+            candidates: position.candidates.map((candidate: any) => ({
+                fName: candidate.fName,
+                lName: candidate.lName,
+                titles: candidate.titles ?? '',
+                description: candidate.description ?? '',
+                picture: candidate.picture ?? '',
+            })),
+        }));
+
+        const ballotInitiatives = initiatives.map((initiative: any) => ({
+            initiativeName: initiative.initiativeName,
+            description: initiative.description ?? '',
+            picture: initiative.picture ?? '',
+            responses: initiative.responses.map((response: any) => ({
+                response: response.response,
+                votes: 0, // You might initialize votes to 0
+            })),
+        }));
+
+        const ballot = {
+            ballotName,
+            description,
+            startDate,
+            endDate,
+            companyID: Number(companyID),
+            positions: ballotPositions,
+            initiatives: ballotInitiatives,
+        };
+
+        // Create the ballot in DB
+        await db.createBallot(ballot, ballotPositions, ballotInitiatives);
+
+        return res.status(201).json({ message: 'Ballot created successfully' });
+
+    } catch (error: any) {
+        console.log('Error creating ballot:', error);
+
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors.map(e => e.message) });
+        } else if (error.message === 'Company does not exist') {
+            return res.status(404).json({ error: 'Company does not exist' });
+        } else if (error.message === 'User is not authorized to create a ballot for this company') {
+            return res.status(403).json({ error: 'Unauthorized to create a ballot for this company' });
+        } else if (error.message === 'Invalid request') {
+            return res.status(400).json({ error: 'Invalid request' });
+        }
+        return res.status(500).json({ error: 'Failed to create ballot' });
     }
 });
 

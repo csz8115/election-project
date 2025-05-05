@@ -156,6 +156,7 @@ export default function EmpDashboard() {
             });
         }
 
+        
 
         return( 
             <div className='dashboard'>
@@ -166,7 +167,11 @@ export default function EmpDashboard() {
                 <div>
                     <h1 className='dashboardHeader'>Assigned Societies</h1>
                     <div className='dashboardBallotContainer'>
-                        
+                        {companyListComponents && companyListComponents.length > 0 ? (
+                                companyListComponents
+                            ) : (
+                                <h3>No Companies Found</h3>
+                            )}
                     </div>
                     </div>
                 <Logout />

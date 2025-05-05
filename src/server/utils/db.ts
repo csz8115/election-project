@@ -1493,6 +1493,22 @@ async function getEmployeeCompany(userID: number): Promise<any> {
     }
 }
 
+async function getCompaniesByIDs(companyIDs: number[]): Promise<Company[]> {
+    try {
+        const companies = await prisma.company.findMany({
+            where: {
+                companyID: {
+                    in: companyIDs,
+                },
+            },
+        });
+        return companies;
+    } catch (error) {
+        console.error('Error fetching companies by IDs:', error);
+        throw error;
+    }
+}
+
 export default {
     getUser,
     getCandidate,
@@ -1544,4 +1560,5 @@ export default {
     getBallotStatus,
     getAllUsers,
     deleteUser,
+    getCompaniesByIDs
 };
