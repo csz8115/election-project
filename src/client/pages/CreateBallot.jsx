@@ -30,7 +30,7 @@ const CreateBallot = ({ballotID}) => {
 
     const editBallot = (ballotID) => {
         console.log("Editing ballot: ", ballotID);
-        fetch(`${baseUrl}/api/v1/member/getBallot/?ballotID=${ballotID}`, {
+        fetch(`${baseUrl}api/v1/member/getBallot/?ballotID=${ballotID}`, {
             method: 'GET',
             credentials: 'include',
         })
