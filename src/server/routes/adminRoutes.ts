@@ -177,7 +177,42 @@ router.get(`/getSocietyReport`, requireRole('Admin'), async (req, res): Promise<
         console.log(error);
         return res.status(500).json({ error: 'Failed to get stats' });
     }
-})
+});
+
+router.get(`/getAllCompanies`, requireRole('Admin'), async (req, res): Promise<any> => {
+    try {
+
+        // Validate userID
+        const userIDSchema = z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, {
+            message: 'User ID must be a positive number'
+        });
+
+        const companies = await db.getCompanies();
+
+        if (!companies) {
+            throw new Error('Companies not found');
+        }
+
+        return res.status(200).json(companies);
+    } catch (error) {
+        // Handle the Zod validation error
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors.map(e => e.message) });
+        }
+        // Handle invalid request error
+        else if (error.message === 'Invalid request') {
+            return res.status(400).json({ error: 'Invalid request' });
+        }
+        // Handle companies not found error
+        else if (error.message === 'Companies not found') {
+            return res.status(404).json({ error: 'Companies not found' });
+        }
+        // Handle other errors
+        console.log(error);
+        return res.status(500).json({ error: 'Failed to get companies' });
+    }
+});
+
 
 
 export default router;

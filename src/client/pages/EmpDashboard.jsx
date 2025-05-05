@@ -4,10 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { useHeartbeat } from "../hooks/useHeartbeat";
 import Logout from '../components/Utils/Logout';
 import SystemStats from '../components/EmpDashboardComponents/systemStats';
+import CompanyButton from '../components/EmpDashboardComponents/CompanyButton';
 
 import '../components/Dashboard.css';
 
 export default function EmpDashboard() { 
+    const [companyList, setCompanyList] = useState(null);
+
     const user = useSelector((state) => {
         return {
             userID: state.userID,
@@ -37,10 +40,43 @@ export default function EmpDashboard() {
     if(user.accountType === "Admin"){
 
         //load all societies
+        useEffect(() => {
+                const fetchData = async () => {
+                    try {
+                        const response = await fetch(`http://localhost:3000/api/v1/admin/getAllCompanies`, {
+                            method: 'GET',
+                            credentials: 'include',
+                        });
+        
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+        
+                        const result = await response.json();
+                        console.log(result);
+                        setCompanyList(result);
+        
+                    } catch (error) {
+                        console.error('Error fetching data:', error);
+                    }
+                };
+        
+                fetchData();
+            }
+            , []);
 
-        //view users button to go to page
-
-        //load system stats
+            const companyListComponents = [];
+            if(companyList != null){
+                companyList.map(company => {
+                    companyListComponents.push(
+                        <CompanyButton 
+                        key={company.companyName}
+                        companyName={company.companyName}
+                        handleClick={() => handleSocietyButton(company.companyID, company.companyName)}
+                        />
+                    );
+                });
+            }
 
         return( 
             <div className='dashboard'>
@@ -52,7 +88,14 @@ export default function EmpDashboard() {
                     <h1 className='dashboardHeader'>All Societies</h1>
                     <div className='dashboardBallotContainer'>
                         {/* put id in for each button when loaded data */}
-                        <button onClick={() => handleSocietyButton(1, "Tech Innovators Inc.")}>Test</button>
+                        {/* <button onClick={() => handleSocietyButton(1, "Tech Innovators Inc.")}>Test</button> */}
+                        <div className="companyListContainer">
+                            {companyListComponents && companyListComponents.length > 0 ? (
+                                companyListComponents
+                            ) : (
+                                <h3>No Companies Found</h3>
+                            )}
+                        </div>
                     </div>
                     {/* <h1 className='dashboardHeader'>View/Edit Users</h1> */}
                     <div className='dashboardCenteredButtonContainer'>

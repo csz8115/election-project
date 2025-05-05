@@ -34,7 +34,7 @@ export default function Dashboard() {
     const handleClick = (ballotID) => {
         const checkIfVoted = async () => {
             try {
-                const response = await fetch(`${baseUrl}/api/v1/member/voterStatus/?userID=${user.userID}&ballotID=${ballotID}`, {
+                const response = await fetch(`${baseUrl}api/v1/member/voterStatus/?userID=${user.userID}&ballotID=${ballotID}`, {
                     method: 'GET',
                     credentials: 'include',
                 });
@@ -62,7 +62,7 @@ export default function Dashboard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch(`${baseUrl}/api/v1/member/getActiveUserBallots/?userID=${user.userID}`, {
+                const response = await fetch(`${baseUrl}api/v1/member/getActiveUserBallots/?userID=${user.userID}`, {
                     method: 'GET',
                     credentials: 'include',
                 });
@@ -78,7 +78,7 @@ export default function Dashboard() {
             }
 
             try {
-                const response = await fetch(`${baseUrl}/api/v1/member/getInactiveUserBallots/?userID=${user.userID}`, {
+                const response = await fetch(`${baseUrl}api/v1/member/getInactiveUserBallots/?userID=${user.userID}`, {
                     method: 'GET',
                     credentials: 'include',
                 });

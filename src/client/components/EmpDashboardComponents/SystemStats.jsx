@@ -12,7 +12,7 @@ const SystemStats = ()=> {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch(`http://localhost:3000/api/getSystemStats`, {
+                const response = await fetch(`http://localhost:3000/api/v1/admin/getSystemReport`, {
                     method: 'GET',
                     credentials: 'include',
                 });

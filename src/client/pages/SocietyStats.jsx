@@ -42,7 +42,7 @@ const SocietyStats = () => {
         useEffect(() => {
                 const fetchData = async () => {
                     try {
-                        const response = await fetch(`http://localhost:3000/api/getCompanyStats?companyID=${company.societyID}`, {
+                        const response = await fetch(`http://localhost:3000/api/v1/admin/getSocietyReport?companyID=${company.societyID}`, {
                             method: 'GET',
                             credentials: 'include',
                         });

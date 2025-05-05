@@ -14,6 +14,22 @@ let companyID = 1;
 
 // run file with npx ts-node createDummyData.ts
 
+export const createAD = async () => {
+
+  const newCompany: Company = {
+    companyName: "American Dream",
+    abbreviation: "AD",
+    category: "Employee",
+  };
+
+  try {
+    const status = await db.createCompany(newCompany);
+    console.log('Company created:', status);
+  } catch (error) {
+    console.error('Error creating company:', error);
+  }
+};
+
 export const createCompany = async () => {
 
   const newCompany: Company = {
@@ -61,7 +77,7 @@ const createAdmin = async () => {
 
   const newUser: User = {
     accountType: "Admin",
-    username: "testAdmin123",
+    username: "test2Admin123",
     fName: "Johnny",
     lName: "Doeson",
     password: hashedPassword,
@@ -234,6 +250,7 @@ const createBallot = async () => {
 
 //createCompany();
 //createBallot();
-//createUser();
+createUser();
+//createAD();
 //createAdmin();
-createEmployee();
+//createEmployee();

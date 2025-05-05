@@ -58,7 +58,7 @@ const FindUsers = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch(`http://localhost:3000/api/getUser/?username=${"testuser123"}`, {
+                const response = await fetch(`http://localhost:3000/api/v1/member/getUser/?username=${"testuser123"}`, {
                     method: 'GET',
                     credentials: 'include',
                 });
