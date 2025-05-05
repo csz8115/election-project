@@ -642,9 +642,11 @@ router.get(`/voterStatus`, requireRole('Member', 'Officer'), async (req, res): P
         ballotIDSchema.parse(ballotID);
         userIDSchema.parse(userID);
         const didVote = await db.checkVoterStatus(Number(ballotID), Number(userID));
-        if (!didVote) {
+
+        if (didVote == null) {
             throw new Error('Ballot not found');
         }
+
         // return the didVote
         return res.status(200).json({voterStatus: didVote});
     } catch (error) {

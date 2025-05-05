@@ -49,7 +49,7 @@ export default function Dashboard() {
                 return false;
             } catch (error) {
                 console.error('Error checking vote status:', error);
-                return false;
+                return true;
             }
         };
         checkIfVoted().then((hasVoted) => {
