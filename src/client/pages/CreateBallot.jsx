@@ -200,7 +200,7 @@ const CreateBallot = ({ballotID}) => {
 
         if (ballotID) {
             try {
-                const response = await fetch(`${baseUrl}/api/updateBallot/${ballotID}`, {
+                const response = await fetch(`${baseUrl}api/v1/employee/updateBallot/${ballotID}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -225,7 +225,7 @@ const CreateBallot = ({ballotID}) => {
 
 
         try {
-            const response = await fetch(`${baseUrl}/api/v1/employee/createBallot`, {
+            const response = await fetch(`${baseUrl}api/v1/employee/createBallot`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
