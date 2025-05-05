@@ -16,7 +16,8 @@ import RoleBasedRoute from "./RoleBasedRoute";
 import SocietyStats from "../pages/SocietyStats";
 import FindUsers from "../pages/FindUsers";
 import CreateUser from "../pages/CreateUser";
-
+import ElectionResults from "../pages/ElectionResults";
+import SocietyView from "../pages/SocietyView";
 
 const AppRoutes = () => {
   return (
@@ -25,14 +26,17 @@ const AppRoutes = () => {
       <Route element={<RoleBasedRoute allowedRoles={["Admin"]}/>}>
           <Route path="/findUsers" element={<FindUsers/>}/>
       </Route>
+      <Route element={<RoleBasedRoute allowedRoles={["Admin", "Employee", "Officer"]}/>}>
+          <Route path="/electionResults" element={<ElectionResults/>}/>
+      </Route>
       <Route element={<RoleBasedRoute allowedRoles={["Admin"]}/>}>
           <Route path="/createUser" element={<CreateUser/>}/>
       </Route>
       <Route element={<RoleBasedRoute allowedRoles={["Admin", "Employee"]}/>}>
           <Route path="/empDashboard" element={<EmpDashboard/>}/>
       </Route>
-      <Route element={<RoleBasedRoute allowedRoles={["Admin", "Employee"]}/>}>
-          <Route path="/societyStats" element={<SocietyStats/>}/>
+      <Route element={<RoleBasedRoute allowedRoles={["Admin", "Employee", "Officer"]}/>}>
+          <Route path="/societyView" element={<SocietyView/>}/>
       </Route>
       {/* default route goes to dashboard for the appropriate role */}
       <Route element={<ProtectedRoute />}>

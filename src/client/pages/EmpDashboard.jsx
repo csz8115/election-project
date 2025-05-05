@@ -5,6 +5,7 @@ import { useHeartbeat } from "../hooks/useHeartbeat";
 import Logout from '../components/Utils/Logout';
 import SystemStats from '../components/EmpDashboardComponents/systemStats';
 import CompanyButton from '../components/EmpDashboardComponents/CompanyButton';
+const baseUrl = import.meta.env.VITE_API_BASE;
 
 import '../components/Dashboard.css';
 
@@ -27,7 +28,7 @@ export default function EmpDashboard() {
 
     const handleSocietyButton = (societyID, societyName) => {
         console.log("Society ID: ", societyID, "Society Name: ", societyName);
-        navigate("/societyStats", {state: {societyID: societyID, societyName: societyName}});
+        navigate("/societyView", {state: {societyID: societyID, societyName: societyName}});
     }
 
     const handleUsersButton = () => {
@@ -43,7 +44,7 @@ export default function EmpDashboard() {
         useEffect(() => {
                 const fetchData = async () => {
                     try {
-                        const response = await fetch(`http://localhost:3000/api/v1/admin/getAllCompanies`, {
+                        const response = await fetch(`${baseUrl}api/v1/admin/getAllCompanies`, {
                             method: 'GET',
                             credentials: 'include',
                         });
@@ -120,7 +121,7 @@ export default function EmpDashboard() {
         useEffect(() => {
             const fetchData = async () => {
                 try {
-                    const response = await fetch(`http://localhost:3000/api/v1/employee/getAssignedCompanies/?userID=${user.userID}`, {
+                    const response = await fetch(`${baseUrl}api/v1/employee/getAssignedCompanies/?userID=${user.userID}`, {
                         method: 'GET',
                         credentials: 'include',
                     });

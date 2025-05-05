@@ -2,14 +2,15 @@ import {React, useEffect, useState} from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import ErrorMessage from '../components/Utils/ErrorMessage'; // Import the Error component
+const baseUrl = import.meta.env.VITE_API_BASE;
 
 import '../components/EmpDashboardComponents/Stats.css';
 
 
 
-const SocietyStats = () => {
+const SocietyStats = ({societyID, societyName}) => {
     const navigate = useNavigate();
-    const location = useLocation();
+    //const location = useLocation();
 
     const [stats, setStats] = useState(null);
 
@@ -27,7 +28,7 @@ const SocietyStats = () => {
             };
         });
 
-        if (!location.state) {
+        /* if (!location.state) {
             return (
                 <div className='company'>
                     <button className='backButton' onClick={handleBackButton}>&lt; Back</button>
@@ -35,14 +36,15 @@ const SocietyStats = () => {
                     <p>Please go back to the dashboard and select a company.</p>
                 </div>
             );
-        }
+        } */
     
-        const company = location.state;
+        //const company = location.state;
+        
 
         useEffect(() => {
                 const fetchData = async () => {
                     try {
-                        const response = await fetch(`http://localhost:3000/api/v1/admin/getSocietyReport?companyID=${company.societyID}`, {
+                        const response = await fetch(`${baseUrl}api/v1/admin/getSocietyReport?companyID=${societyID}`, {
                             method: 'GET',
                             credentials: 'include',
                         });
@@ -68,7 +70,7 @@ const SocietyStats = () => {
                 return(
                     <div className="statsPageContainer">
                         <button className='backButton' onClick={handleBackButton}>&lt; Back</button>
-                        <h1>{company.societyName} Stats</h1>
+                        <h1>{societyName} Stats</h1>
                         <div className="statsContainer">
                             <div className="statsRow">
                                 <div className="statsColumn">
