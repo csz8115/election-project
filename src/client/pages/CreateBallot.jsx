@@ -6,6 +6,8 @@ import CreateBallotInitiativeSection from '../components/CreateBallotComponents/
 import ErrorMessage from '../components/Utils/ErrorMessage';
 import '../components/Ballot.css';
 import { set } from 'zod';
+const baseUrl = import.meta.env.VITE_API_BASE;
+
 
 
 const CreateBallot = ({ballotID}) => {
@@ -28,7 +30,7 @@ const CreateBallot = ({ballotID}) => {
 
     const editBallot = (ballotID) => {
         console.log("Editing ballot: ", ballotID);
-        fetch(`http://localhost:3000/api/getBallot/?ballotID=${ballotID}`, {
+        fetch(`${baseUrl}/api/v1/member/getBallot/?ballotID=${ballotID}`, {
             method: 'GET',
             credentials: 'include',
         })
@@ -198,7 +200,7 @@ const CreateBallot = ({ballotID}) => {
 
         if (ballotID) {
             try {
-                const response = await fetch(`http://localhost:3000/api/updateBallot/${ballotID}`, {
+                const response = await fetch(`${baseUrl}/api/updateBallot/${ballotID}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -223,7 +225,7 @@ const CreateBallot = ({ballotID}) => {
 
 
         try {
-            const response = await fetch(`http://localhost:3000/api/createBallot`, {
+            const response = await fetch(`${baseUrl}/api/v1/employee/createBallot`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

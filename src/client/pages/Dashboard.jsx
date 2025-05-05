@@ -6,6 +6,8 @@ import BallotButton from '../components/BallotComponents/BallotButton';
 import { useHeartbeat } from "../hooks/useHeartbeat";
 import '../components/Dashboard.css';
 import ErrorMessage from '../components/Utils/ErrorMessage';
+const baseUrl = import.meta.env.VITE_API_BASE;
+
 
 import '../components/Dashboard.css';
 
@@ -13,6 +15,7 @@ export default function Dashboard() {
     const [activeBallots, setActiveBallots] = useState(null);
     const [inactiveBallots, setInactiveBallots] = useState(null);
     const [errorMessage, setErrorMessage] = useState('');
+
 
     const user = useSelector((state) => {
         return {
@@ -31,7 +34,7 @@ export default function Dashboard() {
     const handleClick = (ballotID) => {
         const checkIfVoted = async () => {
             try {
-                const response = await fetch(`http://localhost:3000/api/v1/member/voterStatus/?userID=${user.userID}&ballotID=${ballotID}`, {
+                const response = await fetch(`${baseUrl}/api/v1/member/voterStatus/?userID=${user.userID}&ballotID=${ballotID}`, {
                     method: 'GET',
                     credentials: 'include',
                 });
@@ -59,7 +62,7 @@ export default function Dashboard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch(`http://localhost:3000/api/v1/member/getActiveUserBallots/?userID=${user.userID}`, {
+                const response = await fetch(`${baseUrl}/api/v1/member/getActiveUserBallots/?userID=${user.userID}`, {
                     method: 'GET',
                     credentials: 'include',
                 });
@@ -75,7 +78,7 @@ export default function Dashboard() {
             }
 
             try {
-                const response = await fetch(`http://localhost:3000/api/v1/member/getInactiveUserBallots/?userID=${user.userID}`, {
+                const response = await fetch(`${baseUrl}/api/v1/member/getInactiveUserBallots/?userID=${user.userID}`, {
                     method: 'GET',
                     credentials: 'include',
                 });

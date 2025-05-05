@@ -3,6 +3,8 @@ import { useDispatch } from "react-redux";
 import { login } from "../store/userSlice.ts";
 import { useNavigate } from "react-router-dom";
 import ErrorMessage from "../components/Utils/ErrorMessage.jsx";
+const baseUrl = import.meta.env.VITE_API_BASE;
+
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -15,7 +17,7 @@ export default function Login() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     // get API URL from environment variable
-    const response = await fetch(`http://localhost:3000/api/v1/member/login`, {
+    const response = await fetch(`${baseUrl}/api/v1/member/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),

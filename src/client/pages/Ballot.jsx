@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import BallotPositionSection from '../components/BallotComponents/BallotPositionSection'
 import BallotInitiativeSection from '../components/BallotComponents/BallotInitiativeSection';
 import ErrorMessage from '../components/Utils/ErrorMessage'; // Import the Error component
+const baseUrl = import.meta.env.VITE_API_BASE;
 
 
 import '../components/Ballot.css';
@@ -106,7 +107,7 @@ const Ballot = () => {
 
 
         try {
-            const response = await fetch('http://localhost:3000/api/v1/member/submitBallot', {
+            const response = await fetch(`${baseUrl}/api/v1/member/submitBallot`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -133,7 +134,7 @@ const Ballot = () => {
     useEffect(() => {
             const fetchData = async () => {
                 try {
-                    const response = await fetch(`http://localhost:3000/api/v1/member/getBallot/?ballotID=${ballotID.ballotID}`, {
+                    const response = await fetch(`${baseUrl}/api/v1/member/getBallot/?ballotID=${ballotID.ballotID}`, {
                         method: 'GET',
                         credentials: 'include',
                     });

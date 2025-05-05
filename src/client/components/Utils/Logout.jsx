@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { logout } from "../../store/userSlice";
 import ErrorMessage from './ErrorMessage.jsx';
+const baseUrl = import.meta.env.VITE_API_BASE;
+
 export const Logout = () => {
   const [error, setError] = useState(null);
 
@@ -11,7 +13,7 @@ export const Logout = () => {
 
   const logoutUser = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/logout', {
+      const response = await fetch(`${baseUrl}/api/v1/member/logout`, {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
         credentials: 'include',
