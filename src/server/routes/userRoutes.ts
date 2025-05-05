@@ -339,9 +339,9 @@ router.post(`/submitBallot`,requireRole('Member', 'Officer'), async (req, res): 
         }
         console.log(ballot)
 
-
         // Validate the ballot data
         BallotSchema.parse(ballot);
+
 
         // Check if the ballot exists
         const existingBallot = await db.getBallot(ballot.ballotID);
@@ -381,12 +381,14 @@ router.post(`/submitBallot`,requireRole('Member', 'Officer'), async (req, res): 
         let responseVotes: any[] = [];
         let candidate;
 
+
         for (const position of ballot.positions) {
             // Check if the position exists
             const existingPosition = await db.getBallotPosition(position.positionID);
             if (!existingPosition) {
                 throw new Error(`Position ${position.positionID} not found`);
             }
+
             // Check if the candidate exists if the position is not a write-in
             if (position.candidateID && !position.writeIn) {
                 const existingCandidate = await db.getCandidate(position.candidateID);
@@ -399,6 +401,7 @@ router.post(`/submitBallot`,requireRole('Member', 'Officer'), async (req, res): 
                 throw new Error(`Write-in name is required for position ${position.positionID}`);
             }
             // Process the write-in name if provided
+
             if (position.writeIn) {
                 candidate = await db.createWriteInCandidate(position.fName, position.lName);
             }

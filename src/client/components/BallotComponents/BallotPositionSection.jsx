@@ -71,7 +71,6 @@ const BallotPositionSection = forwardRef(({ positionObject }, ref) => {
                     positionName,
                     allowedVotes,
                     writeIn: true,
-                    candidateID: null,
                     fName: selected.fName,
                     lName: selected.lName,
                 }];
