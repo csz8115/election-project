@@ -28,6 +28,10 @@ const FindUsers = () => {
         navigate(-1);
     }
 
+    const handleNewUserClick = async () =>{
+        navigate('/createUser');
+    }
+
     const handleUserClick = async (username) => {
         console.log("Username: ", username);
         const confirmDelete = window.confirm(`Are you sure you want to delete the user: ${username}?`);
@@ -138,7 +142,10 @@ const FindUsers = () => {
         return(
             <div>
                 <button className='backButton' onClick={handleBackButton}>&lt; Back</button>
-                <h1>Find User</h1>
+                <div className="findUserHeader">
+                    <h1>Find Users</h1>
+                    <button className="userCreateButton" onClick={() => handleNewUserClick()}>Create New User</button>
+                </div>
                 <div>      
                     <input
                         type="text"

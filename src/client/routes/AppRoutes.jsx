@@ -15,6 +15,7 @@ import RoleBasedRedirect from "./RoleRedirect";
 import RoleBasedRoute from "./RoleBasedRoute";
 import SocietyStats from "../pages/SocietyStats";
 import FindUsers from "../pages/FindUsers";
+import CreateUser from "../pages/CreateUser";
 
 
 const AppRoutes = () => {
@@ -24,10 +25,13 @@ const AppRoutes = () => {
       <Route element={<RoleBasedRoute allowedRoles={["Admin"]}/>}>
           <Route path="/findUsers" element={<FindUsers/>}/>
       </Route>
-      <Route element={<RoleBasedRoute allowedRoles={["Admin", "Moderator"]}/>}>
+      <Route element={<RoleBasedRoute allowedRoles={["Admin"]}/>}>
+          <Route path="/createUser" element={<CreateUser/>}/>
+      </Route>
+      <Route element={<RoleBasedRoute allowedRoles={["Admin", "Employee"]}/>}>
           <Route path="/empDashboard" element={<EmpDashboard/>}/>
       </Route>
-      <Route element={<RoleBasedRoute allowedRoles={["Admin", "Moderator"]}/>}>
+      <Route element={<RoleBasedRoute allowedRoles={["Admin", "Employee"]}/>}>
           <Route path="/societyStats" element={<SocietyStats/>}/>
       </Route>
       {/* default route goes to dashboard for the appropriate role */}

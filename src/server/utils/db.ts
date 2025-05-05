@@ -140,11 +140,11 @@ async function deleteCandidate(candidateID: number): Promise<boolean> {
     }
 }
 
-async function createUser(user: User, assignedCompanies: number[] = []): Promise<any> {
+async function createUser(user: User, assignedCompanies: number[] = []): Promise<User> {
     try {
         // Start a transaction to ensure both user creation and linking are successful
-        const result = await prisma.$transaction(async (tx) => {
-            // Check if the user is of type Employee
+        const newUser = await prisma.$transaction(async (tx) => {
+            // Check if the user is of type Employee or Admin
             if (user.accountType === "Employee" || user.accountType === "Admin") {
                 // Get ID of American Dream Company
                 const company = await tx.company.findUnique({
@@ -161,7 +161,7 @@ async function createUser(user: User, assignedCompanies: number[] = []): Promise
                 }
 
                 // Create the user
-                const newUser = await tx.user.create({
+                const createdUser = await tx.user.create({
                     data: {
                         fName: user.fName,
                         lName: user.lName,
@@ -181,14 +181,13 @@ async function createUser(user: User, assignedCompanies: number[] = []): Promise
                     },
                 });
 
-                // Check if user of type Employee
+                // If the user is of type Employee, create the assigned companies entries
                 if (user.accountType === "Employee") {
-                    // Create the assigned companies entries
                     for (const companyID of assignedCompanies) {
                         await tx.employeeSocietyAssignment.create({
                             data: {
                                 user: {
-                                    connect: { userID: newUser.userID },
+                                    connect: { userID: createdUser.userID },
                                 },
                                 company: {
                                     connect: { companyID: companyID },
@@ -197,10 +196,11 @@ async function createUser(user: User, assignedCompanies: number[] = []): Promise
                         });
                     }
                 }
-            }
-            // Othewise, create the user without assigned companies
-            else {
-                const newUser = await tx.user.create({
+
+                return createdUser;
+            } else {
+                // Otherwise, create the user without assigned companies
+                const createdUser = await tx.user.create({
                     data: {
                         fName: user.fName,
                         lName: user.lName,
@@ -219,10 +219,14 @@ async function createUser(user: User, assignedCompanies: number[] = []): Promise
                         company: true,
                     },
                 });
+
+                return createdUser;
             }
-            return "User created successfully";
         });
+
+        return newUser; // Return the created user object
     } catch (error) {
+        console.error("Error in createUser:", error);
         throw new Error("Unknown error during user creation");
     }
 }

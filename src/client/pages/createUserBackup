@@ -1,0 +1,25 @@
+import {React, useEffect, useState} from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { useHeartbeat } from "../hooks/useHeartbeat";
+import ErrorMessage from '../components/Utils/ErrorMessage'; // Import the Error component
+import UserButton from '../components/UserComponents/UserButton';
+import '../components/UserComponents/User.css'
+
+const CreateUser = () => {
+
+    const [newUser, setNewUser] = useState(null);
+    const[username, setUsername] = useState('');
+    const[password, setPassword] = useState('');
+    const[accountType, setAccountType] = useState('');
+    const[firstName, setFirstName] = useState('');
+    const[lastName, setLastName] = useState('');
+    const[companyID, setCompanyID] = useState('');
+    const[error, setError] = useState(null);
+
+    
+
+
+}
+
+export default CreateUser;

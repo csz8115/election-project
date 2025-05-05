@@ -3,7 +3,7 @@ import path from 'path';
 // read log files and generate system stats
 
 export async function getHttpStats() {
-    const logFilePath = path.resolve('/Users/coryz/git/election-project-frontrow/log/http.log'); // Using absolute path
+    const logFilePath = path.resolve('/_RIT/rit/432/electionProj/election-project-frontrow/log/http.log'); // Using absolute path
     const stats = {
         totalRequests: 0,
         totalErrors: 0,
@@ -41,7 +41,7 @@ export async function getHttpStats() {
 }
 
 export async function getDbStats() {
-    const logFilePath = path.resolve('/Users/coryz/git/election-project-frontrow/log/db.log'); // Using absolute path
+    const logFilePath = path.resolve('/_RIT/rit/432/electionProj/election-project-frontrow/log/db.log'); // Using absolute path
     const stats = {
         totalQueries: 0,
         totalResponseTime: 0,

@@ -8,7 +8,7 @@ export default function RoleBasedRedirect() {
 
   useEffect(() => {
     console.log("using default redirect");
-    if (accountType === "Admin" || accountType === "Moderator") {
+    if (accountType === "Admin" || accountType === "Employee") {
       navigate("/empDashboard", { replace: true });
     } else {
       navigate("/dashboard", { replace: true });
