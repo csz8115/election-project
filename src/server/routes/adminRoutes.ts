@@ -237,6 +237,42 @@ router.get(`/getAllUsers`, requireRole('Admin'), async (req, res): Promise<any> 
     }
 });
 
-//getAllUser
+router.delete('/deleteUser', requireRole('Admin'), async (req, res): Promise<any> => {
+    try {
+        const { username } = req.body;
+        if (!username) {
+            throw new Error('Invalid request');
+        }
+        // Validate the input data
+        usernameSchema.parse(username);
+        // Check if the user exists
+        const existingUser = await db.checkUsername(username);
+        if (!existingUser) {
+            throw new Error('User does not exist');
+        }
+        // Delete the user
+        const status = await db.deleteUser(username);
+        if (!status) {
+            throw new Error('Failed to delete user');
+        }
+        return res.status(200).json({ message: 'User deleted successfully' });
+    } catch (error) {
+        // Handle the Zod validation error
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors.map(e => e.message) });
+        }
+        // Handle user does not exist error
+        else if (error.message === 'User does not exist') {
+            return res.status(404).json({ error: 'User does not exist' });
+        }
+        // Handle invalid request error
+        else if (error.message === 'Invalid request') {
+            return res.status(400).json({ error: 'Invalid request' });
+        }
+        // Handle other errors
+        console.log(error);
+        return res.status(500).json({ error: 'Failed to delete user' });
+    }
+});
 
 export default router;

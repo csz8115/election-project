@@ -24,9 +24,38 @@ const FindUsers = () => {
     useHeartbeat(user.username);
     const navigate = useNavigate();
 
-    const handleUserClick = (username) => {
+    const handleBackButton = () => {
+        navigate(-1);
+    }
+
+    const handleUserClick = async (username) => {
         console.log("Username: ", username);
-        navigate('/EditUser', {state: {username: username}});
+        const confirmDelete = window.confirm(`Are you sure you want to delete the user: ${username}?`);
+        if (!confirmDelete) return;
+    
+        try {
+            const response = await fetch(`http://localhost:3000/api/v1/admin/deleteUser`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include', // Include cookies for authentication
+                body: JSON.stringify({ username }), // Pass the username in the request body
+            });
+    
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to delete user');
+            }
+    
+            alert(`User ${username} deleted successfully!`);
+    
+            // Update the user list by removing the deleted user
+            setUserList((prevUserList) => prevUserList.filter((user) => user.username !== username));
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            alert(`Failed to delete user: ${error.message}`);
+        }
     }
 
     const [searchItem, setSearchItem] = useState('')
@@ -105,9 +134,10 @@ const FindUsers = () => {
     }
 
     //checks if users are returned, else returns not found message
-    if(true){
+    if(userList != null){
         return(
             <div>
+                <button className='backButton' onClick={handleBackButton}>&lt; Back</button>
                 <h1>Find User</h1>
                 <div>      
                     <input

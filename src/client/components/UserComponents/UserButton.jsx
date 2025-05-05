@@ -3,11 +3,12 @@ import React from 'react';
 const UserButton = ({username, accountType, firstName, lastName, handleClick}) => {
 
     return (
-        <button className="userButton" onClick={handleClick} >
+        <div className="userButton" >
             <p>{username}</p>
             <p>{firstName} {lastName}</p>
             <p>{accountType}</p>
-        </button>
+            <button className="deleteButton" onClick={handleClick}>Delete User</button>
+        </div>
     );
 
 }

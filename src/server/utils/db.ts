@@ -55,6 +55,19 @@ async function getUserByUsername(username: string): Promise<User> {
     }
 }
 
+async function deleteUser(username: string): Promise<boolean> {
+    try {
+        const deletedUser = await prisma.user.delete({
+            where: {
+                username: username,
+            },
+        });
+        return !!deletedUser;
+    } catch (error) {
+        throw new Error("Unknown error during user deletion");
+    }
+}
+
 async function getUsersByCompany(companyID: number): Promise<User[]> {
     try {
         const fetchUsers = await prisma.user.findMany({
@@ -1526,4 +1539,5 @@ export default {
     getCompanyStats,
     getBallotStatus,
     getAllUsers,
+    deleteUser,
 };
