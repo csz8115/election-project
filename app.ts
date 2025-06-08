@@ -7,7 +7,6 @@ import employeeRoutes from './src/server/routes/employeeRoutes.ts';
 import officerRoutes from './src/server/routes/officerRoutes.ts';
 import logger from './src/server/logger.ts';
 import pinoHttp from 'pino-http';
-import path from "path";
 import dotenv from 'dotenv';
 import { decrypt } from './src/server/utils/session.ts';
 dotenv.config();
