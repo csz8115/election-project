@@ -6,9 +6,10 @@ import { Candidate } from '../../types/candidate.ts';
 import { Vote } from '../../types/vote.ts';
 import { ResponseVote } from '../../types/response.ts';
 import { BallotPositions } from '../../types/ballotPositions.ts';
-import { BallotInitiatives } from '../../types/ballotInitiatives.ts';
+import { BallotInitiatives } from '../../types/ballotInitiatives.ts'; 
+import dbLogger from '../../../../prisma/dbLogger.ts';
 
-async function getUser(userID: number): Promise<User> {
+async function getUser(userID: number): Promise<User | string> {
     try {
         const fetchUser = await prisma.user.findUnique({
             where: {
@@ -27,44 +28,28 @@ async function getUser(userID: number): Promise<User> {
         });
         return fetchUser;
     } catch (error) {
-        throw new Error("Unknown error during user retrieval");
-    }
-}
-
-async function getUserByUsername(username: string): Promise<User> {
-    try {
-        const fetchUser = await prisma.user.findUnique({
-            where: {
-                username: username,
-            },
-            select: {
-                userID: true,
-                accountType: true,
-                username: true,
-                fName: true,
-                lName: true,
-                companyID: true,
-                company: true,
-                // password field is omitted
-            },
-
+        dbLogger.error({
+            message: "Unknown error during user retrieval",
+            userID: userID,
+            error: error instanceof Error ? error.message : String(error),
         });
-        return fetchUser;
-    } catch (error) {
-        throw new Error("Unknown error during user retrieval");
     }
 }
 
-async function deleteUser(username: string): Promise<boolean> {
+async function deleteUser(userID: number): Promise<boolean> {
     try {
         const deletedUser = await prisma.user.delete({
             where: {
-                username: username,
+                userID: userID,
             },
         });
         return !!deletedUser;
     } catch (error) {
-        throw new Error("Unknown error during user deletion");
+        dbLogger.error({
+            message: "Unknown error during user deletion",
+            userID: userID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -87,13 +72,17 @@ async function getUsersByCompany(companyID: number): Promise<User[]> {
         });
         return fetchUsers;
     } catch (error) {
-        throw new Error("Unknown error during users retrieval");
+        dbLogger.error({
+            message: "Unknown error during users retrieval by company",
+            companyID: companyID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
 async function getAllUsers(): Promise<User[]> {
     try {
-        const fetchUsers = await prisma.user.findMany({        
+        const fetchUsers = await prisma.user.findMany({
             select: {
                 userID: true,
                 accountType: true,
@@ -107,7 +96,10 @@ async function getAllUsers(): Promise<User[]> {
         });
         return fetchUsers;
     } catch (error) {
-        throw new Error("Unknown error during users retrieval");
+        dbLogger.error({
+            message: "Unknown error during all users retrieval",
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -123,7 +115,11 @@ async function getCandidate(candidateID: number): Promise<Candidate> {
         }
         return fetchCandidate;
     } catch (error) {
-        throw new Error("Unknown error during candidate retrieval");
+        dbLogger.error({
+            message: "Unknown error during candidate retrieval",
+            candidateID: candidateID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -136,7 +132,11 @@ async function deleteCandidate(candidateID: number): Promise<boolean> {
         });
         return !!deletedCandidate;
     } catch (error) {
-        throw new Error("Unknown error during candidate deletion");
+        dbLogger.error({
+            message: "Unknown error during candidate deletion",
+            candidateID: candidateID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -226,13 +226,16 @@ async function createUser(user: User, assignedCompanies: number[] = []): Promise
 
         return newUser; // Return the created user object
     } catch (error) {
-        console.error("Error in createUser:", error);
-        throw new Error("Unknown error during user creation");
+        dbLogger.error({
+            message: "Unknown error during user creation",
+            user: user,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
 
-async function createCandidate(positionID: number, fName: string, lName: string, titles: string, description: string, picture: string): Promise<any> {
+async function createCandidate(positionID: number, fName: string, lName: string, titles: string, description: string, picture: string): Promise<Candidate | undefined> {
     try {
         // Start a transaction to ensure both candidate creation and linking are successful
         const result = await prisma.$transaction(async (tx) => {
@@ -264,11 +267,20 @@ async function createCandidate(positionID: number, fName: string, lName: string,
 
         return result;
     } catch (error) {
-        throw new Error("Unknown error during candidate creation and linking");
+        dbLogger.error({
+            message: "Unknown error during candidate creation",
+            positionID: positionID,
+            fName: fName,
+            lName: lName,
+            titles: titles,
+            description: description,
+            picture: picture,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
-async function createWriteInCandidate(fName: string, lName: string) {
+async function createWriteInCandidate(fName: string, lName: string): Promise<number> {
     try {
         const candidate = await prisma.candidate.create({
             data: {
@@ -285,29 +297,6 @@ async function createWriteInCandidate(fName: string, lName: string) {
         return candidate.candidateID;
     } catch (error) {
         throw new Error("Unknown error during write-in candidate creation");
-    }
-}
-
-async function checkUsername(username: string): Promise<User> {
-    try {
-        const user = await prisma.user.findUnique({
-            where: {
-                username: username,
-            },
-            select: {
-                userID: true,
-                accountType: true,
-                username: true,
-                fName: true,
-                lName: true,
-                companyID: true,
-                company: true,
-                password: true,
-            },
-        });
-        return user;
-    } catch (error) {
-        throw new Error("Unknown error during username check");
     }
 }
 
@@ -336,7 +325,12 @@ async function updateUser(userID: number, user: User): Promise<User> {
         });
         return fetchUser;
     } catch (error) {
-        throw new Error("Unknown error during user update");
+        dbLogger.error({
+            message: "Unknown error during user update",
+            userID: userID,
+            user: user,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -361,7 +355,11 @@ async function removeUser(userID: number): Promise<boolean> {
             return true;
         }
     } catch (error) {
-        throw new Error("Unknown error during user deletion");
+        dbLogger.error({
+            message: "Unknown error during user deletion",
+            userID: userID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -374,7 +372,11 @@ async function getCompany(companyID: number): Promise<Company> {
         });
         return company;
     } catch (error) {
-        throw new Error("Unknown error during company retrieval");
+        dbLogger.error({
+            message: "Unknown error during company retrieval",
+            companyID: companyID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -383,11 +385,14 @@ async function getCompanies(): Promise<Company[]> {
         const companies = await prisma.company.findMany();
         return companies;
     } catch (error) {
-        throw new Error("Unknown error during companies retrieval");
+        dbLogger.error({
+            message: "Unknown error during companies retrieval",
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
-async function removeCompany(companyID: number) {
+async function removeCompany(companyID: number): Promise<boolean> {
     try {
         const company = await prisma.company.delete({
             where: {
@@ -397,12 +402,17 @@ async function removeCompany(companyID: number) {
         if (company) {
             return true;
         }
+        return false;
     } catch (error) {
-        throw new Error("Unknown error during company deletion");
+        dbLogger.error({
+            message: "Unknown error during company deletion",
+            companyID: companyID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
-async function createCompany(company: Company): Promise<Company> {
+async function createCompany(company: Company): Promise<Company | undefined> {
     try {
         const newCompany = await prisma.company.create({
             data: {
@@ -413,7 +423,11 @@ async function createCompany(company: Company): Promise<Company> {
         });
         return newCompany;
     } catch (error) {
-        throw new Error("Unknown error during company creation");
+        dbLogger.error({
+            message: "Unknown error during company creation",
+            company: company,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -497,7 +511,11 @@ async function getCompanyStats(companyID: number): Promise<any> {
         }
         return companyStats;
     } catch (error) {
-        throw new Error("Unknown error during company stats retrieval");
+        dbLogger.error({
+            message: "Unknown error during company stats retrieval",
+            companyID: companyID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -548,11 +566,13 @@ async function createBallotPosition(position: BallotPositions): Promise<BallotPo
 
         return result;
     } catch (error) {
-        throw new Error("Unknown error during ballot position creation");
+        dbLogger.error({
+            message: "Unknown error during ballot position creation",
+            position: position,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
-
-
 
 async function deleteBallotPosition(positionID: number): Promise<boolean> {
     try {
@@ -563,7 +583,11 @@ async function deleteBallotPosition(positionID: number): Promise<boolean> {
         });
         return !!deletedPosition;
     } catch (error) {
-        throw new Error("Unknown error during ballot position deletion");
+        dbLogger.error({
+            message: "Unknown error during ballot position deletion",
+            positionID: positionID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -582,7 +606,11 @@ async function getBallotPosition(positionID: number): Promise<any> {
         }
         return false;
     } catch (error) {
-        throw new Error("Unknown error during ballot position retrieval");
+        dbLogger.error({
+            message: "Unknown error during ballot position retrieval",
+            positionID: positionID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -600,7 +628,12 @@ async function updateBallotPosition(positionID: number, positionData: Partial<Ba
         });
         return updatedPosition;
     } catch (error) {
-        throw new Error("Unknown error during ballot position update");
+        dbLogger.error({
+            message: "Unknown error during ballot position update",
+            positionID: positionID,
+            positionData: positionData,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -651,7 +684,14 @@ async function createVote(userID: number, ballotID: number, positionID: number, 
 
         return result;
     } catch (error) {
-        throw new Error(error.message);
+        dbLogger.error({
+            message: "Unknown error during vote creation",
+            userID: userID,
+            ballotID: ballotID,
+            positionID: positionID,
+            candidateID: candidateID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -683,7 +723,14 @@ async function createInitiativeVote(userID: number, ballotID: number, initiative
             },
         });
     } catch (error) {
-        throw new Error(error.message);
+        dbLogger.error({
+            message: "Unknown error during initiative vote creation",
+            userID: userID,
+            ballotID: ballotID,
+            initiativeID: initiativeID,
+            responseID: responseID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -714,7 +761,11 @@ async function getBallot(ballotID: number): Promise<any> {
 
         return ballot;
     } catch (error) {
-        throw new Error("Unknown error during ballot retrieval");
+        dbLogger.error({
+            message: "Unknown error during ballot retrieval",
+            ballotID: ballotID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -747,20 +798,41 @@ async function createInitiative(initiative: BallotInitiatives): Promise<BallotIn
 
         return newInitiative;
     } catch (error) {
-        throw new Error("Unknown error during initiative creation");
+        dbLogger.error({
+            message: "Unknown error during initiative creation",
+            initiative: initiative,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
-async function getBallots(): Promise<any> {
-    return prisma.ballots.findMany();
+async function getBallots(): Promise<any | undefined> {
+    try {
+        const ballots = await prisma.ballots.findMany({});
+        return ballots;
+    } catch (error) {
+        dbLogger.error({
+            message: "Unknown error during ballots retrieval",
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
 }
 
 async function getBallotsByCompany(companyID: number): Promise<any> {
-    return prisma.ballots.findMany({
-        where: {
+    try {
+        const ballot = prisma.ballots.findMany({
+            where: {
+                companyID: companyID,
+            },
+        });
+        return ballot;
+    } catch (error) {
+        dbLogger.error({
+            message: "Unknown error during ballots retrieval by company",
             companyID: companyID,
-        },
-    });
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
 }
 
 async function getActiveBallots(): Promise<any> {
@@ -777,7 +849,10 @@ async function getActiveBallots(): Promise<any> {
             },
         });
     } catch (error) {
-        throw new Error("Unknown error during active ballot retrieval");
+        dbLogger.error({
+            message: "Unknown error during active ballot retrieval",
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -792,19 +867,29 @@ async function getInactiveBallots(): Promise<any> {
             },
         });
     } catch (error) {
-        throw new Error("Unknown error during inactive ballot retrieval");
+        dbLogger.error({
+            message: "Unknown error during inactive ballot retrieval",
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
 async function getFinishedBallots(): Promise<any> {
-    const now = new Date();
-    return prisma.ballots.findMany({
-        where: {
-            endDate: {
-                lt: now
-            }
-        },
-    });
+    try {
+        const now = new Date();
+        return prisma.ballots.findMany({
+            where: {
+                endDate: {
+                    lt: now
+                }
+            },
+        });
+    } catch (error) {
+        dbLogger.error({
+            message: "Unknown error during finished ballot retrieval",
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
 }
 
 async function getActiveUserBallots(userID: number): Promise<any> {
@@ -855,10 +940,11 @@ async function getActiveUserBallots(userID: number): Promise<any> {
         }
         return user.company.ballots;
     } catch (error) {
-        if (error instanceof Error) {
-            throw new Error(error.message);
-        }
-        throw new Error("Unknown error during user ballot retrieval");
+        dbLogger.error({
+            message: "Unknown error during user active ballot retrieval",
+            userID: userID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -907,10 +993,11 @@ async function getInactiveUserBallots(userID: number): Promise<any> {
         }
         return user.company.ballots;
     } catch (error) {
-        if (error instanceof Error) {
-            throw new Error(error.message);
-        }
-        throw new Error("Unknown error during user ballot retrieval");
+        dbLogger.error({
+            message: "Unknown error during user inactive ballot retrieval",
+            userID: userID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -954,10 +1041,11 @@ async function getUserBallots(userID: number): Promise<any> {
         }
         return user.company.ballots;
     } catch (error) {
-        if (error instanceof Error) {
-            throw new Error(error.message);
-        }
-        throw new Error("Unknown error during user ballot retrieval");
+        dbLogger.error({
+            message: "Unknown error during user ballot retrieval",
+            userID: userID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -980,10 +1068,11 @@ async function getCompanyBallots(companyID: number): Promise<any> {
         }
         return company.ballots;
     } catch (error) {
-        if (error instanceof Error) {
-            throw new Error(error.message);
-        }
-        throw new Error("Unknown error during company ballot retrieval");
+        dbLogger.error({
+            message: "Unknown error during company ballot retrieval",
+            companyID: companyID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -1014,10 +1103,11 @@ async function getActiveCompanyBallots(companyID: number): Promise<any> {
         }
         return company.ballots;
     } catch (error) {
-        if (error instanceof Error) {
-            throw new Error(error.message);
-        }
-        throw new Error("Unknown error during company ballot retrieval");
+        dbLogger.error({
+            message: "Unknown error during company active ballot retrieval",
+            companyID: companyID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -1045,10 +1135,11 @@ async function getInactiveCompanyBallots(companyID: number): Promise<any> {
         }
         return company.ballots;
     } catch (error) {
-        if (error instanceof Error) {
-            throw new Error(error.message);
-        }
-        throw new Error("Unknown error during company ballot retrieval");
+        dbLogger.error({
+            message: "Unknown error during company inactive ballot retrieval",
+            companyID: companyID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -1145,10 +1236,13 @@ async function createBallot(ballot: Ballot, ballotPositions: BallotPositions[], 
         return result; // You can return the result if you want
 
     } catch (error) {
-        if (error instanceof Error) {
-            throw new Error(error.message);
-        }
-        throw new Error("Unknown error during ballot creation");
+        dbLogger.error({
+            message: "Unknown error during ballot creation",
+            ballot: ballot,
+            ballotPositions: ballotPositions,
+            ballotInitiatives: ballotInitiatives,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -1184,7 +1278,12 @@ async function updateBallot(ballotID: number, ballotData: Partial<Ballot>): Prom
             endDate: updatedBallot.endDate.toISOString(),
         };
     } catch (error) {
-        throw new Error("Unknown error during ballot update");
+        dbLogger.error({
+            message: "Unknown error during ballot update",
+            ballotID: ballotID,
+            ballotData: ballotData,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -1262,7 +1361,11 @@ async function tallyBallot(ballotID: number) {
 
         return ballot;
     } catch (error) {
-        throw new Error("Unknown error during ballot retrieval");
+        dbLogger.error({
+            message: "Unknown error during ballot tally",
+            ballotID: ballotID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -1339,7 +1442,12 @@ async function submitBallot(candidateVotes: Vote[], responsesVotes: ResponseVote
         });
         return true;
     } catch (error) {
-        throw new Error(error.message);
+        dbLogger.error({
+            message: "Unknown error during ballot submission",
+            candidateVotes: candidateVotes,
+            responsesVotes: responsesVotes,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -1357,7 +1465,12 @@ async function checkVoterStatus(ballotID: number, userID: number): Promise<boole
         // If status is neither true nor false, throw an error
         throw new Error("Unknown error during voter status check");
     } catch (error) {
-        throw new Error("Unknown error during ballot voter check");
+        dbLogger.error({
+            message: "Unknown error during voter status check",
+            ballotID: ballotID,
+            userID: userID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -1385,7 +1498,11 @@ async function tallyBallotVoters(ballotID) {
         ORDER BY voted DESC`;
         return ballotVoters;
     } catch (error) {
-        throw new Error("Unknown error during ballot voter tally");
+        dbLogger.error({
+            message: "Unknown error during ballot voters tally",
+            ballotID: ballotID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -1398,7 +1515,11 @@ async function getInitiative(initiativeID: number): Promise<any> {
         });
         return initiative;
     } catch (error) {
-        throw new Error("Unknown error during initiative retrieval");
+        dbLogger.error({
+            message: "Unknown error during initiative retrieval",
+            initiativeID: initiativeID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -1411,7 +1532,11 @@ async function deleteInitiative(initiativeID: number): Promise<boolean> {
         });
         return !!deletedInitiative;
     } catch (error) {
-        throw new Error("Unknown error during initiative deletion");
+        dbLogger.error({
+            message: "Unknown error during initiative deletion",
+            initiativeID: initiativeID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -1424,7 +1549,11 @@ async function getResponse(responseID: number): Promise<any> {
         });
         return response;
     } catch (error) {
-        throw new Error("Unknown error during response retrieval");
+        dbLogger.error({
+            message: "Unknown error during response retrieval",
+            responseID: responseID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -1437,7 +1566,11 @@ async function deleteResponse(responseID: number): Promise<boolean> {
         });
         return !!deletedResponse;
     } catch (error) {
-        throw new Error("Unknown error during response deletion");
+        dbLogger.error({
+            message: "Unknown error during response deletion",
+            responseID: responseID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -1451,7 +1584,11 @@ async function getBallotStatus(ballotID: number): Promise<any> {
         }
         return ballotVoters[0].status;
     } catch (error) {
-        throw new Error("Unknown error during ballot status retrieval");
+        dbLogger.error({
+            message: "Unknown error during ballot status retrieval",
+            ballotID: ballotID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -1467,10 +1604,11 @@ async function getEmpAssignedCompanies(userID: number): Promise<any> {
         });
         return user.employeeSocieties;
     } catch (error) {
-        if (error instanceof Error) {
-            throw new Error(error.message);
-        }
-        throw new Error("Unknown error during assigned companies retrieval");
+        dbLogger.error({
+            message: "Unknown error during employee assigned companies retrieval",
+            userID: userID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -1486,10 +1624,11 @@ async function getEmployeeCompany(userID: number): Promise<any> {
         });
         return user.company;
     } catch (error) {
-        if (error instanceof Error) {
-            throw new Error(error.message);
-        }
-        throw new Error("Unknown error during employee company retrieval");
+        dbLogger.error({
+            message: "Unknown error during employee company retrieval",
+            userID: userID,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -1504,8 +1643,11 @@ async function getCompaniesByIDs(companyIDs: number[]): Promise<Company[]> {
         });
         return companies;
     } catch (error) {
-        console.error('Error fetching companies by IDs:', error);
-        throw error;
+        dbLogger.error({
+            message: "Unknown error during companies retrieval by IDs",
+            companyIDs: companyIDs,
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
 }
 
@@ -1513,10 +1655,8 @@ export default {
     getUser,
     getCandidate,
     deleteCandidate,
-    getUserByUsername,
     getUsersByCompany,
     createUser,
-    checkUsername,
     getEmployeeCompany,
     updateUser,
     removeUser,
