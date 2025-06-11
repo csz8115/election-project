@@ -1,11 +1,11 @@
 import express from 'express';
 import { createSession } from '../utils/session.ts';
-import db from '../utils/db.ts';
+import db from '../utils/db/db.ts';
 import { decrypt } from '../utils/session.ts';
 import bcrypt from 'bcrypt';
 import { Ballot, BallotSchema } from '../types/ballot.ts';
 import { z } from 'zod';
-import { getRedisClient } from '../utils/redis.ts';
+import { getRedisClient } from '../utils/db/redis.ts';
 import { requireRole } from '../utils/requireRole.ts';
 
 const router = express.Router();

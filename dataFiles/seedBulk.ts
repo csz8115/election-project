@@ -1,5 +1,5 @@
 import fs from 'fs';
-import prisma from '../client.ts';
+import prisma from '../src/server/utils/db/prisma.ts';
 import { AccountType } from '@prisma/client';
 import path from 'path';
 
@@ -17,7 +17,7 @@ async function main() {
         const responses = JSON.parse(fs.readFileSync(path.join(__dirname, 'responses.json'), 'utf8'));
         const initiativeVotes = JSON.parse(fs.readFileSync(path.join(__dirname, 'initiativesVotes.json'), 'utf8'));
 
-        // Insert companies using createMany
+        // Insert companies
         console.log('Inserting companies...');
         try {
             await prisma.company.createMany({
@@ -25,15 +25,13 @@ async function main() {
                     companyName: company.companyName,
                     abbreviation: company.abbreviation,
                     category: company.category,
-                    // If your companies.json has companyID, uncomment the next line
-                    // companyID: company.companyID,
                 })),
             });
         } catch (error) {
             console.error('Error inserting companies:', error);
         }
 
-        // Insert ballots using createMany
+        // Insert ballots
         console.log('Inserting ballots...');
         try {
             await prisma.ballots.createMany({
@@ -50,7 +48,7 @@ async function main() {
             console.error('Error inserting ballots:', error);
         }
 
-        // Insert candidates using createMany
+        // Insert candidates
         console.log('Inserting candidates...');
         try {
             await prisma.candidate.createMany({
@@ -72,7 +70,6 @@ async function main() {
         console.log('Inserting ballot positions...');
         try {
             const positionsData = candidates.reduce((positions, candidate) => {
-                // Skip if this position is already added
                 if (!positions.some(pos => pos.positionID === Number(candidate.positionID))) {
                     positions.push({
                         positionID: Number(candidate.positionID),
@@ -92,7 +89,7 @@ async function main() {
             console.error('Error inserting ballot positions:', error);
         }
 
-        // Insert ballot candidates (linking table)
+        // Insert ballot candidates
         console.log('Inserting ballot candidates...');
         try {
             await prisma.ballotCandidates.createMany({
@@ -105,49 +102,46 @@ async function main() {
             console.error('Error inserting ballot candidates:', error);
         }
 
-        // Insert users using createMany
+        // Insert users
         console.log('Inserting users...');
         try {
-            // Ensure all users have a default password if not specified
             await prisma.user.createMany({
                 data: users.map(user => ({
-                    // userID can be added if in your JSON
                     fName: user.fName,
                     lName: user.lName,
                     username: user.username,
                     accountType: AccountType.Member,
-                    password: user.password ?? 'Ac7#9pK2xZ!5qYr', // Default password
+                    password: user.password ?? 'Ac7#9pK2xZ!5qYr', 
                     companyID: Number(user.companyID),
                 })),
-                skipDuplicates: true, // Skip duplicates based on unique constraints
+                skipDuplicates: true, 
             });
         } catch (error) {
             console.error('Error inserting users:', error);
         }
 
-        // Insert votes in bulk using a proper approach with connections
+        // Insert votes
         console.log('Inserting votes...');
         try {
             await prisma.votes.createMany({
                 data: votes.map(vote => ({
                     userID: Number(vote.userID),
-                    ballotID: Number(vote.ballotID), // Default to ballot 1 if not specified
+                    ballotID: Number(vote.ballotID),
                 }))
             });
             console.log(`Successfully inserted ${votes.length} votes with position connections`);
         } catch (error) {
             console.error('Error inserting votes:', error);
-            // Continue with other operations
         }
 
-        // Insert into position votes using the index of the vote as the voteID
+        // Insert into position votes
         console.log('Inserting position votes...');
         try {
             const allCandidates = await prisma.candidate.findMany({ select: { candidateID: true } });
             const validCandidateIDs = new Set(allCandidates.map(c => c.candidateID));
 
             const rawPositionVotes = votes.map((vote, index) => ({
-                candidateID: Number(vote.candidateID), // ❗ make sure this exists
+                candidateID: Number(vote.candidateID),
                 positionID: Number(vote.positionID),
                 voteID: index + 1,
             }));
@@ -161,7 +155,7 @@ async function main() {
             console.error('Error inserting position votes:', error);
         }
 
-        // Insert initiatives with proper ballot connections
+        // Insert initiatives
         console.log('Inserting initiatives...');
         try {
             for (const initiative of initiatives) {
@@ -169,14 +163,13 @@ async function main() {
                     data: {
                         initiativeName: initiative.title,
                         description: initiative.description,
-                        ballotID: Number(initiative.ballotID) || 1, // Default to ballot 1 if not specified
+                        ballotID: Number(initiative.ballotID) || 1, 
                     }
                 });
             }
             console.log(`Successfully inserted ${initiatives.length} initiatives`);
         } catch (error) {
             console.error('Error inserting initiatives:', error);
-            // Continue with other operations
         }
 
         // Insert initiative responses with proper initiative connections
@@ -193,10 +186,9 @@ async function main() {
             console.log(`Successfully inserted ${responses.length} initiative responses`);
         } catch (error) {
             console.error('Error inserting initiative responses:', error);
-            // Continue with other operations
         }
 
-        // Improved initiative votes handling using your db.createInitiativeVote pattern
+        // Insert initiatives votes
         console.log('Inserting initiative votes...');
         try {
             for (const vote of initiativeVotes) {
@@ -205,14 +197,13 @@ async function main() {
                         userID: Number(vote.userID),
                         initiativeID: Number(vote.initiativeID),
                         responseID: Number(vote.responseID),
-                        ballotID: Number(vote.ballotID) || 1, // Default to ballot 1 if not specified
+                        ballotID: Number(vote.ballotID) || 1,
                     }
                 });
             }
             console.log(`Successfully inserted ${initiativeVotes.length} initiative votes`);
         } catch (error) {
             console.error('Error inserting initiative votes:', error);
-            // Continue with other operations
         }
 
         // Create a company for American Dream Employees if it doesn't exist
@@ -237,7 +228,6 @@ async function main() {
         catch (error) {
             console.error('Error creating American Dream company:', error);
         }
-        // Seeding complete
         console.log('Bulk seeding completed successfully!');
     } catch (error) {
         console.error('Error during bulk seeding:', error);

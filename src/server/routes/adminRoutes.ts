@@ -1,8 +1,8 @@
-import db from '../utils/db.ts';
+import db from '../utils/db/db.ts';
 import express from 'express';
 import { z } from 'zod';
 import { User } from '../types/user.ts';
-import { getRedisClient } from '../utils/redis.ts';
+import { getRedisClient } from '../utils/db/redis.ts';
 import { getHttpStats, getDbStats } from '../utils/systemStats.ts';
 import { BallotPositions, BallotPositionsSchema } from '../types/ballotPositions.ts';
 import { BallotInitiatives, BallotInitiativeSchema } from '../types/ballotInitiatives.ts';
