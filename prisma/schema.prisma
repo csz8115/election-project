@@ -67,7 +67,7 @@ model candidate {
 model user {
   userID          Int               @id @default(autoincrement())
   accountType     AccountType       @default(Member)
-  username        String            
+  username        String            @unique      
   password        String
   fName           String
   lName           String

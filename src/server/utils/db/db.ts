@@ -8,6 +8,7 @@ import { ResponseVote } from '../../types/response.ts';
 import { BallotPositions } from '../../types/ballotPositions.ts';
 import { BallotInitiatives } from '../../types/ballotInitiatives.ts'; 
 import dbLogger from '../../../../prisma/dbLogger.ts';
+import { user } from '@prisma/client';
 
 async function getUser(userID: number): Promise<User | string> {
     try {
@@ -33,6 +34,63 @@ async function getUser(userID: number): Promise<User | string> {
             userID: userID,
             error: error instanceof Error ? error.message : String(error),
         });
+    }
+}
+
+async function getUserByUsername(username: string): Promise<User | null> {
+    try {
+        const fetchUser = await prisma.user.findUnique({
+            where: {
+                username: username,
+            },
+            select: {
+                userID: true,
+                accountType: true,
+                username: true,
+                fName: true,
+                lName: true,
+                companyID: true,
+                company: true,
+                // password field is omitted
+            },
+        });
+
+        return fetchUser;
+    } catch (error) {
+        dbLogger.error({
+            message: "Unknown error during user retrieval by username",
+            username: username,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return null; // Return null if user not found or error occurs
+    }
+}
+
+async function checkUsername(username: string): Promise<any> {
+    try {
+        const user = await prisma.user.findUnique({
+            where: {
+                username: username,
+            },
+            select: {
+                userID: true,
+                accountType: true,
+                username: true,
+                fName: true,
+                lName: true,
+                companyID: true,
+                company: true,
+                password: true,
+            },
+        });
+        return user; // Returns user object if exists, null otherwise
+    } catch (error) {
+        dbLogger.error({
+            message: "Unknown error during username check",
+            username: username,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return false; // Return false if an error occurs
     }
 }
 
@@ -1659,6 +1717,8 @@ export default {
     createUser,
     getEmployeeCompany,
     updateUser,
+    checkUsername,
+    getUserByUsername,
     removeUser,
     getCompany,
     getCompanies,

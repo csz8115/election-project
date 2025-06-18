@@ -7,6 +7,7 @@ import { getHttpStats, getDbStats } from '../utils/systemStats.ts';
 import { BallotPositions, BallotPositionsSchema } from '../types/ballotPositions.ts';
 import { BallotInitiatives, BallotInitiativeSchema } from '../types/ballotInitiatives.ts';
 import bcrypt from 'bcrypt';
+import logger from '../utils/logger.ts';
 import { BallotSchema } from '../types/ballot.ts';
 import { requireRole } from '../utils/requireRole.ts';
 
@@ -24,16 +25,18 @@ const fNameSchema = z.string().min(1).max(50).regex(/^[a-zA-Z]+$/);
 const lNameSchema = z.string().min(1).max(50).regex(/^[a-zA-Z]+$/);
 
 // User register route
-router.post('/createUser', requireRole('Admin'), async (req, res): Promise<any> => {
+router.post('/createUser', async (req, res): Promise<any> => {
     try {
-        const { accountType,
+        const {
             username,
             fName,
             lName,
             password,
             companyID,
+            accountType
         } = req.body;
         if (!username || !password || !fName || !lName || !companyID || !accountType) {
+            logger.error('Invalid request data:', { body: req.body });
             throw new Error('Invalid request');
         }
         // Validate the input data

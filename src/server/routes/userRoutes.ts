@@ -7,6 +7,7 @@ import { Ballot, BallotSchema } from '../types/ballot.ts';
 import { z } from 'zod';
 import { getRedisClient } from '../utils/db/redis.ts';
 import { requireRole } from '../utils/requireRole.ts';
+import logger from '../utils/logger.ts';
 
 const router = express.Router();
 
@@ -28,28 +29,27 @@ router.post('/login', async (req, res): Promise<any> => {
         passwordSchema.parse(password);
 
         // Check if the user has a session and if the session is valid
-        const existingSession = await req.cookies.user_session;
-        if (existingSession) {
-            const decryptedSession = await decrypt(existingSession);
-            if (decryptedSession) {
-                throw new Error('User already logged in');
-            }
-        }
-        const data = await db.checkUsername(username);
-
-        if (data === null) {
-            return res.status(401).json({ error: 'Invalid username or password' });
+        // const existingSession = await req.cookies.user_session;
+        // logger.info('Existing session:', existingSession);
+        // if (existingSession) {
+        //     const decryptedSession = await decrypt(existingSession);
+        //     if (decryptedSession) {
+        //         throw new Error('User already logged in');
+        //     }
+        // }
+        const user = await db.checkUsername(username);
+        if (user === null || user === false) {
+            throw new Error('Invalid username or password');
         }
 
         // Check if the password is correct using the bcrypt compare function
-        const isValid = await bcrypt.compare(password, data.password);
-
+        const isValid = await bcrypt.compare(password, user.password);
         if (!isValid) {
             throw new Error('Invalid password');
         }
 
         // Create a session
-        const session = await createSession(username, data.accountType);
+        const session = await createSession(username, user.accountType);
 
         // Set the cookie settings based on environment
         const isProduction = process.env.NODE_ENV === 'production';
@@ -57,18 +57,18 @@ router.post('/login', async (req, res): Promise<any> => {
         // Set the session as a cookie
         res.cookie("user_session", session, {
             maxAge: 1000 * 60 * 60 * 24, // 1 day
-            secure: isProduction, // Only require HTTPS in production
+            secure: false, // Only require HTTPS in production
             httpOnly: true,
-            sameSite: isProduction ? "lax" : "strict", // Using strict for non-production instead of none
+            sameSite: "lax", // Using strict for non-production instead of none
             path: "/", // Set the cookie for all routes
         });
-        delete data.password;
+        delete user.password;
         // Return the success message
-        return res.status(200).json({ message: 'Login successful', data });
+        return res.status(200).json({ message: 'Login successful', user });
     } catch (error) {
+        logger.error(error);
         // Handle the Zod validation error
         if (error instanceof z.ZodError) {
-            console.log(error.errors);
             return res.status(400).json({ error: error.errors.map(e => e.message) });
         }
         // Handle invalid request error
@@ -79,13 +79,16 @@ router.post('/login', async (req, res): Promise<any> => {
         else if (error.message === 'User already logged in') {
             return res.status(401).json({ error: 'User already logged in' });
         }
-        // Handle other errors
+        // Handle invalid password error
+        else if (error.message === 'Invalid password') {
+            return res.status(401).json({ error: 'Invalid username or password' });
+        }
         return res.status(500).json({ error: 'Failed to login' });
     }
 });
 
 // User logout route
-router.post('/logout', requireRole('Admin', 'Member', 'Officer', 'Employee'), async (req, res): Promise<any> => {
+router.post('/logout', async (req, res): Promise<any> => {
     try {
         // Check if the user has a session
         const session = await req.cookies.user_session;
@@ -240,8 +243,10 @@ router.get(`/getActiveUserBallots`, requireRole('Admin', 'Member', 'Officer', 'E
         if (!ballots) {
             throw new Error('Ballots not found');
         }
+        logger.info('Active ballots for user retrieved successfully');
         return res.status(200).json(ballots);
     } catch (error) {
+        logger.error(error);
         // Handle the Zod validation error
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors.map(e => e.message) });
@@ -330,7 +335,7 @@ router.get(`/getUserBallots`, requireRole('Admin', 'Member', 'Officer', 'Employe
 
 
 // Submit ballot route
-router.post(`/submitBallot`,requireRole('Member', 'Officer'), async (req, res): Promise<any> => {
+router.post(`/submitBallot`, requireRole('Member', 'Officer'), async (req, res): Promise<any> => {
     try {
         const { ballot } = req.body as { ballot: Ballot };
 
@@ -575,7 +580,7 @@ router.get(`/ping`, requireRole('Admin', 'Member', 'Officer', 'Employee'), async
         }
         // ping
         console.log('Pinging user:', username);
-        getRedisClient().set(`active:${username}`, Date.now().toString(), {EX: expSeconds});
+        getRedisClient().set(`active:${username}`, Date.now().toString(), { EX: expSeconds });
         // return the success message
         return res.status(200).json({ message: 'Ping successful' });
     } catch (error) {
@@ -651,7 +656,7 @@ router.get(`/voterStatus`, requireRole('Member', 'Officer'), async (req, res): P
         }
 
         // return the didVote
-        return res.status(200).json({voterStatus: didVote});
+        return res.status(200).json({ voterStatus: didVote });
     } catch (error) {
         // Handle the Zod validation error
         if (error instanceof z.ZodError) {

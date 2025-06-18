@@ -66,7 +66,7 @@ router.get(`/getBallotStatus`, requireRole('Officer', 'Employee', 'Admin'), asyn
 });
 
 // Get ballot route
-router.get('/viewBallotResults', requireRole('Officer', 'Employee', 'Admin'), async (req, res): Promise<any> => {
+router.get('/viewBallotResults', requireRole('Officer', 'Employee', 'Admin', 'Member'), async (req, res): Promise<any> => {
     try {
         const { ballotID } = req.query;
 

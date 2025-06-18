@@ -5,10 +5,8 @@ import userRoutes from './routes/userRoutes.ts';
 import adminRoutes from './routes/adminRoutes.ts';
 import employeeRoutes from './routes/employeeRoutes.ts';
 import officerRoutes from './routes/officerRoutes.ts';
-import logger from './logger.ts';
-import pinoHttp from 'pino-http';
+import logger from './utils/logger.ts';
 import dotenv from 'dotenv';
-import { decrypt } from './utils/session.ts';
 dotenv.config();
 const app = express();
 
@@ -18,31 +16,27 @@ app.use(cors({
   credentials: true // Enable cookies with CORS
 }));
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // Add cookie parser middleware
 
-
-// Logger middleware
-app.use(pinoHttp({ logger }));
-
-// auth middleware 
-app.use(async (req, res, next) => {
-  // Check if the req is coming from login or register
-  if (req.path.includes('login')) {
-    next();
-  }
-  // Check if the user has a session
-  else {
-    const session = await decrypt(req.cookies.user_session);
-    if (session) {
-      res.locals.username = session.username;
-      res.locals.accountType = session.accountType;
-      next();
-    } else {
-      res.status(401).json({ error: 'Unauthorized' });
-    }
-  }
-});
+// // auth middleware 
+// app.use(async (req, res, next) => {
+//   // Check if the req is coming from login or register
+//   if (req.path.includes('login')) {
+//     next();
+//   }
+//   // Check if the user has a session
+//   else {
+//     const session = await decrypt(req.cookies.user_session);
+//     if (session) {
+//       res.locals.username = session.username;
+//       res.locals.accountType = session.accountType;
+//       next();
+//     } else {
+//       res.status(401).json({ error: 'Unauthorized' });
+//     }
+//   }
+// });
 
 // User routes
 app.use('/api/v1/member', userRoutes);
@@ -62,16 +56,12 @@ app.use('/api/v1/employee', employeeRoutes);
 
 // start the server
 app.listen(3000, () => {
-  // log the time when the server starts
-  console.log('Server started at localhost:3000');
-  logger.info(`Server started`);
-
+  logger.info(`Server is running on http://localhost:3000`);
 });
 
 process.on('exit', () => {
   // log the time when the server stops
   logger.info(`Server stopped`);
-  logger.flush();
 });
 
 export default app;
