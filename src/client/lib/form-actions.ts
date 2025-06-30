@@ -1,6 +1,8 @@
 import { user } from "@prisma/client";
 import { LoginFormSchema, type LoginState } from "../types/login-types";
 
+/// <reference types="vite/client" />
+
 
 export async function login(_prevState: LoginState, formData: FormData): Promise<any> {
     const validatedFields = LoginFormSchema.safeParse({
@@ -71,6 +73,35 @@ export async function getBallotResults(ballotID: number): Promise<any> {
     const response = await fetch(`${import.meta.env.VITE_API_URL}api/v1/officer/viewBallotResults?ballotID=${ballotID}`, {
         method: 'GET',
         credentials: 'include', // Include cookies in the request
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        return {
+            success: false,
+            error: errorData.error || 'Failed to fetch ballot results',
+        };
+    }
+
+    const results = await response.json();
+    return {
+        success: true,
+        results: results,
+    };
+}
+
+export async function getBallotResultsMember(ballotID: number): Promise<any> {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}api/v1/member/viewBallotResults?ballotID=${ballotID}`, {
+        method: 'GET',
+        credentials: 'include', // Include cookies in the request
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        
     });
 
     if (!response.ok) {

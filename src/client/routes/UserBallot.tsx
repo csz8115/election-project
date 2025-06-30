@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useUserStore } from "../store/userStore";
-import { getActiveUserBallots, getBallotResults } from "../lib/form-actions";
+import { getActiveUserBallots, getBallotResults, getBallotResultsMember } from "../lib/form-actions";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card";
 import {
     Accordion, AccordionContent, AccordionItem, AccordionTrigger,
@@ -9,16 +9,15 @@ import type { ballotPositions, ballots } from "@prisma/client";
 import Navbar from "../components/navbar";
 import { useQuery } from "@tanstack/react-query";
 import { PulseLoader } from "react-spinners";
-
 import { CircleCheckBig, Crown } from "lucide-react";
 
-export default function Ballot() {
+export default function UserBallot() {
     const navigate = useNavigate();
     const location = useLocation();
     const ballot = location.state.ballot as ballots;
     const { data, isLoading, isError } = useQuery({
         queryKey: ['activeUserBallots'],
-        queryFn: () => getBallotResults(ballot.ballotID),
+        queryFn: () => getBallotResultsMember(ballot.ballotID),
     });
 
     return (
@@ -50,7 +49,6 @@ export default function Ballot() {
                                             <div key={initiative.initiativeID} className="p-4 border rounded-lg">
                                                 <h3 className="text-lg font-bold">{initiative.title}</h3>
                                                 <p>{initiative.description}</p>
-                                                <p>Votes: {initiative.votes}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -62,7 +60,6 @@ export default function Ballot() {
                                                     <AccordionTrigger className="p-4 border rounded-lg">
                                                         <div className="text-left">
                                                             <h3 className="text-lg font-bold">{position.positionName}</h3>
-                                                            <p>Total Votes: {position._count.positionVotes}</p>
                                                         </div>
                                                     </AccordionTrigger>
                                                     <AccordionContent className="p-4">
@@ -72,7 +69,7 @@ export default function Ballot() {
                                                                 return (
                                                                     <div key={candidate.candidateID} className="p-4 border rounded-lg bg-gray-50">
                                                                         <div className="mb-3">
-                                                                            <div className="flex items-center gap-1">                                                                               
+                                                                            <div className="flex items-center gap-1">
                                                                                 {isWinner && <Crown className="text-yellow-500 w-4 h-4" />}
                                                                                 <h4 className="text-lg font-semibold">{candidate.candidate.fName} {candidate.candidate.lName}</h4>
                                                                             </div>
@@ -80,7 +77,6 @@ export default function Ballot() {
                                                                         </div>
                                                                         <img src={candidate.candidate.picture} alt="" className="w-full h-48 object-cover rounded-md mb-3" />
                                                                         <div>
-                                                                            <p className="mb-2 font-medium">Votes: {candidate.candidate._count.positionVotes}</p>
                                                                             <p className="text-sm">{candidate.candidate.description ? candidate.candidate.description : `No description provided`}</p>
                                                                         </div>
                                                                     </div>

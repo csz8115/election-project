@@ -1,14 +1,9 @@
 import { useUserStore } from "../store/userStore";
-import Navbar from "../components/navbar";
-import UserDash from "../components/userDash";
-import { User } from "lucide-react";
+import { Navigate } from "react-router-dom";
 
 export default function Dashboard() {
     const user = useUserStore((state) => state);
-    return (
-        <div>
-            <Navbar />
-            <UserDash />
-        </div>
-    );
+    if (user.accountType === "Employee") return <Navigate to="/employee-dashboard" />;
+    if (user.accountType === "Member") return <Navigate to="/user-dashboard" />;
+    return <Navigate to="/login" />;
 }

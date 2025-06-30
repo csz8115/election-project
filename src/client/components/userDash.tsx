@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useUserStore } from "../store/userStore";
 import { getActiveUserBallots, getBallotResults } from "../lib/form-actions";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card";
-import { get } from "http";
 import type { ballots } from "@prisma/client";
 import { PulseLoader } from "react-spinners";
 import { useNavigate } from "react-router-dom";
@@ -15,14 +14,14 @@ export default function UserDash() {
         queryFn: () => getActiveUserBallots(user.userID),
     });
     const handleCardClick = async (ballot: ballots) => {
-        navigate(`/ballot`, { state: { ballot }, });
+        navigate(`/user-ballot`, { state: { ballot }, });
     };
 
     return (
         <div className="flex flex-col items-center justify-center mt-16">
             <h1 className="text-2xl font-bold">My Elections</h1>
             <div className="space-y-6 p-4">
-            {(isLoading || !data?.ballots) && <div className="flex justify-center mt-16"><PulseLoader color="#000" size={20} /></div>}
+                {(isLoading || !data?.ballots) && <div className="flex justify-center mt-16"><PulseLoader color="#000" size={20} /></div>}
                 {isError && <p>Error loading ballots</p>}
                 {data?.ballots && (
                     <>
