@@ -200,11 +200,45 @@ The platform uses **role-based access control (RBAC)** to enforce security and e
 | **GET** | `/voterStatus` | Member, Officer | **Query**: `ballotID`, `userID` (ints) | **200** `{ voterStatus: boolean }` | 400 invalid/zod • 404 ballot not found • 500 failed |
 | **GET** | `/viewBallotResults` | Officer, Employee, Admin, Member | **Query**: `ballotID` (int) | **200** tally/results | 400 invalid/zod • 404 ballot not found • 500 failed |
 
-## Performance and Caching 
-
-INSERT CONTENT HERE
-
 ## Security and Auditing
+
+### Authentication & Sessions
+- **HttpOnly Cookie**: `user_session` (signed/encrypted), `SameSite=Lax`, `secure` in production, 24h TTL.  
+- **Logout**: Explicit cookie clear; server treats missing/invalid token as unauthenticated.  
+- **Password Storage**: `bcrypt` with a strong cost factor; no plaintext recovery.  
+
+### Authorization (RBAC)
+- **Route Guards**: `requireRole(...)` enforces **Admin**, **Employee**, **Officer**, **Member**.  
+- **Principle of Least Privilege**: Each role only has access to required endpoints.  
+
+### PostgreSQL Roles & Permissions
+At the database level, fine-grained roles enforce **separation of duties**:  
+
+| Role | Purpose | Permissions |
+|------|----------|-------------|
+| **ElectionDBA** | Database administrator | Full superuser-like rights: schema changes, role management, backup/restore, MV refresh scheduling. Restricted to DBA accounts only. |
+| **ElectionDev** | Developer role for migrations and safe development tasks | `CREATE/ALTER` on dev schema, can run migrations, create views, write functions. **Cannot** drop production schemas or access PII tables directly. |
+| **ElectionSystemUser** | Runtime role for the API server | Minimal privileges: `SELECT/INSERT/UPDATE` only on whitelisted tables (`users`, `ballots`, `votes`, `audit_log`). No `DROP`, `ALTER`, or DDL permissions. Bound to Prisma connection pool. |
+
+- **RLS**: Row-Level Security can be enabled for multi-tenant safety (e.g., only allow queries where `company_id = current_setting('app.company_id')`).  
+- **Auditing Enforcement**: `audit_log` triggers run under `ElectionSystemUser` context, ensuring all changes (ballots, votes, users) are captured.  
+
+### Input & Transport Security
+- **Validation**: Zod on **every** query/body; IDs must be positive integers; usernames restricted to `[A-Za-z0-9_]`.  
+- **TLS Everywhere**: Terminate HTTPS at proxy/load balancer; `secure` cookies in prod.  
+- **CORS**: Only trusted frontend origins allowed; `credentials: true`.  
+- **Rate Limiting**: Recommended on login + ballot submission endpoints.  
+
+### Data Security
+- **Minimal Exposure**: APIs only return necessary fields (`select` in Prisma).  
+- **Encryption at Rest**: DB and Redis deployed on encrypted volumes; backups encrypted.  
+- **Secrets Management**: Environment vars (JWT/session keys, DB creds) rotated and never stored in repo.  
+
+### Auditing
+- INSERT INFO
+
+#### Example Audit Entry
+INSERT EXAMPLE HERE
 
 ## Frontend 
 
