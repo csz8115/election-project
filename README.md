@@ -231,7 +231,19 @@ At the database level, fine-grained roles enforce **separation of duties**:
 - **Encryption at Rest**: DB and Redis deployed on encrypted volumes; backups encrypted.  
 - **Secrets Management**: Environment vars (JWT/session keys, DB creds) rotated and never stored in repo.  
 
-## Security and Auditing
+### Threat Model
+
+The following attack vectors were considered and mitigated:
+
+- **SQL Injection** → Prevented by using **Prisma ORM** and parameterized queries.  
+- **Cross-Site Scripting (XSS)** → Cookies are `HttpOnly`, frontend sanitizes inputs, API never echoes unsanitized user content.  
+- **Cross-Site Request Forgery (CSRF)** → Mitigated by `SameSite=Lax` cookies; sensitive routes require valid sessions.  
+- **Brute-Force / Credential Stuffing** → Blocked with rate limiting + `bcrypt` password hashing.  
+- **Replay Attacks** → Session cookies have short TTL and are rotated on login/logout.  
+- **Privilege Escalation** → Enforced through strict role checks at middleware + DB role separation (`ElectionSystemUser` cannot modify schema).  
+- **Insider Misuse** → `audit_log` (via Pino + Prisma logs) provides immutable evidence of all admin-sensitive actions.  
+- **Denial of Service (DoS)** → Node server hardened with request size limits, Redis used for caching active sessions to reduce DB load.  
+
 
 ### Auditing
 
@@ -272,7 +284,7 @@ Both HTTP traffic and database queries are logged in real time and stored in loc
   "user": "member42",
   "role": "Member"
 }
-
+```
 
 ## Frontend 
 
