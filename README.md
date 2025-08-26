@@ -224,7 +224,6 @@ At the database level, fine-grained roles enforce **separation of duties**:
 - **Validation**: Zod on **every** query/body; IDs must be positive integers; usernames restricted to `[A-Za-z0-9_]`.  
 - **TLS Everywhere**: Terminate HTTPS at proxy/load balancer; `secure` cookies in prod.  
 - **CORS**: Only trusted frontend origins allowed; `credentials: true`.  
-- **Rate Limiting**: Recommended on login + ballot submission endpoints.  
 
 ### Data Security
 - **Minimal Exposure**: APIs only return necessary fields (`select` in Prisma).  
