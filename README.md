@@ -111,16 +111,17 @@ This project uses **Prisma ORM** as the bridge between the **PostgreSQL database
 
 **Example**
 ```ts
-// Fetch voters who haven't cast a ballot yet
-const nonVoters = await prisma.user.findMany({
-  where: {
-    role: 'VOTER',
-    votes: {
-      none: { ballotId: ballotId }
-    }
-  },
-  select: { id: true, username: true, fName: true, lName: true }
-});
+  const fetchUser = await prisma.user.findUnique({
+    where: {
+      username: username,
+    },
+      select: {
+        userID: true,
+        accountType: true,
+        username: true
+        },
+    });
+```
 
 
 ## Roles & Permissions
