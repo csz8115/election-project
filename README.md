@@ -25,6 +25,59 @@ Designed to simulate enterprise workloads (20k+ users, 1.4M+ votes) with auditin
 
 ![Election App ERD](./public/images/electionERD.png)
 
+## Table Descriptions
+
+- **users**  
+  Stores system accounts (admins, clerks, election managers, voters).  
+  Key columns: `id`, `email`, `role`.  
+  Enforced with role-based permissions; linked to `audit_log` for accountability.  
+
+- **voters**  
+  Contains voter registration records and eligibility attributes.  
+  Key columns: `id`, `precinct_id`, `status`.  
+  Eligibility checked via `voter_eligibility()` PL/pgSQL function.  
+
+- **elections**  
+  Defines election events and their lifecycle.  
+  Key columns: `id`, `name`, `start_date`, `end_date`.  
+  Related to `contests` and `ballots`.  
+
+- **contests**  
+  Represents positions, referenda, or questions within an election.  
+  Key columns: `id`, `election_id`, `title`.  
+  Linked to `candidates` and `votes`.  
+
+- **candidates**  
+  Holds candidate or option information for a contest.  
+  Key columns: `id`, `contest_id`, `name`.  
+  Referenced in `votes` records.  
+
+- **ballots**  
+  Issued to voters for a specific election.  
+  Key columns: `id`, `voter_id`, `election_id`, `status`.  
+  Integrity enforced by triggers; audited on issuance and casting.  
+
+- **votes**  
+  Stores individual selections on a ballot.  
+  Key columns: `id`, `ballot_id`, `contest_id`, `candidate_id`.  
+  Aggregated into materialized views for results reporting.  
+
+- **initiative_votes**  
+  Records votes for ballot initiatives (referenda or propositions).  
+  Key columns: `id`, `ballot_id`, `initiative_id`, `choice`.  
+
+- **audit_log**  
+  Append-only log of sensitive system and admin actions.  
+  Populated by triggers on `users`, `ballots`, `votes`, etc.  
+  Key columns: `id`, `action`, `actor_id`, `timestamp`, `details`.  
+
+- **materialized views (analytics)**  
+
+- **`user_voting_status`**  
+  Snapshot of each user’s voting status across all ballots in their company.  
+  Used for dashboards, quick “who has/hasn’t voted” checks, and progress reporting.
+
+
 ## Roles & Permissions
 
 CREATE A TABLE TO SHOWCASE ROLES AND PERMISSIONS
