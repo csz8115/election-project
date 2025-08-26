@@ -88,7 +88,7 @@ Designed to simulate enterprise workloads (20k+ users, 1.4M+ votes) with auditin
   Outputs each member’s info (`user_id`, `username`, `fname`, `lname`) alongside their `has_voted` flag.  
   Designed for dashboards showing overall progress and who has/hasn’t voted.
 
-### Prisma as Database Connector & Middle Layer
+## Prisma as Database Connector & Middle Layer
 
 This project uses **Prisma ORM** as the bridge between the **PostgreSQL database** and the **Node.js/Express API layer**. Prisma serves two important roles:
 
