@@ -87,10 +87,6 @@ Designed to simulate enterprise workloads (20k+ users, 1.4M+ votes) with auditin
   Provides both aggregate stats (percentage, counts) and per-member voting status for a ballot’s company.  
   Outputs each member’s info (`user_id`, `username`, `fname`, `lname`) alongside their `has_voted` flag.  
   Designed for dashboards showing overall progress and who has/hasn’t voted.
-  
-- **Audit Triggers (`audit_on_change()`)** *(trigger functions)*  
-  Automatically logs inserts/updates/deletes on sensitive tables (`users`, `ballots`, `votes`) to the `audit_log`.  
-  Ensures accountability and a tamper-resistant action history.
 
 ## Roles & Permissions
 
