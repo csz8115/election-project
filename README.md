@@ -1,4 +1,4 @@
-# 🕹️ Election Management Platform
+# Election Management Platform
 
 This is a  full-stack election system for managing voters, ballots, initiatives, and results at scale.
 Built with Node.js/Express, PostgreSQL, JWT role-based auth, Redis caching, and Pino logging.
@@ -23,7 +23,7 @@ Designed to simulate enterprise workloads (20k+ users, 1.4M+ votes) with auditin
 
 ## Architecture (Overview)
 
-INSERT DIAGRAM HERE
+![Election App ERD](./public/images/electionERD.png)
 
 ## Roles & Permissions
 
