@@ -137,24 +137,41 @@ The platform uses **role-based access control (RBAC)** to enforce security and e
 
 ## API 
 
+> Unless noted, protected endpoints require a valid `user_session` cookie and pass `requireRole(...)`.  
+> Request bodies/queries are validated with **Zod**; invalid inputs return **400** with messages.
+
 | Method | Path | Roles Required | Params (Query / Body) | Success Response | Error Responses |
-|--------|------|----------------|------------------------|------------------|-----------------|
-| **POST** | `/login` | None | **Body**: `username`, `password` | **200** `{ message, user }` + sets `user_session` cookie | 400 invalid request/zod • 401 invalid credentials • 500 failed login |
-| **POST** | `/logout` | None | Cookie: `user_session` | **200** `{ message }` clears cookie | 401 not logged in • 500 failed logout |
-| **GET** | `/getUser` | None | **Query**: `username` | **200** user object | 400 invalid/zod • 404 user not found • 500 failed |
-| **GET** | `/getEmployeeCompany` | Admin, Member, Officer, Employee | **Query**: `userID` (int) | **200** company object | 400 invalid/zod • 404 not found • 500 failed |
-| **GET** | `/getBallot` | Admin, Member, Officer, Employee | **Query**: `ballotID` (int) | **200** ballot object | 400 invalid/zod • 404 not found • 500 failed |
-| **GET** | `/getActiveUserBallots` | Admin, Member, Officer, Employee | **Query**: `userID` (int) | **200** ballots[] | 400 invalid/zod • 404 none found • 500 failed |
-| **GET** | `/getInactiveUserBallots` | Admin, Member, Officer, Employee | **Query**: `userID` (int) | **200** ballots[] or `{ ballot: 'No inactive ballots found' }` | 400 invalid/zod • 500 failed |
-| **GET** | `/getUserBallots` | Admin, Member, Officer, Employee | **Query**: `userID` (int) | **200** ballots[] | 400 invalid/zod • 404 none found • 500 failed |
-| **POST** | `/submitBallot` | Member, Officer | **Body**: `{ ballot }` (BallotSchema) | **201** `{ message: 'Ballot submitted successfully' }` | 400 invalid/zod • 500 failed submit |
-| **GET** | `/getCompanyBallots` | Admin, Member, Officer, Employee | **Query**: `companyID` (int) | **200** ballots[] | 400 invalid/zod • 404 not found • 500 failed |
-| **GET** | `/getActiveCompanyBallots` | Admin, Member, Officer, Employee | **Query**: `companyID` (int) | **200** ballots[] | 400 invalid/zod • 404 not found • 500 failed |
-| **GET** | `/getInactiveCompanyBallots` | Admin, Member, Officer, Employee | **Query**: `companyID` (int) | **200** ballots[] | 400 invalid/zod • 404 not found • 500 failed |
-| **GET** | `/ping` | Admin, Member, Officer, Employee | **Query**: `username` | **200** `{ message: 'Ping successful' }` (sets Redis TTL) | 400 invalid/zod • 404 not found • 500 failed |
-| **GET** | `/getUserByUsername` | Admin, Member, Officer, Employee | **Query**: `username` | **200** user object | 400 invalid/zod • 404 not found • 500 failed |
-| **GET** | `/voterStatus` | Member, Officer | **Query**: `ballotID`, `userID` (int) | **200** `{ voterStatus: boolean }` | 400 invalid/zod • 404 ballot not found • 500 failed |
-| **GET** | `/viewBallotResults` | Officer, Employee, Admin, Member | **Query**: `ballotID` (int) | **200** tally results | 400 invalid/zod • 404 not found • 500 failed |
+|-------:|------|----------------|------------------------|------------------|-----------------|
+| **POST** | `/login` | None | **Body**: `username`, `password` | **200** `{ message, user }` and sets `user_session` cookie | 400 invalid/zod • 401 invalid credentials • 500 failed login |
+| **POST** | `/logout` | None | Cookie: `user_session` | **200** `{ message }` (clears cookie) | 401 not logged in • 500 failed logout |
+| **POST** | `/createUser` | None | **Body**: `username`, `password`, `fName`, `lName`, `companyID`, `accountType` (`Admin` \| `Member` \| `Officer` \| `Employee`) | **201** `{ message, user }` | 400 invalid/zod • 404 company missing • 409 username exists • 500 failed |
+| **DELETE** | `/deleteUser` | Admin | **Body**: `username` | **200** `{ message }` | 400 invalid/zod • 404 user does not exist • 500 failed |
+| **GET** | `/getAllUsers` | Admin | — | **200** `users[]` | 400 invalid • 404 not found • 500 failed |
+| **GET** | `/getAllCompanies` | Admin | — | **200** `companies[]` | 400 invalid • 404 not found • 500 failed |
+| **GET** | `/getSystemReport` | Admin, Employee | — | **200** `{ activeUsers, activeElectionsCount, inactiveElectionsCount, queryStats, httpStats }` | 400 invalid • 404 stats not found • 500 failed |
+| **GET** | `/getSocietyReport` | Admin | **Query**: `companyID` (int) | **200** stats | 400 invalid/zod • 404 stats not found • 500 failed |
+| **GET** | `/getCompanyStats` | Officer, Employee, Admin | **Query**: `companyID` (int) | **200** stats | 400 invalid/zod • 404 stats not found • 500 failed |
+| **GET** | `/getCompanyUsers` | Officer, Employee, Admin | **Query**: `companyID` (int) | **200** `users[]` | 400 invalid/zod • 500 internal error |
+| **GET** | `/getUser` | None | **Query**: `username` | **200** user | 400 invalid/zod • 404 not found • 500 failed |
+| **GET** | `/getUserByUsername` | Admin, Member, Officer, Employee | **Query**: `username` | **200** user | 400 invalid/zod • 404 not found • 500 failed |
+| **GET** | `/ping` | Admin, Member, Officer, Employee | **Query**: `username` | **200** `{ message }` (sets `active:<username>` in Redis, TTL 120s) | 400 invalid/zod • 404 user not found • 500 failed |
+| **GET** | `/getEmployeeCompany` | Admin, Member, Officer, Employee | **Query**: `userID` (int) | **200** company | 400 invalid/zod • 404 user not found • 500 failed |
+| **GET** | `/getAssignedCompanies` | Employee | **Query**: `userID` (int) | **200** `companies[]` (authorized assignments) | 400 invalid/zod • 404 none found • 500 failed |
+| **GET** | `/getBallots` | None | **Query**: `page` (cursor int, optional) | **200** `{ ballots[], nextCursor, hasNextPage, hasPreviousPage, totalCount }` | 400 invalid cursor • 404 none found • 500 failed |
+| **GET** | `/getBallot` | Admin, Member, Officer, Employee | **Query**: `ballotID` (int) | **200** ballot | 400 invalid/zod • 404 not found • 500 failed |
+| **GET** | `/getBallotStatus` | Officer, Employee, Admin | **Query**: `ballotID` (int) | **200** status | 400 invalid/zod • 404 ballot not found • 500 failed |
+| **GET** | `/getCompanyBallots` | Admin, Member, Officer, Employee | **Query**: `companyID` (int) | **200** `ballots[]` | 400 invalid/zod • 404 not found • 500 failed |
+| **GET** | `/getActiveCompanyBallots` | Admin, Member, Officer, Employee | **Query**: `companyID` (int) | **200** `ballots[]` | 400 invalid/zod • 404 not found • 500 failed |
+| **GET** | `/getInactiveCompanyBallots` | Admin, Member, Officer, Employee | **Query**: `companyID` (int) | **200** `ballots[]` | 400 invalid/zod • 404 not found • 500 failed |
+| **GET** | `/getActiveUserBallots` | Admin, Member, Officer, Employee | **Query**: `userID` (int) | **200** `ballots[]` | 400 invalid/zod • 404 none found • 500 failed |
+| **GET** | `/getInactiveUserBallots` | Admin, Member, Officer, Employee | **Query**: `userID` (int) | **200** `ballots[]` _or_ `{ ballot: 'No inactive ballots found' }` | 400 invalid/zod • 500 failed |
+| **GET** | `/getUserBallots` | Admin, Member, Officer, Employee | **Query**: `userID` (int) | **200** `ballots[]` | 400 invalid/zod • 404 none found • 500 failed |
+| **POST** | `/createBallot` | Employee, Admin | **Body**: `ballotName`, `description`, `startDate`, `endDate`, `companyID`, `positions[]`, `initiatives[]` | **201** `{ message }` | 400 invalid/zod • 404 company not found • 500 failed |
+| **POST** | `/createBallotFromList` | Employee, Admin | **Body**: `ballotName`, `description`, `startDate`, `endDate`, `companyID`, `positions[]`, `initiatives[]`, `userID` | **201** `{ message }` | 400 invalid/zod • 403 unauthorized company • 404 company not found • 500 failed |
+| **PUT** | `/updateBallot` | Employee, Admin | **Query**: `ballotID` (int) <br> **Body**: `ballotName`, `description`, `startDate`, `endDate`, `companyID`, `positions[]`, `initiatives[]` | **200** `{ message }` | 400 invalid/zod • 404 ballot/company not found • 500 failed |
+| **POST** | `/submitBallot` | Member, Officer | **Body**: `{ ballot }` (`BallotSchema`) | **201** `{ message }` | 400 invalid/zod • 500 failed |
+| **GET** | `/voterStatus` | Member, Officer | **Query**: `ballotID`, `userID` (ints) | **200** `{ voterStatus: boolean }` | 400 invalid/zod • 404 ballot not found • 500 failed |
+| **GET** | `/viewBallotResults` | Officer, Employee, Admin, Member | **Query**: `ballotID` (int) | **200** tally/results | 400 invalid/zod • 404 ballot not found • 500 failed |
 
 ## Performance and Caching 
 
