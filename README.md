@@ -231,11 +231,48 @@ At the database level, fine-grained roles enforce **separation of duties**:
 - **Encryption at Rest**: DB and Redis deployed on encrypted volumes; backups encrypted.  
 - **Secrets Management**: Environment vars (JWT/session keys, DB creds) rotated and never stored in repo.  
 
+## Security and Auditing
+
 ### Auditing
-- INSERT INFO
+
+This project uses **log-based auditing** (via [Pino](https://getpino.io/)) instead of database triggers or audit tables.  
+Both HTTP traffic and database queries are logged in real time and stored in local log files.
+
+- **Application-Layer Auditing**  
+  - An Express middleware with **Pino** intercepts all HTTP requests.  
+  - Captures: `timestamp`, `reqId`, `method`, `url`, `statusCode`, `responseTime`, and the authenticated `user`/`role`.  
+  - Logs are stored in **`log/app.log`** as line-delimited JSON.  
+
+- **Database-Layer Auditing**  
+  - Prisma client is extended with a `$use` middleware.  
+  - Captures: `timestamp`, `reqId`, `model`, `action` (`findMany`, `create`, `update`), and `durationMs`.  
+  - Logs are stored in **`log/db.log`** as line-delimited JSON.  
+
+- **Log Format**  
+  - Both `app.log` and `db.log` are JSON logs, suitable for parsing, shipping, or feeding into observability stacks (ELK, Datadog, Loki, etc.).  
+  - Each log entry is correlated via `reqId` to provide an end-to-end trace of request → DB queries → response.  
+
+- **Benefits**  
+  - Full visibility into request/response cycles and DB usage patterns.  
+  - No schema bloat (audit tables avoided).  
+  - Useful for debugging performance, detecting anomalies, and incident investigations.
 
 #### Example Audit Entry
-INSERT EXAMPLE HERE
+
+**`app.log`** (HTTP request audit):  
+```json
+{
+  "time": "2025-08-26T14:22:07.112Z",
+  "level": "info",
+  "reqId": "d93ac7f1",
+  "method": "POST",
+  "url": "/submitBallot",
+  "statusCode": 201,
+  "responseTime": 142,
+  "user": "member42",
+  "role": "Member"
+}
+
 
 ## Frontend 
 
