@@ -220,9 +220,6 @@ At the database level, fine-grained roles enforce **separation of duties**:
 | **ElectionDev** | Developer role for migrations and safe development tasks | `CREATE/ALTER` on dev schema, can run migrations, create views, write functions. **Cannot** drop production schemas or access PII tables directly. |
 | **ElectionSystemUser** | Runtime role for the API server | Minimal privileges: `SELECT/INSERT/UPDATE` only on whitelisted tables (`users`, `ballots`, `votes`, `audit_log`). No `DROP`, `ALTER`, or DDL permissions. Bound to Prisma connection pool. |
 
-- **RLS**: Row-Level Security can be enabled for multi-tenant safety (e.g., only allow queries where `company_id = current_setting('app.company_id')`).  
-- **Auditing Enforcement**: `audit_log` triggers run under `ElectionSystemUser` context, ensuring all changes (ballots, votes, users) are captured.  
-
 ### Input & Transport Security
 - **Validation**: Zod on **every** query/body; IDs must be positive integers; usernames restricted to `[A-Za-z0-9_]`.  
 - **TLS Everywhere**: Terminate HTTPS at proxy/load balancer; `secure` cookies in prod.  
