@@ -88,6 +88,41 @@ Designed to simulate enterprise workloads (20k+ users, 1.4M+ votes) with auditin
   Outputs each member’s info (`user_id`, `username`, `fname`, `lname`) alongside their `has_voted` flag.  
   Designed for dashboards showing overall progress and who has/hasn’t voted.
 
+### Prisma as Database Connector & Middle Layer
+
+This project uses **Prisma ORM** as the bridge between the **PostgreSQL database** and the **Node.js/Express API layer**. Prisma serves two important roles:
+
+1. **Database Connector**  
+   - Manages connections to PostgreSQL through a type-safe client.  
+   - Provides a clean abstraction over raw SQL while still allowing custom SQL and PL/pgSQL functions when needed.  
+   - Handles migrations and schema synchronization with `prisma migrate`, ensuring consistency across environments.
+
+2. **Middle Layer (Domain Access Layer)**  
+   - Encapsulates queries and transactions in a **service-like API** for the rest of the application.  
+   - Enforces type safety at compile-time (`TypeScript` integration), reducing runtime errors.  
+   - Simplifies complex operations like filtering, pagination, and joins into concise and maintainable code.  
+   - Works alongside raw SQL features like **materialized views, triggers, and stored functions**, enabling the best of both ORM convenience and database power.
+
+**Benefits for the Project**
+- **Productivity**: Developers can focus on business logic instead of boilerplate SQL.  
+- **Safety**: Type-safe queries prevent common mistakes (wrong field names, mismatched types).  
+- **Flexibility**: Allows mixing Prisma with raw SQL for advanced features (e.g., `user_voting_status` MV or `get_ballot_voting_status()` function).  
+- **Maintainability**: Centralized schema and generated client make it easy to evolve the DB model without breaking code.  
+
+**Example**
+```ts
+// Fetch voters who haven't cast a ballot yet
+const nonVoters = await prisma.user.findMany({
+  where: {
+    role: 'VOTER',
+    votes: {
+      none: { ballotId: ballotId }
+    }
+  },
+  select: { id: true, username: true, fName: true, lName: true }
+});
+
+
 ## Roles & Permissions
 
 CREATE A TABLE TO SHOWCASE ROLES AND PERMISSIONS
