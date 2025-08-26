@@ -137,6 +137,33 @@ The platform uses **role-based access control (RBAC)** to enforce security and e
 
 ## API 
 
+### Express + Nodejs + Typescript
+
+- **Authentication:**  
+  User login issues a **signed & encrypted session token** (`user_session`) as an **HttpOnly cookie**.  
+  Cookie TTL: ~24h, `SameSite=Lax`, `secure=true` in production.  
+
+- **Authorization:**  
+  Role-based access control (RBAC) is enforced via `requireRole(...)`.  
+  Roles: **Admin**, **Employee**, **Officer**, **Member**.  
+
+- **Validation:**  
+  All request bodies and query parameters are validated with **Zod** schemas.  
+  Invalid inputs return **400** with detailed messages.  
+
+- **Error Model:**  
+  - `400` – invalid request / validation errors  
+  - `401` – not authenticated  
+  - `403` – unauthorized (role mismatch / restricted resource)  
+  - `404` – entity not found  
+  - `409` – conflict (e.g., username exists)  
+  - `500` – internal server error  
+
+- **Observability:**  
+  Logging with **Pino** and system statistics endpoints (`/getSystemReport`, `/getCompanyStats`) expose DB + HTTP metrics.  
+
+### Routes
+
 > Unless noted, protected endpoints require a valid `user_session` cookie and pass `requireRole(...)`.  
 > Request bodies/queries are validated with **Zod**; invalid inputs return **400** with messages.
 
