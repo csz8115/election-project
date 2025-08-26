@@ -21,11 +21,11 @@ Designed to simulate enterprise workloads (20k+ users, 1.4M+ votes) with auditin
 - Logging: Pino (JSON structured logs)'
 - Testing: Jest
 
-## Architecture (Overview)
+## Database (Overview)
 
 ![Election App ERD](./public/images/electionERD.png)
 
-## Table Descriptions
+### Table Descriptions
 
 - **users**  
   Stores system accounts (admins, clerks, election managers, voters).  
@@ -71,12 +71,26 @@ Designed to simulate enterprise workloads (20k+ users, 1.4M+ votes) with auditin
   Populated by triggers on `users`, `ballots`, `votes`, etc.  
   Key columns: `id`, `action`, `actor_id`, `timestamp`, `details`.  
 
-- **materialized views (analytics)**  
+### Materialized Views
 
 - **`user_voting_status`**  
   Snapshot of each user’s voting status across all ballots in their company.  
   Used for dashboards, quick “who has/hasn’t voted” checks, and progress reporting.
 
+### Functions
+
+- **`check_ballot_voter(p_ballot_id int, p_user_id int) RETURNS boolean`**  
+  Returns `TRUE` if the given user has cast a vote in the specified ballot, otherwise `FALSE`.  
+  Useful for API guards and ensuring a user cannot vote more than once.  
+
+- **`get_ballot_voting_status(p_ballot_id int) RETURNS TABLE (...)`**  
+  Provides both aggregate stats (percentage, counts) and per-member voting status for a ballot’s company.  
+  Outputs each member’s info (`user_id`, `username`, `fname`, `lname`) alongside their `has_voted` flag.  
+  Designed for dashboards showing overall progress and who has/hasn’t voted.
+  
+- **Audit Triggers (`audit_on_change()`)** *(trigger functions)*  
+  Automatically logs inserts/updates/deletes on sensitive tables (`users`, `ballots`, `votes`) to the `audit_log`.  
+  Ensures accountability and a tamper-resistant action history.
 
 ## Roles & Permissions
 
