@@ -126,7 +126,17 @@ This project uses **Prisma ORM** as the bridge between the **PostgreSQL database
 
 ## Roles & Permissions
 
-CREATE A TABLE TO SHOWCASE ROLES AND PERMISSIONS
+## Roles & Permissions
+
+The platform uses **role-based access control (RBAC)** to enforce security and ensure users can only perform actions appropriate to their role.  
+
+| Role              | Description                                                                 | Key Permissions                                                                 |
+|-------------------|-----------------------------------------------------------------------------|--------------------------------------------------------------------------------|
+| **Society Member** | Base-level participant (e.g., a registered voter or community member).      | - View elections and contests <br> - Cast their own ballot <br> - View their voting history/status |
+| **Society Officer** | Elevated community role with limited administrative powers.                | - All Society Member permissions <br> - Create/manage events within their society <br> - View aggregate participation reports for their group |
+| **Employee**       | Internal staff user supporting election operations or platform tasks.       | - Manage voter registrations <br> - Issue and revoke ballots <br> - Assist with troubleshooting voter accounts |
+| **Officer**        | Full administrative authority (system or organizational officer).           | - All Employee permissions <br> - Configure elections and contests <br> - Manage candidates and initiatives <br> - Refresh materialized views <br> - Audit logs and system actions <br> - Manage roles and permissions for other users |
+
 
 ## API 
 
