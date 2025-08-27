@@ -64,12 +64,7 @@ Designed to simulate enterprise workloads (20k+ users, 1.4M+ votes) with auditin
 
 - **initiative_votes**  
   Records votes for ballot initiatives (referenda or propositions).  
-  Key columns: `id`, `ballot_id`, `initiative_id`, `choice`.  
-
-- **audit_log**  
-  Append-only log of sensitive system and admin actions.  
-  Populated by triggers on `users`, `ballots`, `votes`, etc.  
-  Key columns: `id`, `action`, `actor_id`, `timestamp`, `details`.  
+  Key columns: `id`, `ballot_id`, `initiative_id`, `choice`.    
 
 ### Materialized Views
 
