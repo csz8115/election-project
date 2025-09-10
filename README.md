@@ -28,7 +28,7 @@ Designed to simulate enterprise workloads (20k+ users, 1.4M+ votes) with auditin
 ### Table Descriptions
 
 - **user**  
-  Stores user system accounts.  
+  Stores user system accounts
   Enforced with role-based permissions;
 
 - **candidate**
@@ -60,7 +60,7 @@ Designed to simulate enterprise workloads (20k+ users, 1.4M+ votes) with auditin
   Linked to `positionVotes` and `user`.
 
 - **votes**  
-  Contains votes 
+  Contains votes.
   Linked to `positionVotes` and `user`.
 
 - **positionVotes**  
