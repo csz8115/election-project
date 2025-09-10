@@ -27,44 +27,65 @@ Designed to simulate enterprise workloads (20k+ users, 1.4M+ votes) with auditin
 
 ### Table Descriptions
 
-- **users**  
-  Stores system accounts (admins, clerks, election managers, voters).  
-  Key columns: `id`, `email`, `role`.  
-  Enforced with role-based permissions; linked to `audit_log` for accountability.  
+- **user**  
+  Stores system accounts.  
+  Key columns: `userID`, `accountType`, `companyID`, `username`.  
+  Enforced with role-based permissions;
 
-- **voters**  
+- **candidate**
   Contains voter registration records and eligibility attributes.  
-  Key columns: `id`, `precinct_id`, `status`.  
-  Eligibility checked via `voter_eligibility()` PL/pgSQL function.  
+  Key columns: `voteID`, `ballotID`, `userID`.  
+  Linked to `positionVotes` and `user`.
 
-- **elections**  
-  Defines election events and their lifecycle.  
-  Key columns: `id`, `name`, `start_date`, `end_date`.  
-  Related to `contests` and `ballots`.  
+- **ballots**
+  Contains voter registration records and eligibility attributes.  
+  Key columns: `voteID`, `ballotID`, `userID`.  
+  Linked to `positionVotes` and `user`.
 
-- **contests**  
-  Represents positions, referenda, or questions within an election.  
-  Key columns: `id`, `election_id`, `title`.  
-  Linked to `candidates` and `votes`.  
+- **company**
+  Contains voter registration records and eligibility attributes.  
+  Key columns: `voteID`, `ballotID`, `userID`.  
+  Linked to `positionVotes` and `user`.
 
-- **candidates**  
-  Holds candidate or option information for a contest.  
-  Key columns: `id`, `contest_id`, `name`.  
-  Referenced in `votes` records.  
+- **ballotPositions**
+  Contains voter registration records and eligibility attributes.  
+  Key columns: `voteID`, `ballotID`, `userID`.  
+  Linked to `positionVotes` and `user`.
 
-- **ballots**  
-  Issued to voters for a specific election.  
-  Key columns: `id`, `voter_id`, `election_id`, `status`.  
-  Integrity enforced by triggers; audited on issuance and casting.  
+- **ballotInitiatives**
+  Contains voter registration records and eligibility attributes.  
+  Key columns: `voteID`, `ballotID`, `userID`.  
+  Linked to `positionVotes` and `user`.
+
+- **initiativeResponses**
+  Contains voter registration records and eligibility attributes.  
+  Key columns: `voteID`, `ballotID`, `userID`.  
+  Linked to `positionVotes` and `user`.
+
+- **ballotCandidates**
+  Contains voter registration records and eligibility attributes.  
+  Key columns: `voteID`, `ballotID`, `userID`.  
+  Linked to `positionVotes` and `user`.
 
 - **votes**  
-  Stores individual selections on a ballot.  
-  Key columns: `id`, `ballot_id`, `contest_id`, `candidate_id`.  
-  Aggregated into materialized views for results reporting.  
+  Contains votes 
+  Key columns: `voteID`, `ballotID`, `userID`.  
+  Linked to `positionVotes` and `user`.
 
-- **initiative_votes**  
-  Records votes for ballot initiatives (referenda or propositions).  
-  Key columns: `id`, `ballot_id`, `initiative_id`, `choice`.    
+- **positionVotes**  
+  Contains voter registration records and eligibility attributes.  
+  Key columns: `voteID`, `ballotID`, `userID`.  
+  Linked to `positionVotes` and `user`.
+  
+- **initiativeVotes**  
+  Contains voter registration records and eligibility attributes.  
+  Key columns: `voteID`, `ballotID`, `userID`.  
+  Linked to `positionVotes` and `user`.
+
+- **employeeSocietyAssignment**  
+  Contains voter registration records and eligibility attributes.  
+  Key columns: `voteID`, `ballotID`, `userID`.  
+  Linked to `positionVotes` and `user`.
 
 ### Materialized Views
 
