@@ -28,63 +28,51 @@ Designed to simulate enterprise workloads (20k+ users, 1.4M+ votes) with auditin
 ### Table Descriptions
 
 - **user**  
-  Stores system accounts.  
-  Key columns: `userID`, `accountType`, `companyID`, `username`.  
+  Stores user system accounts.  
   Enforced with role-based permissions;
 
 - **candidate**
-  Contains voter registration records and eligibility attributes.  
-  Key columns: `voteID`, `ballotID`, `userID`.  
+  Contains candidates and their information 
   Linked to `positionVotes` and `user`.
 
 - **ballots**
   Contains voter registration records and eligibility attributes.  
-  Key columns: `voteID`, `ballotID`, `userID`.  
   Linked to `positionVotes` and `user`.
 
 - **company**
   Contains voter registration records and eligibility attributes.  
-  Key columns: `voteID`, `ballotID`, `userID`.  
   Linked to `positionVotes` and `user`.
 
 - **ballotPositions**
   Contains voter registration records and eligibility attributes.  
-  Key columns: `voteID`, `ballotID`, `userID`.  
   Linked to `positionVotes` and `user`.
 
 - **ballotInitiatives**
   Contains voter registration records and eligibility attributes.  
-  Key columns: `voteID`, `ballotID`, `userID`.  
   Linked to `positionVotes` and `user`.
 
 - **initiativeResponses**
   Contains voter registration records and eligibility attributes.  
-  Key columns: `voteID`, `ballotID`, `userID`.  
   Linked to `positionVotes` and `user`.
 
 - **ballotCandidates**
   Contains voter registration records and eligibility attributes.  
-  Key columns: `voteID`, `ballotID`, `userID`.  
   Linked to `positionVotes` and `user`.
 
 - **votes**  
   Contains votes 
-  Key columns: `voteID`, `ballotID`, `userID`.  
   Linked to `positionVotes` and `user`.
 
 - **positionVotes**  
   Contains voter registration records and eligibility attributes.  
-  Key columns: `voteID`, `ballotID`, `userID`.  
   Linked to `positionVotes` and `user`.
   
 - **initiativeVotes**  
   Contains voter registration records and eligibility attributes.  
-  Key columns: `voteID`, `ballotID`, `userID`.  
   Linked to `positionVotes` and `user`.
 
 - **employeeSocietyAssignment**  
   Contains voter registration records and eligibility attributes.  
-  Key columns: `voteID`, `ballotID`, `userID`.  
   Linked to `positionVotes` and `user`.
 
 ### Materialized Views
