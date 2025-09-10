@@ -18,7 +18,7 @@ Designed to simulate enterprise workloads (20k+ users, 1.4M+ votes) with auditin
 - Database: PostgreSQL (Prisma ORM, PL/pgSQL, triggers, materialized views)
 - Cache/Analytics: Redis
 - Auth: JWT (access + refresh)
-- Logging: Pino (JSON structured logs)'
+- Logging: Pino (JSON structured logs)
 - Testing: Jest
 
 ## Database
