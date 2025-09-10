@@ -60,7 +60,7 @@ Designed to simulate enterprise workloads (20k+ users, 1.4M+ votes) with auditin
 - **initiativeResponses**  
   Stores initiative responses submitted by voters.  
   Linked to `initiativeVotes` and `user`.  
-  ![InitiativeResponses ERD](./public/images/initiativeResponses.png)
+  ![InitiativeResponses ERD](./public/images/inititativeResponses.png)
 
 - **ballotCandidates**  
   Stores the association of candidates with ballots.  
