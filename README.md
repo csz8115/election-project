@@ -28,64 +28,65 @@ Designed to simulate enterprise workloads (20k+ users, 1.4M+ votes) with auditin
 ### Table Descriptions
 
 - **user**  
-  Stores user system accounts
-  Enforced with role-based permissions;
+  Stores user system accounts.  
+  Enforced with role-based permissions.  
   ![User ERD](./public/images/user.png)
 
-- **candidate**
-  Contains candidates and their information 
-  Linked to `positionVotes` and `user`.
-  ![User ERD](./public/images/candidate.png)
+- **candidate**  
+  Stores candidate records and related information.  
+  Linked to `positionVotes` and `user`.  
+  ![Candidate ERD](./public/images/candidate.png)
 
-- **ballots**
-  Contains voter registration records and eligibility attributes
-  Linked to `positionVotes` and `user`.
-  ![User ERD](./public/images/ballots.png)
+- **ballots**  
+  Stores voter registration records and eligibility attributes.  
+  Linked to `positionVotes` and `user`.  
+  ![Ballots ERD](./public/images/ballots.png)
 
-- **company**
-  Contains voter registration records and eligibility attributes
-  Linked to `positionVotes` and `user`.
-  ![User ERD](./public/images/company.png)
+- **company**  
+  Stores company information and related associations.  
+  Linked to `employeeSocietyAssignment` and `user`.  
+  ![Company ERD](./public/images/company.png)
 
-- **ballotPositions**
-  Contains voter registration records and eligibility attributes
-  Linked to `positionVotes` and `user`.
-  ![User ERD](./public/images/ballotPositions.png)
+- **ballotPositions**  
+  Stores positions available on ballots.  
+  Linked to `positionVotes` and `ballots`.  
+  ![BallotPositions ERD](./public/images/ballotPositions.png)
 
-- **ballotInitiatives**
-  Contains voter registration records and eligibility attributes
-  Linked to `positionVotes` and `user`.
-  ![User ERD](./public/images/ballotInitiatives.png)
+- **ballotInitiatives**  
+  Stores initiatives available on ballots.  
+  Linked to `initiativeVotes` and `ballots`.  
+  ![BallotInitiatives ERD](./public/images/ballotInitiatives.png)
 
-- **initiativeResponses**
-  Contains voter registration records and eligibility attributes
-  Linked to `positionVotes` and `user`.
-  ![User ERD](./public/images/initiativeResponses.png)
+- **initiativeResponses**  
+  Stores initiative responses submitted by voters.  
+  Linked to `initiativeVotes` and `user`.  
+  ![InitiativeResponses ERD](./public/images/initiativeResponses.png)
 
-- **ballotCandidates**
-  Contains voter registration records and eligibility attributes
-  Linked to `positionVotes` and `user`.
-  ![User ERD](./public/images/ballotCandidates.png)
+- **ballotCandidates**  
+  Stores the association of candidates with ballots.  
+  Linked to `candidate` and `ballots`.  
+  ![BallotCandidates ERD](./public/images/ballotCandidates.png)
 
 - **votes**  
-  Contains votes.
-  Linked to `positionVotes` and `user`
-  ![User ERD](./public/images/votes.png)
+  Stores individual votes cast.  
+  Linked to `positionVotes` and `user`.  
+  ![Votes ERD](./public/images/votes.png)
 
 - **positionVotes**  
-  Contains voter registration records and eligibility attributes  
-  Linked to `positionVotes` and `user`.
-  ![User ERD](./public/images/positionVotes.png)
+  Stores votes related to ballot positions.  
+  Linked to `ballotPositions` and `user`.  
+  ![PositionVotes ERD](./public/images/positionVotes.png)
   
 - **initiativeVotes**  
-  Contains voter registration records and eligibility attributes  
-  Linked to `positionVotes` and `user`.
-  ![User ERD](./public/images/initiativeVotes.png)
+  Stores votes related to ballot initiatives.  
+  Linked to `ballotInitiatives` and `user`.  
+  ![InitiativeVotes ERD](./public/images/initiativeVotes.png)
 
 - **employeeSocietyAssignment**  
-  Contains voter registration records and eligibility attributes
-  Linked to `positionVotes` and `user`.
-  ![User ERD](./public/images/employeeSocietyAssignment.png)
+  Stores employee-to-society assignments within a company.  
+  Linked to `company` and `user`.  
+  ![EmployeeSocietyAssignment ERD](./public/images/employeeSocietyAssignment.png)
+
 
 ### Materialized Views
 
