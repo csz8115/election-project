@@ -30,50 +30,62 @@ Designed to simulate enterprise workloads (20k+ users, 1.4M+ votes) with auditin
 - **user**  
   Stores user system accounts
   Enforced with role-based permissions;
+  ![User ERD](./public/images/user.png)
 
 - **candidate**
   Contains candidates and their information 
   Linked to `positionVotes` and `user`.
+  ![User ERD](./public/images/candidate.png)
 
 - **ballots**
-  Contains voter registration records and eligibility attributes.  
+  Contains voter registration records and eligibility attributes
   Linked to `positionVotes` and `user`.
+  ![User ERD](./public/images/ballots.png)
 
 - **company**
-  Contains voter registration records and eligibility attributes.  
+  Contains voter registration records and eligibility attributes
   Linked to `positionVotes` and `user`.
+  ![User ERD](./public/images/company.png)
 
 - **ballotPositions**
-  Contains voter registration records and eligibility attributes.  
+  Contains voter registration records and eligibility attributes
   Linked to `positionVotes` and `user`.
+  ![User ERD](./public/images/ballotPositions.png)
 
 - **ballotInitiatives**
-  Contains voter registration records and eligibility attributes.  
+  Contains voter registration records and eligibility attributes
   Linked to `positionVotes` and `user`.
+  ![User ERD](./public/images/ballotInitiatives.png)
 
 - **initiativeResponses**
-  Contains voter registration records and eligibility attributes.  
+  Contains voter registration records and eligibility attributes
   Linked to `positionVotes` and `user`.
+  ![User ERD](./public/images/initiativeResponses.png)
 
 - **ballotCandidates**
-  Contains voter registration records and eligibility attributes.  
+  Contains voter registration records and eligibility attributes
   Linked to `positionVotes` and `user`.
+  ![User ERD](./public/images/ballotCandidates.png)
 
 - **votes**  
   Contains votes.
-  Linked to `positionVotes` and `user`.
+  Linked to `positionVotes` and `user`
+  ![User ERD](./public/images/votes.png)
 
 - **positionVotes**  
-  Contains voter registration records and eligibility attributes.  
+  Contains voter registration records and eligibility attributes  
   Linked to `positionVotes` and `user`.
+  ![User ERD](./public/images/positionVotes.png)
   
 - **initiativeVotes**  
-  Contains voter registration records and eligibility attributes.  
+  Contains voter registration records and eligibility attributes  
   Linked to `positionVotes` and `user`.
+  ![User ERD](./public/images/initiativeVotes.png)
 
 - **employeeSocietyAssignment**  
-  Contains voter registration records and eligibility attributes.  
+  Contains voter registration records and eligibility attributes
   Linked to `positionVotes` and `user`.
+  ![User ERD](./public/images/employeeSocietyAssignment.png)
 
 ### Materialized Views
 
