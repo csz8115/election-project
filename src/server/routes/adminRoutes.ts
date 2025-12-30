@@ -93,7 +93,7 @@ router.post('/createUser', async (req, res): Promise<any> => {
     }
 });
 
-router.get(`/getSystemReport`, requireRole('Admin'), async (req, res): Promise<any> => {
+router.get(`/getSystemReport`, requireRole('Admin', 'Employee'), async (req, res): Promise<any> => {
     try {
         const keys = await getRedisClient().keys('*active:*');
         const activeUsers = keys.length;

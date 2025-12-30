@@ -13,6 +13,7 @@
   "dependencies": {
     "@prisma/client": "^6.5.0",
     "@reduxjs/toolkit": "^2.6.1",
+    "@tanstack/react-query-persist-client": "^5.80.10",
     "@types/bcryptjs": "^2.4.6",
     "@types/express": "^5.0.1",
     "@types/pino": "^7.0.4",
@@ -75,5 +76,8 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2",
     "vite": "^6.2.0"
+  },
+  "prisma": {
+    "seed": "npx tsx ./dataFiles/seedBulk.ts"
   }
 }

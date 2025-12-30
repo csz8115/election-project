@@ -70,7 +70,7 @@ async function checkUsername(username: string): Promise<any> {
     try {
         const user = await prisma.user.findUnique({
             where: {
-                username: username,
+                username: username.trim(),
             },
             select: {
                 userID: true,
@@ -864,10 +864,34 @@ async function createInitiative(initiative: BallotInitiatives): Promise<BallotIn
     }
 }
 
-async function getBallots(): Promise<any | undefined> {
+async function getBallots(cursor?: number): Promise<{
+    ballots: any[];
+    nextCursor: string | null;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+} | undefined> {
+    const entryPerPage = 40;
+    
     try {
-        const ballots = await prisma.ballots.findMany({});
-        return ballots;
+        const ballots = await prisma.ballots.findMany({
+            take: entryPerPage + 1, // Fetch one extra to check for next page
+            skip: cursor ? cursor * entryPerPage : 0, // Skip based on page number
+            orderBy: {
+                endDate: 'desc', // Sort by date created, newest first
+            },
+        });
+
+        const hasNextPage = ballots.length > 40;
+        const hasPreviousPage = cursor !== undefined && cursor > 0;
+        const ballotsPage = hasNextPage ? ballots.slice(0, -1) : ballots;
+        const nextCursor = cursor + 1;
+
+        return {
+            ballots: ballotsPage,
+            nextCursor: nextCursor?.toString() ?? null,
+            hasNextPage: hasNextPage,
+            hasPreviousPage: hasPreviousPage,
+        };
     } catch (error) {
         dbLogger.error({
             message: "Unknown error during ballots retrieval",
@@ -875,6 +899,7 @@ async function getBallots(): Promise<any | undefined> {
         });
     }
 }
+
 
 async function getBallotsByCompany(companyID: number): Promise<any> {
     try {
@@ -1427,6 +1452,52 @@ async function tallyBallot(ballotID: number) {
     }
 }
 
+// same as tallyBallot but only displays the winners and not the full results
+async function tallyBallotMember(ballotID: number) {
+    try {
+        const ballot = await prisma.ballots.findUnique({
+            where: {
+                ballotID: ballotID,
+            },
+            include: {
+                positions: {
+                    include: {
+                        candidates: {
+                            include: {
+                                candidate: true,
+                            },
+                            orderBy: {
+                                candidate: {
+                                    positionVotes: {
+                                        _count: 'desc'
+                                    }
+                                }
+                            },
+                        },
+                    },
+                },
+                initiatives: {
+                    include: {
+                        responses: true,
+                    }
+                },
+            }
+        });
+
+        if (!ballot) {
+            throw new Error("Ballot not found");
+        }
+
+        return ballot;
+    } catch (error) {
+        dbLogger.error({
+            message: "Unknown error during ballot member tally",
+            ballotID: ballotID,
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+}
+
 async function submitBallot(candidateVotes: Vote[], responsesVotes: ResponseVote[]) {
     try {
         // Using a transaction with sequentially executed operations
@@ -1760,5 +1831,6 @@ export default {
     getBallotStatus,
     getAllUsers,
     deleteUser,
-    getCompaniesByIDs
+    getCompaniesByIDs,
+    tallyBallotMember,
 };

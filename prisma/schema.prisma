@@ -151,4 +151,3 @@ model positionVotes {
 
   @@id([voteID, positionID])
 }
-

@@ -118,3 +118,26 @@ export async function getBallotResultsMember(ballotID: number): Promise<any> {
         results: results,
     };
 }
+
+export async function getSystemReport(): Promise<any> {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}api/v1/admin/getSystemReport`, {
+        method: 'GET',
+        credentials: 'include', // Include cookies in the request
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        return {
+            success: false,
+            error: errorData.error || 'Failed to fetch system report',
+        };
+    }
+    const report = await response.json();
+    return {
+        success: true,
+        report: report,
+    };
+}

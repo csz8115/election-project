@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { getRedisClient } from '../utils/db/redis.ts';
 import { requireRole } from '../utils/requireRole.ts';
 import logger from '../utils/logger.ts';
+import prisma from '../utils/db/prisma.ts';
 
 const router = express.Router();
 
@@ -37,8 +38,15 @@ router.post('/login', async (req, res): Promise<any> => {
         //         throw new Error('User already logged in');
         //     }
         // }
-        const user = await db.checkUsername(username);
-        if (user === null || user === false) {
+        console.log("Attempting login for username:", username);
+        const user = await prisma.user.findFirst({
+            where: {
+                username: username.trim(),
+            },
+        });
+        const count = await prisma.user.count();
+        console.log(user);
+        if (!user) {
             throw new Error('Invalid username or password');
         }
 
@@ -81,6 +89,10 @@ router.post('/login', async (req, res): Promise<any> => {
         }
         // Handle invalid password error
         else if (error.message === 'Invalid password') {
+            return res.status(401).json({ error: 'Invalid username or password' });
+        }
+        // Handle invalid username error
+        else if (error.message === 'Invalid username or password') {
             return res.status(401).json({ error: 'Invalid username or password' });
         }
         return res.status(500).json({ error: 'Failed to login' });
@@ -672,6 +684,47 @@ router.get(`/voterStatus`, requireRole('Member', 'Officer'), async (req, res): P
         }
         // Handle other errors
         return res.status(500).json({ error: 'Failed to check if user voted' });
+    }
+});
+
+
+// Get ballot route
+router.get('/viewBallotResults', requireRole('Officer', 'Employee', 'Admin', 'Member'), async (req, res): Promise<any> => {
+    try {
+        const { ballotID } = req.query;
+
+        if (!ballotID) {
+            throw new Error('Invalid request');
+        }
+
+        // Validate ballotID
+        const ballotIDSchema = z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, {
+            message: 'Ballot ID must be a positive number'
+        });
+        ballotIDSchema.parse(ballotID);
+
+        const ballot = await db.tallyBallotMember(Number(ballotID));
+
+        if (!ballot) {
+            throw new Error('Ballot not found');
+        }
+
+        return res.status(200).json(ballot);
+    } catch (error) {
+        // Handle the Zod validation error
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors.map(e => e.message) });
+        }
+        // Handle invalid request error
+        else if (error.message === 'Invalid request') {
+            return res.status(400).json({ error: 'Invalid request' });
+        }
+        // Handle ballot not found error
+        else if (error.message === 'Ballot not found') {
+            return res.status(404).json({ error: 'Ballot not found' });
+        }
+        // Handle other errors
+        return res.status(500).json({ error: 'Failed to get ballot' });
     }
 });
 

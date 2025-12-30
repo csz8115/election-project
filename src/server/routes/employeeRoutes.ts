@@ -3,10 +3,46 @@ import express from 'express';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import { requireRole } from '../utils/requireRole.ts';
+import logger from '../utils/logger.ts';
 
 
 const router = express.Router();
 
+router.get('/getBallots', async (req, res): Promise<any> => {
+    try {
+        const cursor = Number(req.query.page);
+
+        // Validate cursor
+        if (cursor !== undefined && isNaN(cursor)) {
+            throw new Error('Invalid cursor value');
+        }
+        // Fetch ballots from the database
+        const ballots = await db.getBallots(cursor);
+
+        if (!ballots || ballots.ballots.length === 0) {
+            throw new Error('No ballots found');
+        }
+        // Prepare the response
+        const response = {
+            ballots: ballots.ballots,
+            nextCursor: ballots.nextCursor,
+            hasNextPage: ballots.hasNextPage,
+            hasPreviousPage: ballots.hasPreviousPage,
+            totalCount: 50,
+        };
+        logger.info(`Retrieved ${response.ballots.length} ballots successfully`);
+        return res.status(200).json(response);
+    } catch (error: any) {
+        console.error("Error retrieving ballots:", error);
+        
+        if (error.message === 'Invalid cursor value') {
+            return res.status(400).json({ error: 'Invalid cursor value' });
+        } else if (error.message === 'No ballots found') {
+            return res.status(404).json({ error: 'No ballots found' });
+        }
+        return res.status(500).json({ error: "Failed to retrieve ballots." });
+    }
+});
 // Create ballot route
 router.post('/createBallot', requireRole('Employee', 'Admin'), async (req, res): Promise<any> => {
     try {
