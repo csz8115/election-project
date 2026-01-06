@@ -864,7 +864,7 @@ async function createInitiative(initiative: BallotInitiatives): Promise<BallotIn
     }
 }
 
-async function getBallots(cursor?: number, search?: string, sortBy?: string, sortDir?: "asc" | "desc"): Promise<{
+async function getBallots(cursor?: number, search?: string, sortBy?: string, sortDir?: "asc" | "desc", status?: "open" | "closed" | "all"): Promise<{
     ballots: any[];
     nextCursor: string | null;
     hasNextPage: boolean;
@@ -874,21 +874,35 @@ async function getBallots(cursor?: number, search?: string, sortBy?: string, sor
     const entryPerPage = 40;
     
     try {
-        const ballots = await prisma.ballots.findMany({
+        let ballots = await prisma.ballots.findMany({
             take: entryPerPage + 1, // Fetch one extra to check for next page
             skip: cursor ? cursor * entryPerPage : 0, // Skip based on page number
-            orderBy: {
-                endDate: 'desc', // Sort by date created, newest first
+            orderBy: sortBy === "votes"
+            ? {
+                votes: {
+                _count: sortDir || "desc",
+                },
+            }
+            : {
+                [sortBy || "endDate"]: sortDir || "desc",
             },
             where: search
-                ? {
-                    OR: [
-                        { ballotName: { contains: search, mode: 'insensitive' } },
-                        { description: { contains: search, mode: 'insensitive' } },
-                    ],
-                }
-                : undefined,
+            ? {
+                OR: [
+                { ballotName: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } },
+                ],
+            }
+            : undefined,
         });
+
+        if (status === "open") {
+            const now = new Date();
+            ballots = ballots.filter(ballot => ballot.startDate <= now && ballot.endDate >= now);
+        } else if (status === "closed") {
+            const now = new Date();
+            ballots = ballots.filter(ballot => ballot.endDate < now);
+        }
 
         const hasNextPage = ballots.length > 40;
         const hasPreviousPage = cursor !== undefined && cursor > 0;

@@ -1,11 +1,11 @@
-import { useMemo, useState, useEffect, use } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ballots } from "@prisma/client";
 import { PulseLoader } from "react-spinners";
-import { ArrowDown, ArrowUp, Search, SquareSplitHorizontal } from "lucide-react";
+import { ArrowDown, ArrowUp, SquareSplitHorizontal } from "lucide-react";
 import { useAllBallots } from "../hooks/useAllBallots";
-import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
+import SearchInput from "../components/searchInput";
 import {
   Pagination,
   PaginationContent,
@@ -42,7 +42,9 @@ export default function EmployeeDash() {
   const [page, setPage] = useState(0);
   const [query, setQuery] = useState("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [sortBy, setSortBy] = useState<"startDate" | "endDate" | "ballotName" | "votes">("startDate");
   const [debouncedQuery, setDebouncedQuery] = useState(query);
+  const [status, setStatus] = useState<"open" | "closed" | "all">("all");
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -56,9 +58,9 @@ export default function EmployeeDash() {
 
   useEffect(() => {
     setPage(0); // Reset to first page when query changes
-  }, [debouncedQuery]);
+  }, [debouncedQuery, status, sortBy, sortDir]);
 
-  const { data, isLoading, isError } = useAllBallots(page, debouncedQuery);
+  const { data, isLoading, isError } = useAllBallots({pageParam: page, q: debouncedQuery, sortBy, sortDir, status});
   const navigate = useNavigate();
 
   const LIMIT = 40;
@@ -70,6 +72,7 @@ export default function EmployeeDash() {
       setPage(totalPages - 1);
     }
   }, [totalPages, page]);
+
 
   const handleCardClick = (ballot: ballots) => {
     navigate("/employee-ballot", { state: { ballot } });
@@ -122,13 +125,12 @@ export default function EmployeeDash() {
         </PaginationContent>
       </Pagination>
     );
-  }, [page, totalPages]);
+  }, [page, totalPages, sortBy, sortDir, status]);
 
   return (
     // 🔒 Always render a background shell (prevents “fall through to white”)
     <div className="min-h-screen w-full bg-slate-950 text-slate-300">
       <div className="p-4 space-y-4 flex flex-col">
-        <h1 className="text-2xl text-slate-100">All Elections</h1>
 
         {/* Top Pagination */}
         {!isLoading && !isError && paginationControls}
@@ -136,31 +138,64 @@ export default function EmployeeDash() {
         {/* Toolbar */}
         <div className="flex justify-between items-center mb-4 gap-4">
           <div className="relative w-full max-w-xs">
-            <Input
+            <SearchInput
               type="text"
               placeholder="Search ballots..."
-              className="w-full pl-10 bg-slate-900/50 border-slate-800 text-slate-200 placeholder:text-slate-500"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 h-4 w-4" />
           </div>
+            <Select defaultValue="all" onValueChange={(value) => setStatus(value as "open" | "closed" | "all")}>
+            <SelectTrigger className="w-32 bg-slate-900/30 border-slate-800 text-slate-200">
+              <SelectValue placeholder="all" />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="open">Open</SelectItem>
+              <SelectItem value="closed">Closed</SelectItem>
+            </SelectContent>
+            </Select>
+
+            <div className="flex-1" />
 
           <div className="flex items-center space-x-2">
             <label htmlFor="sortBy" className="text-sm text-slate-300">
               Sort by:
             </label>
 
-            <Select defaultValue="date">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="border-slate-800 bg-slate-900/30 text-slate-200 hover:bg-slate-800/60"
+                >
+                  Company
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="bg-slate-950 border-slate-800">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-slate-200">Company</AlertDialogTitle>
+                  <AlertDialogDescription className="text-slate-400">
+                    {/* Dialog content will go here */}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="bg-slate-900 text-slate-200 border-slate-800 hover:bg-slate-800">
+                    Close
+                  </AlertDialogCancel>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            <Select defaultValue="startDate" onValueChange={(value) => setSortBy(value as "startDate" | "endDate" | "ballotName" | "votes")}>
               <SelectTrigger className="w-32 bg-slate-900/30 border-slate-800 text-slate-200">
-                <SelectValue placeholder="Filter" />
+                <SelectValue placeholder="startDate" />
               </SelectTrigger>
               <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
-                <SelectItem value="date">Date</SelectItem>
-                <SelectItem value="name">Name</SelectItem>
-                <SelectItem value="status">Status</SelectItem>
+                <SelectItem value="startDate">Start Date </SelectItem>
+                <SelectItem value="endDate">End Date</SelectItem>
+                <SelectItem value="ballotName">Ballot Name</SelectItem>
                 <SelectItem value="votes">Votes</SelectItem>
-                <SelectItem value="participants">Participants</SelectItem>
               </SelectContent>
             </Select>
 

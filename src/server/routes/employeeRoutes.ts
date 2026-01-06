@@ -12,6 +12,9 @@ router.get('/getBallots', async (req, res): Promise<any> => {
     try {
         const cursor = Number(req.query.page);
         const query = req.query.q as string | undefined;
+        const sortBy = req.query.sortBy as string | undefined;
+        const sortDir = req.query.sortDir as "asc" | "desc" | undefined;
+        const status = req.query.status as "open" | "closed" | "all" | undefined;
 
         // Validate cursor
         if (cursor !== undefined && isNaN(cursor)) {
@@ -22,9 +25,30 @@ router.get('/getBallots', async (req, res): Promise<any> => {
         if (query !== undefined && typeof query !== 'string') {
             throw new Error('Invalid query value');
         }
-        
+
+        // Validate and sanitize query with Zod
+        const querySchema = z.string().trim().max(100).regex(/^[a-zA-Z0-9\s\-_]*$/, 'Query contains invalid characters').optional();
+        const sanitizedQuery = query ? querySchema.parse(query) : undefined;
+
+        // Validate sortBy and sortDir
+        const validSortByFields = ["ballotName", "startDate", "endDate", "createdAt", "votes"];
+        const validSortDirValues = ["asc", "desc"];
+        const validStatusValues = ["open", "closed", "all"];
+
+        if (sortBy && !validSortByFields.includes(sortBy)) {
+            throw new Error('Invalid sortBy value');
+        }
+
+        if (sortDir && !validSortDirValues.includes(sortDir)) {
+            throw new Error('Invalid sortDir value');
+        }
+
+        if (status && !validStatusValues.includes(status)) {
+            throw new Error('Invalid status value');
+        }
+
         // Fetch ballots from the database
-        const ballots = await db.getBallots(cursor, query);
+        const ballots = await db.getBallots(cursor, sanitizedQuery, sortBy, sortDir, status);
         // Prepare the response
         const response = {
             ballots: ballots.ballots,
@@ -42,6 +66,8 @@ router.get('/getBallots', async (req, res): Promise<any> => {
             return res.status(400).json({ error: 'Invalid cursor value' });
         } else if (error.message === 'No ballots found') {
             return res.status(404).json({ error: 'No ballots found' });
+        } else if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors.map(e => e.message) });
         }
         return res.status(500).json({ error: "Failed to retrieve ballots." });
     }
