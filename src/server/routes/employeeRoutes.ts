@@ -11,24 +11,27 @@ const router = express.Router();
 router.get('/getBallots', async (req, res): Promise<any> => {
     try {
         const cursor = Number(req.query.page);
+        const query = req.query.q as string | undefined;
 
         // Validate cursor
         if (cursor !== undefined && isNaN(cursor)) {
             throw new Error('Invalid cursor value');
         }
-        // Fetch ballots from the database
-        const ballots = await db.getBallots(cursor);
 
-        if (!ballots || ballots.ballots.length === 0) {
-            throw new Error('No ballots found');
+        // Validate query
+        if (query !== undefined && typeof query !== 'string') {
+            throw new Error('Invalid query value');
         }
+        
+        // Fetch ballots from the database
+        const ballots = await db.getBallots(cursor, query);
         // Prepare the response
         const response = {
             ballots: ballots.ballots,
             nextCursor: ballots.nextCursor,
             hasNextPage: ballots.hasNextPage,
             hasPreviousPage: ballots.hasPreviousPage,
-            totalCount: 50,
+            totalCount: ballots.totalCount,
         };
         logger.info(`Retrieved ${response.ballots.length} ballots successfully`);
         return res.status(200).json(response);

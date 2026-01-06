@@ -3,9 +3,8 @@ import EmployeeDash from "../components/employeeDash";
 
 export default function EmployeeDashboard() {
     return (
-        <div>
-            <Navbar />
-            <EmployeeDash/>
+        <div className="min-h-screen bg-background text-foreground">
+            <EmployeeDash />
         </div>
     );
 }

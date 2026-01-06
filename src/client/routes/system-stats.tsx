@@ -11,7 +11,6 @@ export default function SystemStats() {
 
     return (
         <div>
-            <Navbar />
             <h1 className="text-2xl font-bold mb-4">System Statistics</h1>
             <p className="text-gray-700">This page will display system statistics.</p>
             {/* Add your system stats components here */}

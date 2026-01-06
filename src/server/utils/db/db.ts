@@ -864,11 +864,12 @@ async function createInitiative(initiative: BallotInitiatives): Promise<BallotIn
     }
 }
 
-async function getBallots(cursor?: number): Promise<{
+async function getBallots(cursor?: number, search?: string, sortBy?: string, sortDir?: "asc" | "desc"): Promise<{
     ballots: any[];
     nextCursor: string | null;
     hasNextPage: boolean;
     hasPreviousPage: boolean;
+    totalCount: number;
 } | undefined> {
     const entryPerPage = 40;
     
@@ -879,6 +880,14 @@ async function getBallots(cursor?: number): Promise<{
             orderBy: {
                 endDate: 'desc', // Sort by date created, newest first
             },
+            where: search
+                ? {
+                    OR: [
+                        { ballotName: { contains: search, mode: 'insensitive' } },
+                        { description: { contains: search, mode: 'insensitive' } },
+                    ],
+                }
+                : undefined,
         });
 
         const hasNextPage = ballots.length > 40;
@@ -891,6 +900,16 @@ async function getBallots(cursor?: number): Promise<{
             nextCursor: nextCursor?.toString() ?? null,
             hasNextPage: hasNextPage,
             hasPreviousPage: hasPreviousPage,
+            totalCount: await prisma.ballots.count({
+                where: search
+                    ? {
+                        OR: [
+                            { ballotName: { contains: search, mode: 'insensitive' } },
+                            { description: { contains: search, mode: 'insensitive' } },
+                        ],
+                    }
+                    : undefined,
+            }),
         };
     } catch (error) {
         dbLogger.error({

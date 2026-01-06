@@ -31,6 +31,7 @@ persistQueryClient({
   persister,
 });
 
+document.documentElement.classList.add("dark");
 createRoot(document.getElementById('root')!).render(
   <QueryClientProvider client={queryClient}>
     <CookiesProvider defaultSetOptions={{ path: '/' }}>

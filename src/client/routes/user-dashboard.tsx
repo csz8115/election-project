@@ -6,7 +6,6 @@ export default function UserDashboard() {
     const user = useUserStore((state) => state);
     return (
         <div>
-            <Navbar />
             <UserDash />
         </div>
     );

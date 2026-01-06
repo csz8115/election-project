@@ -3,7 +3,6 @@ import {
     CardAction,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle
 } from '../components/ui/card'
@@ -74,11 +73,6 @@ export default function Login() {
                         </Button>
                     </form>
                 </CardContent>
-                <CardFooter>
-                    <Button variant="outline" className="w-full">
-                        Forgot Password?
-                    </Button>
-                </CardFooter>
             </Card>
         </div>
     );

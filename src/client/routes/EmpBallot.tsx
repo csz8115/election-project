@@ -1,106 +1,163 @@
-import { useNavigate, useLocation } from "react-router-dom";
-import { useUserStore } from "../store/userStore";
-import { getActiveUserBallots, getBallotResults } from "../lib/form-actions";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card";
-import {
-    Accordion, AccordionContent, AccordionItem, AccordionTrigger,
-} from "../components/ui/accordion"
-import type { ballotPositions, ballots } from "@prisma/client";
-import Navbar from "../components/navbar";
+import { useLocation, useNavigate } from "react-router-dom";
+import type { ballots } from "@prisma/client";
 import { useQuery } from "@tanstack/react-query";
 import { PulseLoader } from "react-spinners";
-
-import { CircleCheckBig, Crown } from "lucide-react";
+import { CircleCheckBig } from "lucide-react";
+import CandidateCard from "../components/candidateCard";
+import { getBallotResults } from "../lib/form-actions";
+import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import { Button } from "../components/ui/button";
 
 export default function EmpBallot() {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const ballot = location.state.ballot as ballots;
-    const { data, isLoading, isError } = useQuery({
-        queryKey: ['activeUserBallots'],
-        queryFn: () => getBallotResults(ballot.ballotID),
-    });
+  const location = useLocation();
+  const navigate = useNavigate();
 
+  // Guard if user refreshes page (location.state is lost)
+  const ballot = (location.state as any)?.ballot as ballots | undefined;
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["ballotResults", ballot?.ballotID],
+    queryFn: () => getBallotResults(ballot!.ballotID),
+    enabled: !!ballot?.ballotID, // don’t run unless ballot exists
+  });
+
+  if (!ballot) {
     return (
-        <div>
-            <Navbar />
-            <div className="flex items-center justify-center h-screen w-full">
-                {ballot ? (
-                    <Card className="w-full max-w-6xl shadow-lg">
-                        <CardHeader>
-                            <CardTitle>{ballot.ballotName}</CardTitle>
-                            <CardDescription
-                                className="text-sm flex gap-1 text-green-500"
-                            >
-                                <CircleCheckBig />
-                                Complete
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-
-                            {isLoading || !data.results ? (
-                                <div className="flex items-center justify-center p-8">
-                                    <PulseLoader color="#000" size={15} />
-                                </div>
-                            ) : (
-                                <>
-                                    <h2 className="text-xl font-semibold mb-4">Initiatives</h2>
-                                    <div className="space-y-4">
-                                        {data?.results?.initiatives.map((initiative: any) => (
-                                            <div key={initiative.initiativeID} className="p-4 border rounded-lg">
-                                                <h3 className="text-lg font-bold">{initiative.title}</h3>
-                                                <p>{initiative.description}</p>
-                                                <p>Votes: {initiative.votes}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <h2 className="text-xl font-semibold mt-6 mb-4">Positions</h2>
-                                    <div className="space-y-4">
-                                        {data?.results?.positions.map((position: any) => (
-                                            <Accordion type="single" collapsible key={position.positionID}>
-                                                <AccordionItem value={`position-${position.positionID}`}>
-                                                    <AccordionTrigger className="p-4 border rounded-lg">
-                                                        <div className="text-left">
-                                                            <h3 className="text-lg font-bold">{position.positionName}</h3>
-                                                            <p>Total Votes: {position?._count?.positionVotes}</p>
-                                                        </div>
-                                                    </AccordionTrigger>
-                                                    <AccordionContent className="p-4">
-                                                        <div className="grid grid-cols-3 gap-4 max-h-96 overflow-y-auto">
-                                                            {position.candidates.map((candidate: any, index: number) => {
-                                                                const isWinner = index === 0; // Assuming candidates are sorted by vote count
-                                                                return (
-                                                                    <div key={candidate.candidateID} className="p-4 border rounded-lg bg-gray-50">
-                                                                        <div className="mb-3">
-                                                                            <div className="flex items-center gap-1">                                                                               
-                                                                                {isWinner && <Crown className="text-yellow-500 w-4 h-4" />}
-                                                                                <h4 className="text-lg font-semibold">{candidate.candidate.fName} {candidate.candidate.lName}</h4>
-                                                                            </div>
-                                                                            <p className="text-sm italic text-gray-600">{candidate.candidate.titles}</p>
-                                                                        </div>
-                                                                        <img src={candidate.candidate.picture} alt="" className="w-full h-48 object-cover rounded-md mb-3" />
-                                                                        <div>
-                                                                            <p className="mb-2 font-medium">Votes: {candidate.candidate?._count?.positionVotes}</p>
-                                                                            <p className="text-sm">{candidate.candidate.description ? candidate.candidate.description : `No description provided`}</p>
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                            </Accordion>
-                                        ))}
-                                    </div>
-                                </>
-                            )}
-
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <p>No ballot selected.</p>
-                )}
-            </div>
-        </div>
+      <div className="min-h-screen w-full bg-background text-foreground flex items-center justify-center px-4">
+        <Card className="w-full max-w-lg">
+          <CardHeader>
+            <CardTitle>No ballot selected</CardTitle>
+          </CardHeader>
+          <CardContent className="flex gap-3">
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              Go Back
+            </Button>
+            <Button onClick={() => navigate("/")}>Go Home</Button>
+          </CardContent>
+        </Card>
+      </div>
     );
+  }
+
+  return (
+    <div className="min-h-screen w-full bg-background text-foreground">
+      <div className="mx-auto w-full max-w-6xl px-4 py-6 space-y-6">
+        {/* Header */}
+        <Card className="border border-white/10 bg-slate-900/60">
+          <CardHeader className="flex flex-row items-start justify-between gap-4">
+            <div className="min-w-0">
+              <CardTitle className="text-2xl text-slate-100 truncate">
+                {ballot.ballotName}
+              </CardTitle>
+              <p className="text-sm text-slate-300 mt-1">Complete</p>
+            </div>
+
+            <CircleCheckBig className="text-green-500 shrink-0" />
+          </CardHeader>
+        </Card>
+
+        {/* Loading / Error */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-16">
+            <PulseLoader color="currentColor" size={10} />
+          </div>
+        )}
+
+        {isError && (
+          <Card className="border border-white/10 bg-slate-900/60">
+            <CardContent className="py-10 text-slate-200">
+              Error loading ballot results.
+            </CardContent>
+          </Card>
+        )}
+
+        {!isLoading && !isError && !data?.results && (
+          <Card className="border border-white/10 bg-slate-900/60">
+            <CardContent className="py-10 text-slate-200">
+              No results returned.
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Content */}
+        {!isLoading && !isError && data?.results && (
+          <div className="space-y-10">
+            {/* Initiatives */}
+            {!!data.results.initiatives?.length && (
+              <section className="space-y-4">
+                <h2 className="text-xl font-semibold text-slate-100">
+                  Initiatives
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {data.results.initiatives.map((initiative: any) => (
+                    <Card
+                      key={initiative.initiativeID}
+                      className="border border-white/10 bg-slate-900/60"
+                    >
+                      <CardHeader>
+                        <CardTitle className="text-base text-slate-100">
+                          {initiative.title}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2 text-sm text-slate-300">
+                        <p>{initiative.description}</p>
+                        <p className="text-slate-200">
+                          Votes:{" "}
+                          <span className="font-medium">
+                            {initiative.votes ?? 0}
+                          </span>
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Positions */}
+            <section className="space-y-4">
+              <h2 className="text-xl font-semibold text-slate-100">
+                Positions
+              </h2>
+
+              <div className="space-y-6">
+                {data.results.positions.map((position: any) => (
+                  <section
+                    key={position.positionID}
+                    className="rounded-2xl border border-white/10 bg-slate-900/60"
+                  >
+                    <div className="px-5 py-4 border-b border-white/10">
+                      <h3 className="text-lg font-semibold text-slate-100">
+                        {position.positionName}
+                      </h3>
+                      <p className="text-sm text-slate-300">
+                        Total Votes:{" "}
+                        <span className="text-slate-100 font-medium">
+                          {position?._count?.positionVotes ?? 0}
+                        </span>
+                      </p>
+                    </div>
+
+                    <div className="p-5">
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {position.candidates.map((candidate: any, index: number) => (
+                          <CandidateCard
+                            key={candidate.candidate.candidateID}
+                            candidate={candidate.candidate}
+                            candidateIndex={index}
+                            votes={candidate.candidate._count?.positionVotes || 0}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </section>
+                ))}
+              </div>
+            </section>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

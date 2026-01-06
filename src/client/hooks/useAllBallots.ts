@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 interface BallotsResponse {
     ballots: any;
@@ -6,22 +6,23 @@ interface BallotsResponse {
     hasPreviousPage: boolean;
     nextCursor: number;
     totalCount: number;
-    data: any[];
 }
 
-export function useAllBallots(pageParam: number = 0) {
+export function useAllBallots(pageParam: number = 0, q: string = "") {
   return useQuery<BallotsResponse>({
-    queryKey: ['allBallots', pageParam],
+    queryKey: ['allBallots', pageParam, q],
     queryFn: async () => {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}api/v1/employee/getBallots?page=${pageParam}&limit=40`
-      );
+      const url = new URL(`${import.meta.env.VITE_API_URL}api/v1/employee/getBallots`);
+      url.searchParams.append('page', pageParam.toString());
+      url.searchParams.append('limit', '40');
+      if (q.trim()) url.searchParams.set("q", q.trim());
+      const response = await fetch(url.toString());
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
       return response.json();
     },
     refetchOnWindowFocus: false,
+    placeholderData: (prev) => prev
   });
 }
-
