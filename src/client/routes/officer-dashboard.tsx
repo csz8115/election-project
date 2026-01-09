@@ -1,5 +1,4 @@
-import Navbar from "../components/navbar";
-import OfficerDash from "../components/officerDash";
+import OfficerDash from "../components/dashboard/officerDash";
 
 export default function OfficerDashboard() {
     return (

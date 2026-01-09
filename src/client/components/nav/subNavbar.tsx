@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 
 type SubHeaderProps = { label?: string };
 

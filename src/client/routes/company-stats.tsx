@@ -1,5 +1,3 @@
-import Navbar from "../components/navbar";
-
 export default function CompanyStats() {
     return (
         <div>

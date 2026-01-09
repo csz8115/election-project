@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom";
-import Navbar from "../components/navbar";
-import SubHeader from "../components/subNavbar";
+import Navbar from "../components/nav/navbar";
+import SubHeader from "../components/nav/subNavbar";
 
 export default function AppLayout() {
   return (

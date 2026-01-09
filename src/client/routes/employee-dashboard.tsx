@@ -1,5 +1,4 @@
-import Navbar from "../components/navbar";
-import EmployeeDash from "../components/employeeDash";
+import EmployeeDash from "../components/dashboard/employeeDash";
 
 export default function EmployeeDashboard() {
     return (

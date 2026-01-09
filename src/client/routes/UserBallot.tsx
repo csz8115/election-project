@@ -6,7 +6,7 @@ import {
     Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "../components/ui/accordion"
 import type { ballotPositions, ballots } from "@prisma/client";
-import Navbar from "../components/navbar";
+import Navbar from "../components/nav/navbar";
 import { useQuery } from "@tanstack/react-query";
 import { PulseLoader } from "react-spinners";
 import { CircleCheckBig, Crown } from "lucide-react";

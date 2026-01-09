@@ -6,9 +6,9 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   navigationMenuTriggerStyle,
-} from "../components/ui/navigation-menu";
-import { useUserStore } from "../store/userStore";
-import { Button } from "./ui/button";
+} from "../ui/navigation-menu";
+import { useUserStore } from "../../store/userStore";
+import { Button } from "../ui/button";
 import { useNavigate } from "react-router-dom";
 import { useCookies } from "react-cookie";
 import { LogOut } from "lucide-react";

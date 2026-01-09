@@ -2,25 +2,25 @@ import { useMemo, useState, useEffect } from "react";
 import { PulseLoader } from "react-spinners";
 import { ArrowDown, ArrowUp, SquareSplitHorizontal } from "lucide-react";
 import type { ballots } from "@prisma/client";
-import { useUserStore } from "../store/userStore";
-import ElectionCard from "../components/electionCard";
-import SearchInput from "../components/searchInput";
-import { Button } from "../components/ui/button";
+import { useUserStore } from "../../store/userStore";
+import ElectionCard from "../electionCard";
+import SearchInput from "../searchInput";
+import { Button } from "../ui/button";
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationNext,
   PaginationPrevious,
-} from "../components/ui/pagination";
+} from "../ui/pagination";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select";
-import { useUserBallots } from "../hooks/useUserBallots";
+} from "../ui/select";
+import { useUserBallots } from "../../hooks/useUserBallots";
 
 export default function UserDash() {
   const user = useUserStore((s) => s);

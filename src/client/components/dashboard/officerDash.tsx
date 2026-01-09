@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { useUserStore } from "../store/userStore";
-import { getActiveUserBallots, getBallotResults } from "../lib/form-actions";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card";
+import { useUserStore } from "../../store/userStore";
+import { getActiveUserBallots, getBallotResults } from "../../lib/form-actions";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card";
 import type { ballots } from "@prisma/client";
 import { PulseLoader } from "react-spinners";
 import { useNavigate } from "react-router-dom";
-import ElectionCard from "../components/electionCard";
+import ElectionCard from "../electionCard";
 
 export default function OfficerDash() {
     const user = useUserStore((state) => state);

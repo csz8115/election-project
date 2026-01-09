@@ -1,6 +1,6 @@
 import { useUserStore } from "../store/userStore";
-import Navbar from "../components/navbar";
-import UserDash from "../components/userDash";
+import Navbar from "../components/nav/navbar";
+import UserDash from "../components/dashboard/userDash";
 
 export default function UserDashboard() {
     const user = useUserStore((state) => state);
