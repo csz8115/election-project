@@ -13,6 +13,7 @@ import AddBallot from "./add-ballot";
 import UsersPage from "./users-page";
 import AdminDashboard from "./admin-dashboard";
 import Ballot from "./ballot";
+import CreateBallot from "./create-ballot"
 
 export const router = createBrowserRouter([
   // Public route (no navbar)
@@ -25,7 +26,7 @@ export const router = createBrowserRouter([
   {
     path: "/",
     element: <AppLayout />,
-    
+
     children: [
       {
         index: true,
@@ -34,7 +35,7 @@ export const router = createBrowserRouter([
       {
         path: "ballot",
         element: (
-            <Ballot />
+          <Ballot />
         ),
       },
 
@@ -48,85 +49,94 @@ export const router = createBrowserRouter([
       },
 
       {
-        path: "employee-ballot",
+        path: "create-ballot",
         element: (
-          <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
-            <EmpBallot />
+          <ProtectedRoute allowedRoles={["Employee", "Admin"]}>
+            <CreateBallot />
           </ProtectedRoute>
-        ),
+      ),
       },
 
-      {
-        path: "officer-dashboard",
-        element: (
-          <ProtectedRoute allowedRoles={["Officer"]}>
-            <OfficerDashboard />
-          </ProtectedRoute>
-        ),
-      },
+  {
+    path: "employee-ballot",
+    element: (
+      <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
+        <EmpBallot />
+      </ProtectedRoute>
+    ),
+  },
 
-      {
-        path: "admin-dashboard",
-        element: (
-          <ProtectedRoute allowedRoles={["Admin"]}>
-            <AdminDashboard />
-          </ProtectedRoute>
-        ),
-      },
+  {
+    path: "officer-dashboard",
+    element: (
+      <ProtectedRoute allowedRoles={["Officer"]}>
+        <OfficerDashboard />
+      </ProtectedRoute>
+    ),
+  },
 
-      {
-        path: "company-stats",
-        element: (
-          <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
-            <CompanyStats />
-          </ProtectedRoute>
-        ),
-      },
+  {
+    path: "admin-dashboard",
+    element: (
+      <ProtectedRoute allowedRoles={["Admin"]}>
+        <AdminDashboard />
+      </ProtectedRoute>
+    ),
+  },
 
-      {
-        path: "add-ballot",
-        element: (
-          <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
-            <AddBallot />
-          </ProtectedRoute>
-        ),
-      },
+  {
+    path: "company-stats",
+    element: (
+      <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
+        <CompanyStats />
+      </ProtectedRoute>
+    ),
+  },
 
-      {
-        path: "users-page",
-        element: (
-          <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
-            <UsersPage />
-          </ProtectedRoute>
-        ),
-      },
+  {
+    path: "add-ballot",
+    element: (
+      <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
+        <AddBallot />
+      </ProtectedRoute>
+    ),
+  },
 
-      {
-        path: "user-dashboard",
-        element: (
-          <ProtectedRoute allowedRoles={["Member"]}>
-            <UserDashboard />
-          </ProtectedRoute>
-        ),
-      },
+  {
+    path: "users-page",
+    element: (
+      <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
+        <UsersPage />
+      </ProtectedRoute>
+    ),
+  },
 
-      {
-        path: "user-ballot",
-        element: (
-          <ProtectedRoute allowedRoles={["Member"]}>
-            <UserBallot />
-          </ProtectedRoute>
-        ),
-      },
+  {
+    path: "user-dashboard",
+    element: (
+      <ProtectedRoute allowedRoles={["Member"]}>
+        <UserDashboard />
+      </ProtectedRoute>
+    ),
+  },
 
-      {
-        path: "unauthorized",
-        element: (
-          <div className="flex items-center justify-center min-h-screen">
-            <h1 className="text-2xl font-bold text-slate-100">Unauthorized</h1>
-          </div>
-        ),
-      },
-    ],
+  {
+    path: "user-ballot",
+    element: (
+      <ProtectedRoute allowedRoles={["Member"]}>
+        <UserBallot />
+      </ProtectedRoute>
+    ),
+  },
+
+  {
+    path: "unauthorized",
+    element: (
+      <div className="flex items-center justify-center min-h-screen">
+        <h1 className="text-2xl font-bold text-slate-100">Unauthorized</h1>
+      </div>
+    ),
+  },
+],
   },
 ]);

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import { requireRole } from '../utils/requireRole.ts';
 import logger from '../utils/logger.ts';
+import { Prisma } from '@prisma/client';
 
 
 const router = express.Router();
@@ -99,72 +100,81 @@ router.post('/getBallots', async (req, res): Promise<any> => {
     }
 });
 // Create ballot route
-router.post('/createBallot', requireRole('Employee', 'Admin'), async (req, res): Promise<any> => {
-    try {
-        const { ballotName, description, startDate, endDate, companyID, positions, initiatives } = req.body;
+router.post("/createBallot", requireRole("Employee", "Admin"), async (req, res): Promise<any> => {
+  try {
+    const {
+      ballotName,
+      description,
+      startDate,
+      endDate,
+      companyID,
+      positions,
+      initiatives,
+    } = req.body;
 
-        // Validate required fields
-        if (!ballotName || !description || !startDate || !endDate || !companyID || !positions) {
-            throw new Error('Invalid request');
-        }
-
-        // Check company exists
-        const company = await db.getCompany(Number(companyID));
-        if (!company) {
-            throw new Error('Company does not exist');
-        }
-
-        // Prepare data for Prisma
-        const ballotPositions = positions.map((position: any) => ({
-            positionName: position.positionName,
-            allowedVotes: position.allowedVotes,
-            writeIn: position.writeIn,
-            candidates: position.candidates.map((candidate: any) => ({
-                fName: candidate.fName,
-                lName: candidate.lName,
-                titles: candidate.titles ?? '',
-                description: candidate.description ?? '',
-                picture: candidate.picture ?? '',
-            })),
-        }));
-
-        const ballotInitiatives = initiatives.map((initiative: any) => ({
-            initiativeName: initiative.initiativeName,
-            description: initiative.description ?? '',
-            picture: initiative.picture ?? '',
-            responses: initiative.responses.map((response: any) => ({
-                response: response.response,
-                votes: 0, // You might initialize votes to 0
-            })),
-        }));
-
-        const ballot = {
-            ballotName,
-            description,
-            startDate,
-            endDate,
-            companyID: Number(companyID),
-            positions: ballotPositions,
-            initiatives: ballotInitiatives,
-        };
-
-        // Create the ballot in DB
-        await db.createBallot(ballot, ballotPositions, ballotInitiatives);
-
-        return res.status(201).json({ message: 'Ballot created successfully' });
-
-    } catch (error: any) {
-        console.log('Error creating ballot:', error);
-
-        if (error instanceof z.ZodError) {
-            return res.status(400).json({ error: error.errors.map(e => e.message) });
-        } else if (error.message === 'Company does not exist') {
-            return res.status(404).json({ error: 'Company does not exist' });
-        } else if (error.message === 'Invalid request') {
-            return res.status(400).json({ error: 'Invalid request' });
-        }
-        return res.status(500).json({ error: 'Failed to create ballot' });
+    // ✅ Validate arrays properly
+    if (
+      !ballotName ||
+      !description ||
+      !startDate ||
+      !endDate ||
+      !companyID ||
+      !Array.isArray(positions) ||
+      positions.length === 0
+    ) {
+      return res.status(400).json({ error: "Invalid request" });
     }
+
+    // initiatives can be optional, normalize to []
+    const safeInitiatives = Array.isArray(initiatives) ? initiatives : [];
+
+    // check company exists
+    const company = await db.getCompany(Number(companyID));
+    if (!company) return res.status(404).json({ error: "Company does not exist" });
+
+    const ballotPositions = positions.map((position: any) => ({
+      positionName: position.positionName,
+      allowedVotes: position.allowedVotes,
+      writeIn: position.writeIn,
+      candidates: Array.isArray(position.candidates) ? position.candidates.map((candidate: any) => ({
+        fName: candidate.fName,
+        lName: candidate.lName,
+        titles: candidate.titles ?? "",
+        description: candidate.description ?? "",
+        picture: candidate.picture ?? "",
+      })) : [],
+    }));
+
+    const ballotInitiatives = safeInitiatives.map((initiative: any) => ({
+      initiativeName: initiative.initiativeName,
+      description: initiative.description ?? "",
+      picture: initiative.picture ?? "",
+      responses: Array.isArray(initiative.responses) ? initiative.responses.map((response: any) => ({
+        response: response.response,
+        votes: 0,
+      })) : [],
+    }));
+
+    const ballot = {
+      ballotName,
+      description,
+      startDate,
+      endDate,
+      companyID: Number(companyID),
+      positions: ballotPositions,
+      initiatives: ballotInitiatives,
+    };
+
+    const created = await db.createBallot(ballot, ballotPositions, ballotInitiatives);
+
+    return res.status(201).json({ message: "Ballot created successfully", ballotID: created.ballotID });
+  } catch (err: any) {
+    // debugging info dev logs
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      return res.status(400).json({ error: err.code, details: err.meta ?? err.message });
+    }
+    return res.status(500).json({ error: err?.message ?? "Failed to create ballot" });
+  }
 });
 
 

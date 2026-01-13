@@ -120,7 +120,7 @@ export default function Navbar() {
                       <MotionButton
                         variant="ghost"
                         className="bg-transparent hover:bg-slate-800/50 hover:text-white flex items-center justify-center gap-2 transition-colors duration-200"
-                        onClick={() => navigate("/my-votes")}
+                        onClick={() => navigate("/create-ballot")}
                       >
                         Create Election
                       </MotionButton>
