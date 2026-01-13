@@ -6,7 +6,7 @@ import { Candidate } from '../../types/candidate.ts';
 import { Vote } from '../../types/vote.ts';
 import { ResponseVote } from '../../types/response.ts';
 import { BallotPositions } from '../../types/ballotPositions.ts';
-import { BallotInitiatives } from '../../types/ballotInitiatives.ts'; 
+import { BallotInitiatives } from '../../types/ballotInitiatives.ts';
 import dbLogger from '../../../../prisma/dbLogger.ts';
 import { user } from '@prisma/client';
 
@@ -50,7 +50,12 @@ async function getUserByUsername(username: string): Promise<User | null> {
                 fName: true,
                 lName: true,
                 companyID: true,
-                company: true,
+                password: true,
+                company: {
+                    select: {
+                        companyName: true,
+                    }
+                },
                 // password field is omitted
             },
         });
@@ -489,6 +494,26 @@ async function createCompany(company: Company): Promise<Company | undefined> {
     }
 }
 
+async function getCompanyIDByName(companyName: string): Promise<number | null> {
+    try {
+        const company = await prisma.company.findUnique({
+            where: {
+                companyName: companyName,
+            },
+        });
+        if (!company) {
+            return null; // Return null if company not found
+        }
+        return company.companyID;
+    } catch (error) {
+        dbLogger.error({
+            message: "Unknown error during company ID retrieval by name",
+            companyName: companyName,
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+}
+
 async function getCompanyStats(companyID: number): Promise<any> {
     try {
         const company = await prisma.company.findUnique({
@@ -864,7 +889,81 @@ async function createInitiative(initiative: BallotInitiatives): Promise<BallotIn
     }
 }
 
-async function getBallots(cursor?: number, search?: string, sortBy?: string, sortDir?: "asc" | "desc", status?: "open" | "closed" | "all"): Promise<{
+function buildBallotOrderBy(sortBy?: string, sortDir?: "asc" | "desc") {
+    if (sortBy === "votes") {
+        return { votes: { _count: sortDir || "desc" } };
+    }
+    return { [sortBy || "endDate"]: sortDir || "desc" };
+}
+
+function buildSearchWhereClause(search?: string) {
+    if (!search) return undefined;
+    return {
+        OR: [
+            { ballotName: { contains: search, mode: 'insensitive' as const } },
+            { description: { contains: search, mode: 'insensitive' as const } },
+        ],
+    };
+}
+
+function filterBallotsByStatus(ballots: any[], status?: "open" | "closed" | "all") {
+    if (status === "open") {
+        const now = new Date();
+        return ballots.filter(ballot => ballot.startDate <= now && ballot.endDate >= now);
+    }
+    if (status === "closed") {
+        const now = new Date();
+        return ballots.filter(ballot => ballot.endDate < now);
+    }
+    return ballots;
+}
+
+function normalizeCompanyIds(companies?: number[] | Set<number>) {
+    if (!companies) return [];
+    const arr = companies instanceof Set ? Array.from(companies) : companies;
+    return arr
+        .map((x) => (typeof x === "string" ? Number(x) : x))
+        .filter((x): x is number => Number.isFinite(x));
+}
+
+function buildCombinedWhere(
+    search?: string,
+    status: "open" | "closed" | "all" = "all",
+    companies?: number[] | Set<number>
+) {
+    const companyIds = normalizeCompanyIds(companies);
+    const now = new Date();
+
+    const searchWhere = buildSearchWhereClause(search); // your existing function
+
+    const statusWhere =
+        status === "open"
+            ? { endDate: { gte: now } }
+            : status === "closed"
+                ? { endDate: { lt: now } }
+                : undefined;
+
+    const companyWhere =
+        companyIds.length > 0 ? { companyID: { in: companyIds } } : undefined;
+
+    return {
+        AND: [
+            // keep your existing OR search clause
+            searchWhere ?? {},
+            statusWhere ?? {},
+            companyWhere ?? {},
+        ],
+    };
+}
+
+async function getBallots(
+    cursor: number = 0,
+    search?: string,
+    sortBy?: string,
+    sortDir: "asc" | "desc" = "asc",
+    status: "open" | "closed" | "all" = "all",
+    companies?: number[] | Set<number>
+): Promise<{
     ballots: any[];
     nextCursor: string | null;
     hasNextPage: boolean;
@@ -872,58 +971,31 @@ async function getBallots(cursor?: number, search?: string, sortBy?: string, sor
     totalCount: number;
 } | undefined> {
     const entryPerPage = 40;
-    
+
     try {
-        let ballots = await prisma.ballots.findMany({
-            take: entryPerPage + 1, // Fetch one extra to check for next page
-            skip: cursor ? cursor * entryPerPage : 0, // Skip based on page number
-            orderBy: sortBy === "votes"
-            ? {
-                votes: {
-                _count: sortDir || "desc",
-                },
-            }
-            : {
-                [sortBy || "endDate"]: sortDir || "desc",
-            },
-            where: search
-            ? {
-                OR: [
-                { ballotName: { contains: search, mode: 'insensitive' } },
-                { description: { contains: search, mode: 'insensitive' } },
-                ],
-            }
-            : undefined,
+        const where = buildCombinedWhere(search, status, companies);
+
+        // IMPORTANT: count uses the same filters
+        const totalCount = await prisma.ballots.count({ where });
+
+        // IMPORTANT: findMany uses the same filters
+        const ballots = await prisma.ballots.findMany({
+            take: entryPerPage + 1,
+            skip: cursor * entryPerPage,
+            orderBy: buildBallotOrderBy(sortBy, sortDir),
+            where,
         });
 
-        if (status === "open") {
-            const now = new Date();
-            ballots = ballots.filter(ballot => ballot.startDate <= now && ballot.endDate >= now);
-        } else if (status === "closed") {
-            const now = new Date();
-            ballots = ballots.filter(ballot => ballot.endDate < now);
-        }
-
-        const hasNextPage = ballots.length > 40;
-        const hasPreviousPage = cursor !== undefined && cursor > 0;
-        const ballotsPage = hasNextPage ? ballots.slice(0, -1) : ballots;
-        const nextCursor = cursor + 1;
+        const hasNextPage = ballots.length > entryPerPage;
+        const hasPreviousPage = cursor > 0;
+        const ballotsPage = hasNextPage ? ballots.slice(0, entryPerPage) : ballots;
 
         return {
             ballots: ballotsPage,
-            nextCursor: nextCursor?.toString() ?? null,
-            hasNextPage: hasNextPage,
-            hasPreviousPage: hasPreviousPage,
-            totalCount: await prisma.ballots.count({
-                where: search
-                    ? {
-                        OR: [
-                            { ballotName: { contains: search, mode: 'insensitive' } },
-                            { description: { contains: search, mode: 'insensitive' } },
-                        ],
-                    }
-                    : undefined,
-            }),
+            nextCursor: hasNextPage ? String(cursor + 1) : null,
+            hasNextPage,
+            hasPreviousPage,
+            totalCount,
         };
     } catch (error) {
         dbLogger.error({
@@ -934,20 +1006,44 @@ async function getBallots(cursor?: number, search?: string, sortBy?: string, sor
 }
 
 
-async function getBallotsByCompany(companyID: number): Promise<any> {
+
+async function getBallotsByCompany(
+    companyID: number,
+    cursor: number = 0,
+    search?: string,
+    sortBy?: string,
+    sortDir: "asc" | "desc" = "asc",
+    status: "open" | "closed" | "all" = "all"): Promise<any> {
     try {
-        const ballot = prisma.ballots.findMany({
-            where: {
-                companyID: companyID,
-            },
+        const where = buildCombinedWhere(search, status, new Set([companyID]));
+
+        const totalCount = await prisma.ballots.count({ where });
+
+        const ballots = await prisma.ballots.findMany({
+            take: 40 + 1,
+            skip: cursor * 40,
+            orderBy: buildBallotOrderBy(sortBy, sortDir),
+            where,
         });
-        return ballot;
+
+        const hasNextPage = ballots.length > 40;
+        const hasPreviousPage = cursor > 0;
+        const ballotsPage = hasNextPage ? ballots.slice(0, 40) : ballots;
+
+        return {
+            ballots: ballotsPage,
+            nextCursor: hasNextPage ? String(cursor + 1) : null,
+            hasNextPage,
+            hasPreviousPage,
+            totalCount,
+        };
     } catch (error) {
         dbLogger.error({
             message: "Unknown error during ballots retrieval by company",
             companyID: companyID,
             error: error instanceof Error ? error.message : String(error),
         });
+        throw new Error("failed to retrieve ballots for company", error.message); 
     }
 }
 
@@ -1813,7 +1909,7 @@ async function getCompaniesByIDs(companyIDs: number[]): Promise<Company[]> {
     }
 }
 
-export default {
+export const db = {
     getUser,
     getCandidate,
     deleteCandidate,
@@ -1866,4 +1962,5 @@ export default {
     deleteUser,
     getCompaniesByIDs,
     tallyBallotMember,
+    getCompanyIDByName
 };

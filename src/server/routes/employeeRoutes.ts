@@ -1,4 +1,4 @@
-import db from '../utils/db/db.ts';
+import { db } from '../utils/db/db.ts';
 import express from 'express';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
@@ -8,14 +8,24 @@ import logger from '../utils/logger.ts';
 
 const router = express.Router();
 
-router.get('/getBallots', async (req, res): Promise<any> => {
+router.get('/getCompanies', async (req, res): Promise<any> => {
     try {
-        const cursor = Number(req.query.page);
-        const query = req.query.q as string | undefined;
-        const sortBy = req.query.sortBy as string | undefined;
-        const sortDir = req.query.sortDir as "asc" | "desc" | undefined;
-        const status = req.query.status as "open" | "closed" | "all" | undefined;
+        const companies = await db.getCompanies();
+        return res.status(200).json(companies);
+    } catch (error) {
+        console.error('Error retrieving companies:', error);
+        return res.status(500).json({ error: "Failed to retrieve companies." });
+    }
+});
 
+router.post('/getBallots', async (req, res): Promise<any> => {
+    try {
+        const cursor = Number(req.body.page);
+        const query = req.body.q as string | undefined;
+        const sortBy = req.body.sortBy as string | undefined;
+        const sortDir = req.body.sortDir as "asc" | "desc" | undefined;
+        const status = req.body.status as "open" | "closed" | "all" | undefined;
+        const companies = req.body.companies as (number[] | Set<number>) | undefined;
         // Validate cursor
         if (cursor !== undefined && isNaN(cursor)) {
             throw new Error('Invalid cursor value');
@@ -47,8 +57,24 @@ router.get('/getBallots', async (req, res): Promise<any> => {
             throw new Error('Invalid status value');
         }
 
+        if (companies !== undefined) {
+            if (Array.isArray(companies)) {
+                if (!companies.every(id => typeof id === 'number')) {
+                    throw new Error('Invalid companies value: all company IDs must be numbers');
+                }
+            } else if (companies instanceof Set) {
+                for (const id of companies) {
+                    if (typeof id !== 'number') {
+                        throw new Error('Invalid companies value: all company IDs must be numbers');
+                    }
+                }
+            } else {
+                throw new Error('Invalid companies value: must be an array or a set of numbers');
+            }
+        }
+
         // Fetch ballots from the database
-        const ballots = await db.getBallots(cursor, sanitizedQuery, sortBy, sortDir, status);
+        const ballots = await db.getBallots(cursor, sanitizedQuery, sortBy, sortDir, status, companies);
         // Prepare the response
         const response = {
             ballots: ballots.ballots,
@@ -61,7 +87,7 @@ router.get('/getBallots', async (req, res): Promise<any> => {
         return res.status(200).json(response);
     } catch (error: any) {
         console.error("Error retrieving ballots:", error);
-        
+
         if (error.message === 'Invalid cursor value') {
             return res.status(400).json({ error: 'Invalid cursor value' });
         } else if (error.message === 'No ballots found') {

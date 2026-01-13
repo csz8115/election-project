@@ -113,38 +113,72 @@ export default function Navbar() {
                 </NavigationMenuLink>
               </NavigationMenuItem>
 
-              <span className="text-slate-600 select-none">|</span>
+              {(user.accountType !== "Member") && (
+                <NavigationMenuItem>
+                  <NavigationMenuLink asChild>
+                    <motion.div {...navItemMotion}>
+                      <MotionButton
+                        variant="ghost"
+                        className="bg-transparent hover:bg-slate-800/50 hover:text-white flex items-center justify-center gap-2 transition-colors duration-200"
+                        onClick={() => navigate("/my-votes")}
+                      >
+                        Create Election
+                      </MotionButton>
+                    </motion.div>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              )}
 
-              {(user.accountType === "Employee" || user.accountType === "Admin") && (
+                {(user.accountType === "Member" || user.accountType === "Officer") && (
                 <>
+                  <span className="text-slate-600 select-none">|</span>
                   <NavigationMenuItem>
-                    <NavigationMenuLink asChild>
-                      <motion.div {...navItemMotion}>
-                        <MotionButton
-                          variant="ghost"
-                          className="bg-transparent hover:bg-slate-800/50 hover:text-white flex items-center justify-center gap-2 transition-colors duration-200"
-                          onClick={() => navigate("/company-stats")}
-                        >
-                          Company Stats
-                        </MotionButton>
-                      </motion.div>
-                    </NavigationMenuLink>
+                  <NavigationMenuLink asChild>
+                    <motion.div {...navItemMotion}>
+                    <MotionButton
+                      variant="ghost"
+                      className="bg-transparent hover:bg-slate-800/50 hover:text-white flex items-center justify-center gap-2 transition-colors duration-200"
+                      onClick={() => navigate("/my-votes")}
+                    >
+                      My Votes
+                    </MotionButton>
+                    </motion.div>
+                  </NavigationMenuLink>
+                  </NavigationMenuItem>
+                </>
+                )}
+
+                {(user.accountType === "Employee" || user.accountType === "Admin") && (
+                <>
+                  <span className="text-slate-600 select-none">|</span>
+                  <NavigationMenuItem>
+                  <NavigationMenuLink asChild>
+                    <motion.div {...navItemMotion}>
+                    <MotionButton
+                      variant="ghost"
+                      className="bg-transparent hover:bg-slate-800/50 hover:text-white flex items-center justify-center gap-2 transition-colors duration-200"
+                      onClick={() => navigate("/company-stats")}
+                    >
+                      Company Stats
+                    </MotionButton>
+                    </motion.div>
+                  </NavigationMenuLink>
                   </NavigationMenuItem>
 
                   <span className="text-slate-600 select-none">|</span>
 
                   <NavigationMenuItem>
-                    <NavigationMenuLink asChild>
-                      <motion.div {...navItemMotion}>
-                        <MotionButton
-                          variant="ghost"
-                          className="bg-transparent hover:bg-slate-800/50 hover:text-white flex items-center justify-center gap-2 transition-colors duration-200"
-                          onClick={() => navigate("/users-page")}
-                        >
-                          Edit Users
-                        </MotionButton>
-                      </motion.div>
-                    </NavigationMenuLink>
+                  <NavigationMenuLink asChild>
+                    <motion.div {...navItemMotion}>
+                    <MotionButton
+                      variant="ghost"
+                      className="bg-transparent hover:bg-slate-800/50 hover:text-white flex items-center justify-center gap-2 transition-colors duration-200"
+                      onClick={() => navigate("/users-page")}
+                    >
+                      Edit Users
+                    </MotionButton>
+                    </motion.div>
+                  </NavigationMenuLink>
                   </NavigationMenuItem>
 
                   <span className="text-slate-600 select-none">|</span>

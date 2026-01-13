@@ -6,7 +6,7 @@ import { motion, useReducedMotion } from "framer-motion";
 type CandidateCardProps = {
   candidate: candidate;
   candidateIndex: number;
-  votes: number;
+  votes?: number;
 };
 
 const MotionDiv = motion.div;
@@ -70,10 +70,12 @@ export default function CandidateCard({
             </div>
 
             {/* Votes pill */}
-            <div className="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium text-slate-100">
-              {votes.toLocaleString()}{" "}
-              <span className="text-slate-400">votes</span>
-            </div>
+            {votes !== undefined && (
+              <div className="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium text-slate-100">
+                {votes.toLocaleString()}{" "}
+                <span className="text-slate-400">votes</span>
+              </div>
+            )}
           </div>
         </CardHeader>
 

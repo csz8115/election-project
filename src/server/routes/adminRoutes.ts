@@ -1,4 +1,4 @@
-import db from '../utils/db/db.ts';
+import { db } from '../utils/db/db.ts';
 import express from 'express';
 import { z } from 'zod';
 import { User } from '../types/user.ts';

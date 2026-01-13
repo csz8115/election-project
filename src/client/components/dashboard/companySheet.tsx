@@ -53,22 +53,25 @@ export default function CompanySheet({
   }, [open, selectedCompanies]);
 
   const filteredCompanies = useMemo(() => {
-    const q = companyQuery.trim().toLowerCase();
-    const list = companiesData ?? [];
-    if (!q) return list;
+  const q = companyQuery.trim().toLowerCase();
 
-    return list.filter((c) => {
-      const name = (c.companyName ?? "").toLowerCase();
-      const abbr = (c.abbreviation ?? "").toLowerCase();
-      const cat = (c.category ?? "").toLowerCase();
-      return (
-        name.includes(q) ||
-        abbr.includes(q) ||
-        cat.includes(q) ||
-        String(c.companyID ?? "").includes(q)
-      );
-    });
-  }, [companiesData, companyQuery]);
+  // ✅ Runtime guard: guarantee an array
+  const list = Array.isArray(companiesData) ? companiesData : [];
+
+  if (!q) return list;
+
+  return list.filter((c) => {
+    const name = (c.companyName ?? "").toLowerCase();
+    const abbr = (c.abbreviation ?? "").toLowerCase();
+    const cat = (c.category ?? "").toLowerCase();
+    return (
+      name.includes(q) ||
+      abbr.includes(q) ||
+      cat.includes(q) ||
+      String(c.companyID ?? "").includes(q)
+    );
+  });
+}, [companiesData, companyQuery]);
 
   // Helpers
   const toggleCompany = (companyID: number) => {

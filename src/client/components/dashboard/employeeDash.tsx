@@ -2,10 +2,10 @@ import {useState, useEffect } from "react";
 import { PulseLoader } from "react-spinners";
 import { useAllBallots } from "../../hooks/useAllBallots";
 import ElectionCard from "../../components/electionCard";
-import { useCompanies } from "../../hooks/useCompanies";
 import NoResultsCat from ".././catErrors/noResultsCat";
 import { PaginationControls } from ".././paginationControls";
 import { EmployeeToolbar } from "./employeeToolbar";
+import { useCompanies } from "../../hooks/useCompanies";
 /**
  * Fixes white flash by ensuring this component ALWAYS paints a background:
  * - outer Shell is always rendered (even during loading/error)

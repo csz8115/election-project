@@ -1,6 +1,6 @@
 import express from 'express';
 import { createSession } from '../utils/session.ts';
-import db from '../utils/db/db.ts';
+import { db } from '../utils/db/db.ts';
 import { decrypt } from '../utils/session.ts';
 import bcrypt from 'bcrypt';
 import { Ballot, BallotSchema } from '../types/ballot.ts';
@@ -39,12 +39,7 @@ router.post('/login', async (req, res): Promise<any> => {
         //     }
         // }
         console.log("Attempting login for username:", username);
-        const user = await prisma.user.findFirst({
-            where: {
-                username: username.trim(),
-            },
-        });
-        const count = await prisma.user.count();
+        const user = await db.getUserByUsername(username);
         console.log(user);
         if (!user) {
             throw new Error('Invalid username or password');
@@ -238,6 +233,72 @@ router.get(`/getBallot`, requireRole('Admin', 'Member', 'Officer', 'Employee'), 
         return res.status(500).json({ error: 'Failed to get ballot' });
     }
 })
+
+router.get('/getBallots', async (req, res): Promise<any> => {
+    try {
+        const companyName = String(req.query.companyName);
+        const cursor = Number(req.query.page);
+        const query = req.query.q as string | undefined;
+        const sortBy = req.query.sortBy as string | undefined;
+        const sortDir = req.query.sortDir as "asc" | "desc" | undefined;
+        const status = req.query.status as "open" | "closed" | "all" | undefined;
+
+        // Validate companyName
+        const companyNameSchema = z.string().min(1);
+        companyNameSchema.parse(companyName);
+
+        // Validate cursor
+        const cursorSchema = z.number().int().nonnegative().optional();
+        cursorSchema.parse(cursor);
+
+        // Validate and sanitize query with Zod
+        const querySchema = z.string().trim().max(100).regex(/^[a-zA-Z0-9\s\-_]*$/, 'Query contains invalid characters').optional();
+        const sanitizedQuery = query ? querySchema.parse(query) : undefined;
+
+        // Validate sortBy and sortDir
+        const validSortByFields = ["ballotName", "startDate", "endDate", "createdAt", "votes"];
+        const validSortDirValues = ["asc", "desc"];
+        const validStatusValues = ["open", "closed", "all"];
+
+        if (sortBy && !validSortByFields.includes(sortBy)) {
+            throw new Error('Invalid sortBy value');
+        }
+
+        if (sortDir && !validSortDirValues.includes(sortDir)) {
+            throw new Error('Invalid sortDir value');
+        }
+
+        if (status && !validStatusValues.includes(status)) {
+            throw new Error('Invalid status value');
+        }
+
+        const companyID = await db.getCompanyIDByName(companyName);
+
+        // Fetch ballots from the database
+        const ballots = await db.getBallotsByCompany(companyID, cursor, sanitizedQuery, sortBy, sortDir, status);
+        // Prepare the response
+        const response = {
+            ballots: ballots.ballots,
+            nextCursor: ballots.nextCursor,
+            hasNextPage: ballots.hasNextPage,
+            hasPreviousPage: ballots.hasPreviousPage,
+            totalCount: ballots.totalCount,
+        };
+        logger.info(`Retrieved ${response.ballots.length} ballots successfully`);
+        return res.status(200).json(response);
+    } catch (error: any) {
+        console.error("Error retrieving ballots:", error);
+
+        if (error.message === 'Invalid cursor value') {
+            return res.status(400).json({ error: 'Invalid cursor value' });
+        } else if (error.message === 'No ballots found') {
+            return res.status(404).json({ error: 'No ballots found' });
+        } else if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors.map(e => e.message) });
+        }
+        return res.status(500).json({ error: "Failed to retrieve ballots." });
+    }
+});
 
 router.get(`/getActiveUserBallots`, requireRole('Admin', 'Member', 'Officer', 'Employee'), async (req, res): Promise<any> => {
     try {
