@@ -5,16 +5,25 @@ import {
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-  navigationMenuTriggerStyle,
 } from "../ui/navigation-menu";
 import { useUserStore } from "../../store/userStore";
 import { Button } from "../ui/button";
 import { useNavigate } from "react-router-dom";
 import { useCookies } from "react-cookie";
 import { LogOut } from "lucide-react";
-import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import {
+  motion,
+  useReducedMotion,
+  useTransform,
+  useMotionTemplate,
+  type MotionValue,
+} from "framer-motion";
 
-export default function Navbar() {
+type NavbarProps = {
+  scrollProgress: MotionValue<number>; // 0..1
+};
+
+export default function Navbar({ scrollProgress }: NavbarProps) {
   const navigate = useNavigate();
   const [, , removeCookie] = useCookies(["user_session"]);
   const clearUser = useUserStore((state) => state.clearUser);
@@ -22,12 +31,39 @@ export default function Navbar() {
   const MotionButton = motion(Button);
 
   const reduceMotion = useReducedMotion();
-  const { scrollY } = useScroll();
 
-  // Scroll-reactive header opacity + blur feel
-  const bgOpacity = useTransform(scrollY, [0, 30], [0.22, 0.45]);
-  const shadowOpacity = useTransform(scrollY, [0, 30], [0, 0.25]);
-  const accentOpacity = useTransform(scrollY, [0, 50], [0.45, 0.95]);
+  // You can still do opacity/blur based on progress instead of window scroll
+  const bgOpacity = useTransform(scrollProgress, [0, 0.2], [0.22, 0.45]);
+  const accentOpacity = useTransform(scrollProgress, [0, 0.5], [0.35, 0.95]);
+
+  // COLOR MORPH: blue -> pink as you scroll down
+  const leftColor = useTransform(
+    scrollProgress,
+    [0, 1],
+    ["rgba(56,189,248,0.95)", "rgba(236,72,153,0.95)"]
+  );
+  const midColor = useTransform(
+    scrollProgress,
+    [0, 1],
+    ["rgba(56,189,248,0.95)", "rgba(236,72,153,0.95)"]
+  );
+  const rightColor = useTransform(
+    scrollProgress,
+    [0, 1],
+    ["rgba(236,72,153,0.95)", "rgba(56,189,248,0.95)"]
+  );
+
+  // Use a motion template so the gradient string updates smoothly
+  const borderGradient = useMotionTemplate`
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      ${leftColor} 18%,
+      ${midColor} 50%,
+      ${rightColor} 82%,
+      transparent 100%
+    )
+  `;
 
   const handleLogout = async () => {
     try {
@@ -36,10 +72,7 @@ export default function Navbar() {
 
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}api/v1/member/logout`,
-        {
-          method: "POST",
-          credentials: "include",
-        }
+        { method: "POST", credentials: "include" }
       );
 
       if (!response.ok) {
@@ -71,14 +104,27 @@ export default function Navbar() {
       className="sticky top-0 z-50 min-w-full"
     >
       <motion.div
-        className="bg-slate-800/30 backdrop-blur-xl relative min-w-full flex items-center gap-4 px-6 py-4 backdrop-blur-xl"
+        className="relative min-w-full flex items-center gap-4 px-6 py-4 backdrop-blur-xl"
+        style={{
+          // keep your bg but let it deepen as you scroll
+          backgroundColor: useMotionTemplate`rgba(15, 23, 42, ${bgOpacity})`,
+        }}
       >
+
+        <motion.div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            opacity: useTransform(scrollProgress, [0, 0.4], [0.85, 0.55]),
+            backgroundImage:
+              "radial-gradient(1200px 200px at 50% 0%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 40%, transparent 70%)",
+          }}
+        />
+        {/* Bottom gradient border */}
         <motion.div
           className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]"
           style={{
             opacity: accentOpacity,
-            backgroundImage:
-              "linear-gradient(90deg, transparent 0%, rgba(236,72,153,0.75) 18%, rgba(56,189,248,0.9) 50%, rgba(236,72,153,0.75) 82%, transparent 100%)",
+            backgroundImage: borderGradient,
           }}
         />
 
@@ -98,10 +144,7 @@ export default function Navbar() {
           <NavigationMenu>
             <NavigationMenuList className="flex items-center gap-2">
               <NavigationMenuItem>
-                <NavigationMenuLink
-                  asChild
-                  onClick={() => navigate("/")}
-                >
+                <NavigationMenuLink asChild onClick={() => navigate("/")}>
                   <motion.div {...navItemMotion}>
                     <MotionButton
                       variant="ghost"
@@ -113,7 +156,7 @@ export default function Navbar() {
                 </NavigationMenuLink>
               </NavigationMenuItem>
 
-              {(user.accountType !== "Member") && (
+              {user.accountType !== "Member" && (
                 <NavigationMenuItem>
                   <NavigationMenuLink asChild>
                     <motion.div {...navItemMotion}>
@@ -129,61 +172,63 @@ export default function Navbar() {
                 </NavigationMenuItem>
               )}
 
-                {(user.accountType === "Member" || user.accountType === "Officer") && (
-                <>
-                  <span className="text-slate-600 select-none">|</span>
-                  <NavigationMenuItem>
-                  <NavigationMenuLink asChild>
-                    <motion.div {...navItemMotion}>
-                    <MotionButton
-                      variant="ghost"
-                      className="bg-transparent hover:bg-slate-800/50 hover:text-white flex items-center justify-center gap-2 transition-colors duration-200"
-                      onClick={() => navigate("/my-votes")}
-                    >
-                      My Votes
-                    </MotionButton>
-                    </motion.div>
-                  </NavigationMenuLink>
-                  </NavigationMenuItem>
-                </>
+              {(user.accountType === "Member" ||
+                user.accountType === "Officer") && (
+                  <>
+                    <span className="text-slate-600 select-none">|</span>
+                    <NavigationMenuItem>
+                      <NavigationMenuLink asChild>
+                        <motion.div {...navItemMotion}>
+                          <MotionButton
+                            variant="ghost"
+                            className="bg-transparent hover:bg-slate-800/50 hover:text-white flex items-center justify-center gap-2 transition-colors duration-200"
+                            onClick={() => navigate("/my-votes")}
+                          >
+                            My Votes
+                          </MotionButton>
+                        </motion.div>
+                      </NavigationMenuLink>
+                    </NavigationMenuItem>
+                  </>
                 )}
 
-                {(user.accountType === "Employee" || user.accountType === "Admin") && (
-                <>
-                  <span className="text-slate-600 select-none">|</span>
-                  <NavigationMenuItem>
-                  <NavigationMenuLink asChild>
-                    <motion.div {...navItemMotion}>
-                    <MotionButton
-                      variant="ghost"
-                      className="bg-transparent hover:bg-slate-800/50 hover:text-white flex items-center justify-center gap-2 transition-colors duration-200"
-                      onClick={() => navigate("/company-stats")}
-                    >
-                      Company Stats
-                    </MotionButton>
-                    </motion.div>
-                  </NavigationMenuLink>
-                  </NavigationMenuItem>
+              {(user.accountType === "Employee" ||
+                user.accountType === "Admin") && (
+                  <>
+                    <span className="text-slate-600 select-none">|</span>
+                    <NavigationMenuItem>
+                      <NavigationMenuLink asChild>
+                        <motion.div {...navItemMotion}>
+                          <MotionButton
+                            variant="ghost"
+                            className="bg-transparent hover:bg-slate-800/50 hover:text-white flex items-center justify-center gap-2 transition-colors duration-200"
+                            onClick={() => navigate("/company-stats")}
+                          >
+                            Company Stats
+                          </MotionButton>
+                        </motion.div>
+                      </NavigationMenuLink>
+                    </NavigationMenuItem>
 
-                  <span className="text-slate-600 select-none">|</span>
+                    <span className="text-slate-600 select-none">|</span>
 
-                  <NavigationMenuItem>
-                  <NavigationMenuLink asChild>
-                    <motion.div {...navItemMotion}>
-                    <MotionButton
-                      variant="ghost"
-                      className="bg-transparent hover:bg-slate-800/50 hover:text-white flex items-center justify-center gap-2 transition-colors duration-200"
-                      onClick={() => navigate("/users-page")}
-                    >
-                      Edit Users
-                    </MotionButton>
-                    </motion.div>
-                  </NavigationMenuLink>
-                  </NavigationMenuItem>
+                    <NavigationMenuItem>
+                      <NavigationMenuLink asChild>
+                        <motion.div {...navItemMotion}>
+                          <MotionButton
+                            variant="ghost"
+                            className="bg-transparent hover:bg-slate-800/50 hover:text-white flex items-center justify-center gap-2 transition-colors duration-200"
+                            onClick={() => navigate("/users-page")}
+                          >
+                            Edit Users
+                          </MotionButton>
+                        </motion.div>
+                      </NavigationMenuLink>
+                    </NavigationMenuItem>
 
-                  <span className="text-slate-600 select-none">|</span>
-                </>
-              )}
+                    <span className="text-slate-600 select-none">|</span>
+                  </>
+                )}
 
               <NavigationMenuItem>
                 <NavigationMenuLink asChild>
@@ -194,13 +239,7 @@ export default function Navbar() {
                       onClick={handleLogout}
                       aria-label="Log out"
                     >
-                      <motion.span
-                        whileHover={reduceMotion ? {} : { rotate: -8 }}
-                        transition={{ duration: 0.18, ease }}
-                        className="inline-flex"
-                      >
-                        <LogOut className="text-slate-300" />
-                      </motion.span>
+                      <LogOut className="text-slate-300" />
                     </MotionButton>
                   </motion.div>
                 </NavigationMenuLink>

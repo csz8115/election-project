@@ -4,7 +4,7 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { Button } from "../ui/button";
 import SearchInput from "../searchInput";
 import { PaginationControls } from ".././paginationControls";
-import ElectionCard from "../electionCard";
+import ElectionCard from "./electionCard";
 import NoResultsCat from ".././catErrors/noResultsCat";
 
 import {

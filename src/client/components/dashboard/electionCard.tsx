@@ -1,7 +1,10 @@
 import type { ballots } from "@prisma/client";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
+import { useUserStore } from "../../store/userStore";
+import { Check } from "lucide-react";
+import { useBallotStore } from "../../store/ballotStore";
 
 type ElectionCardProps = {
   ballot: ballots;
@@ -10,10 +13,23 @@ type ElectionCardProps = {
 export default function ElectionCard({ ballot }: ElectionCardProps) {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
+  const user = useUserStore((state) => state);
+
+  const isManageMode = useBallotStore((s) => s.isManageMode);
+  const selectedIds = useBallotStore((s) => s.selectedIds);
+  const toggleId = useBallotStore((s) => s.toggleId);
+
+  const ballotId = ballot.ballotID;
+  const isSelected = selectedIds.includes(ballotId);
 
   const handleCardClick = () => {
+    if (isManageMode) {
+      toggleId(ballotId);
+      return;
+    }
     navigate(`/ballot`, { state: { ballot } });
   };
+
 
   const shimmerBg =
     "linear-gradient(to bottom," +
@@ -29,22 +45,22 @@ export default function ElectionCard({ ballot }: ElectionCardProps) {
       opacity: 0,
       backgroundPosition: "50% 0%",
       transition: {
-        opacity: { duration: 0.1, ease: "easeOut" }, // 👈 smooth fade-out
+        opacity: { duration: 0.1, ease: "easeOut" },
       },
     },
     hover: reduceMotion
       ? { opacity: 1 }
       : {
-          opacity: 1,
-          backgroundPosition: ["50% 0%", "50% 200%"],
-          transition: {
-            opacity: { duration: 0.18 },
-            backgroundPosition: {
-              duration: 2.2,
-              ease: "linear",
-            },
+        opacity: 1,
+        backgroundPosition: ["50% 0%", "50% 200%"],
+        transition: {
+          opacity: { duration: 0.18 },
+          backgroundPosition: {
+            duration: 2.2,
+            ease: "linear",
           },
         },
+      },
   };
 
   return (
@@ -53,9 +69,17 @@ export default function ElectionCard({ ballot }: ElectionCardProps) {
       initial="rest"
       whileHover="hover"
       onClick={handleCardClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") handleCardClick();
+      }}
     >
       <motion.div
-        className="relative w-full overflow-hidden rounded-xl p-[2px]"
+        className={[
+          "relative w-full overflow-hidden rounded-xl p-[2px]",
+          isManageMode && isSelected ? "ring-2 ring-sky-400/70" : "",
+        ].join(" ")}
         whileHover={reduceMotion ? undefined : { y: -2, scale: 1.02 }}
         transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
       >
@@ -72,7 +96,12 @@ export default function ElectionCard({ ballot }: ElectionCardProps) {
         />
 
         {/* Card */}
-        <Card className="relative z-10 w-full cursor-pointer rounded-[11px] bg-background border border-transparent">
+        <Card
+          className={[
+            "relative z-10 w-full rounded-[11px] bg-background border border-transparent",
+            isManageMode ? "cursor-default" : "cursor-pointer",
+          ].join(" ")}
+        >
           <CardHeader>
             <CardTitle>{ballot.ballotName}</CardTitle>
           </CardHeader>

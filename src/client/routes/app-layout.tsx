@@ -4,6 +4,7 @@ import SubHeader from "../components/nav/subNavbar";
 import {
   AnimatePresence,
   motion,
+  useMotionValue,
   useMotionValueEvent,
   useReducedMotion,
   useScroll,
@@ -15,39 +16,45 @@ export default function AppLayout() {
   const reduceMotion = useReducedMotion();
 
   const { scrollY } = useScroll({ container: scrollRef });
+
   const [isSubnavVisible, setIsSubnavVisible] = useState(false);
+
+  // NEW: MotionValue progress 0..1 for the scroll container
+  const scrollProgress = useMotionValue(0);
 
   useMotionValueEvent(scrollY, "change", () => {
     const el = scrollRef.current;
     if (!el) return;
 
     const maxScroll = el.scrollHeight - el.clientHeight;
-    if (maxScroll <= 0) return;
+    if (maxScroll <= 0) {
+      scrollProgress.set(0);
+      setIsSubnavVisible(false);
+      return;
+    }
 
-    const progress = el.scrollTop / maxScroll;
+    const progress = el.scrollTop / maxScroll; // 0..1
+    scrollProgress.set(progress);
     setIsSubnavVisible(progress >= 0.4);
   });
 
   const scrolltoTop = () => {
     if (scrollRef.current) {
-          const scrollOptions: ScrollToOptions = {
-            top: 0,
-            behavior: reduceMotion ? "auto" : "smooth",
-          };
-          scrollRef.current.scrollTo(scrollOptions);
+      scrollRef.current.scrollTo({
+        top: 0,
+        behavior: reduceMotion ? "auto" : "smooth",
+      });
     }
   };
 
   const ease = [0.16, 1, 0.3, 1] as const;
-
-  // Set this to your SubHeader height (px). If yours is 48px, keep 48.
   const SUBNAV_H = 48;
 
   return (
     <div className="h-full bg-slate-950 text-slate-300 flex flex-col">
-      <Navbar />
+      {/* pass scrollProgress down */}
+      <Navbar scrollProgress={scrollProgress} />
 
-      {/* Subnav overlay layer: does NOT take up layout space */}
       <div className="relative">
         <AnimatePresence>
           {isSubnavVisible && (
@@ -59,15 +66,12 @@ export default function AppLayout() {
               transition={{ duration: 0.28, ease }}
               className="absolute inset-x-0 top-0 z-40"
             >
-              <SubHeader
-              onTop={scrolltoTop}
-               />
+              <SubHeader onTop={scrolltoTop} />
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Scroll container: add padding-top only when subnav is visible */}
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto"

@@ -382,8 +382,6 @@ export default function CreateBallot() {
                                         </div>
                                     </div>
 
-                                    <FieldSeparator className="my-4 bg-slate-800" />
-
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <Field className="md:col-span-2">
                                             <FieldLabel>Position Name</FieldLabel>

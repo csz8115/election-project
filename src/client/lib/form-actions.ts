@@ -1,7 +1,151 @@
-import { user } from "@prisma/client";
+import type { user } from "@prisma/client";
 import { LoginFormSchema, type LoginState } from "../types/login-types";
 
 /// <reference types="vite/client" />
+
+declare global {
+    interface ImportMetaEnv {
+        readonly VITE_API_URL: string;
+    }
+
+    interface ImportMeta {
+        readonly env: ImportMetaEnv;
+    }
+}
+
+type DeleteBallotInput = number | number[];
+
+type changeBallotDateInput = {
+    ballotID: number | number[];
+    newEndDate?: Date;
+    newStartDate?: Date;
+}
+export async function deleteBallot(ballotID: DeleteBallotInput): Promise<any> {
+    const normalizedIds = (Array.isArray(ballotID) ? ballotID : [ballotID]).map(Number);
+    const invalidIds = normalizedIds.filter(id => Number.isNaN(id) || id <= 0);
+
+    if (invalidIds.length > 0) {
+        return {
+            success: false,
+            error: `Invalid ballot ID${invalidIds.length > 1 ? 's' : ''}: ${invalidIds.join(', ')}`,
+        };
+    }
+
+    const deletionResults = await Promise.all(
+        normalizedIds.map(async (id) => {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}api/v1/employee/deleteBallot?ballotID=${id}`, {
+                method: 'DELETE',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage =
+                    typeof errorData === 'object' && errorData !== null && 'error' in errorData
+                        ? (errorData as { error?: string }).error ?? 'Failed to delete ballot'
+                        : 'Failed to delete ballot';
+
+                return { id, success: false as const, error: errorMessage };
+            }
+
+            return { id, success: true as const };
+        }),
+    );
+
+    const failed = deletionResults.filter(result => !result.success);
+    if (failed.length > 0) {
+        return {
+            success: false,
+            deletedBallotIds: deletionResults.filter(result => result.success).map(result => result.id),
+            errors: failed.reduce<Record<number, string>>((acc, result) => {
+                acc[result.id] = result.error ?? 'Failed to delete ballot';
+                return acc;
+            }, {}),
+        };
+    }
+
+    return {
+        success: true,
+        deletedBallotIds: normalizedIds,
+    };
+}
+
+export async function changeDate({ballotID, newStartDate, newEndDate}: changeBallotDateInput): Promise<any> {
+    const normalizedIds = (Array.isArray(ballotID) ? ballotID : [ballotID]).map(Number);
+    const invalidIds = normalizedIds.filter(id => Number.isNaN(id) || id <= 0);
+
+    if (invalidIds.length > 0) {
+        return {
+            success: false,
+            error: `Invalid ballot ID${invalidIds.length > 1 ? 's' : ''}: ${invalidIds.join(', ')}`,
+        };
+    }
+
+    const hasValidStartDate = newStartDate instanceof Date && !Number.isNaN(newStartDate.getTime());
+    const hasValidEndDate = newEndDate instanceof Date && !Number.isNaN(newEndDate.getTime());
+
+    if (!hasValidStartDate && !hasValidEndDate) {
+        return {
+            success: false,
+            error: 'You must provide at least one valid start date or end date.',
+        };
+    }
+
+    const updateResults = await Promise.all(
+        normalizedIds.map(async (id) => {
+            const payload: Record<string, unknown> = { ballotID: id };
+
+            if (hasValidStartDate) {
+                payload.newStartDate = newStartDate!.toISOString().slice(0, 10);
+            }
+
+            if (hasValidEndDate) {
+                payload.newEndDate = newEndDate!.toISOString().slice(0, 10);
+            }
+
+            const response = await fetch(`${import.meta.env.VITE_API_URL}api/v1/employee/changeDate`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage =
+                    typeof errorData === 'object' && errorData !== null && 'error' in errorData
+                        ? (errorData as { error?: string }).error ?? 'Failed to change date'
+                        : 'Failed to change date';
+
+                return { id, success: false as const, error: errorMessage };
+            }
+
+            return { id, success: true as const };
+        }),
+    );
+
+    const failed = updateResults.filter(result => !result.success);
+    if (failed.length > 0) {
+        return {
+            success: false,
+            updatedBallotIds: updateResults.filter(result => result.success).map(result => result.id),
+            errors: failed.reduce<Record<number, string>>((acc, result) => {
+                acc[result.id] = result.error ?? 'Failed to change date';
+                return acc;
+            }, {}),
+        };
+    }
+
+    return {
+        success: true,
+        updatedBallotIds: normalizedIds,
+    };
+}
 
 
 export async function login(_prevState: LoginState, formData: FormData): Promise<any> {
@@ -76,7 +220,7 @@ export async function getBallotResults(ballotID: number): Promise<any> {
         headers: {
             'Content-Type': 'application/json',
         },
-        
+
     });
 
     if (!response.ok) {
@@ -101,7 +245,7 @@ export async function getBallotResultsMember(ballotID: number): Promise<any> {
         headers: {
             'Content-Type': 'application/json',
         },
-        
+
     });
 
     if (!response.ok) {

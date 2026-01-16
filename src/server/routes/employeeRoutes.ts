@@ -19,6 +19,31 @@ router.get('/getCompanies', async (req, res): Promise<any> => {
     }
 });
 
+router.delete('/deleteBallot', async (req, res): Promise<any> => {
+    try {
+        const { ballotID } = req.query;
+
+        if (!ballotID) {
+            return res.status(400).json({ error: 'Ballot ID is required' });
+        }
+
+        const ballotIDNum = Number(ballotID);
+        if (isNaN(ballotIDNum) || ballotIDNum <= 0) {
+            return res.status(400).json({ error: 'Invalid Ballot ID' });
+        }
+
+        await db.deleteBallot(ballotIDNum);
+        return res.status(200).json({ message: 'Ballot deleted successfully' });
+    }
+    catch (error) {
+        console.error('Error deleting ballot:', error);
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            return res.status(400).json({ error: error.code, details: error.meta ?? error.message });
+        }
+        return res.status(500).json({ error: 'Failed to delete ballot' });
+    }
+});
+
 router.post('/getBallots', async (req, res): Promise<any> => {
     try {
         const cursor = Number(req.body.page);
@@ -99,82 +124,149 @@ router.post('/getBallots', async (req, res): Promise<any> => {
         return res.status(500).json({ error: "Failed to retrieve ballots." });
     }
 });
+
+router.post('/getBallotIDs', async (req, res): Promise<any> => {
+    try {
+        const query = req.body.q as string | undefined;
+        const sortBy = req.body.sortBy as string | undefined;
+        const sortDir = req.body.sortDir as "asc" | "desc" | undefined;
+        const status = req.body.status as "open" | "closed" | "all" | undefined;
+        const companies = req.body.companies as (number[] | Set<number>) | undefined;
+
+        // Validate and sanitize query with Zod
+        const querySchema = z.string().trim().max(100).regex(/^[a-zA-Z0-9\s\-_]*$/, 'Query contains invalid characters').optional();
+        const sanitizedQuery = query ? querySchema.parse(query) : undefined;
+
+        // Validate sortBy and sortDir
+        const validSortByFields = ["ballotName", "startDate", "endDate", "createdAt", "votes"];
+        const validSortDirValues = ["asc", "desc"];
+        const validStatusValues = ["open", "closed", "all"];
+
+        if (sortBy && !validSortByFields.includes(sortBy)) {
+            throw new Error('Invalid sortBy value');
+        }
+
+        if (sortDir && !validSortDirValues.includes(sortDir)) {
+            throw new Error('Invalid sortDir value');
+        }
+
+        if (status && !validStatusValues.includes(status)) {
+            throw new Error('Invalid status value');
+        }
+
+        if (companies !== undefined) {
+            if (Array.isArray(companies)) {
+                if (!companies.every(id => typeof id === 'number')) {
+                    throw new Error('Invalid companies value: all company IDs must be numbers');
+                }
+            } else if (companies instanceof Set) {
+                for (const id of companies) {
+                    if (typeof id !== 'number') {
+                        throw new Error('Invalid companies value: all company IDs must be numbers');
+                    }
+                }
+            } else {
+                throw new Error('Invalid companies value: must be an array or a set of numbers');
+            }
+        }
+
+        // Fetch ballots from the database
+        const ballots = await db.getBallotIDs(sanitizedQuery, sortBy, sortDir, status, companies);
+        // Prepare the response
+        const response = {
+            ballots: ballots
+        };
+        logger.info(`Retrieved ${ballots.length} ballots successfully`);
+        return res.status(200).json(response);
+    } catch (error: any) {
+        console.error("Error retrieving ballots:", error);
+
+        if (error.message === 'Invalid cursor value') {
+            return res.status(400).json({ error: 'Invalid cursor value' });
+        } else if (error.message === 'No ballots found') {
+            return res.status(404).json({ error: 'No ballots found' });
+        } else if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors.map(e => e.message) });
+        }
+        return res.status(500).json({ error: "Failed to retrieve ballots." });
+    }
+});
 // Create ballot route
 router.post("/createBallot", requireRole("Employee", "Admin"), async (req, res): Promise<any> => {
-  try {
-    const {
-      ballotName,
-      description,
-      startDate,
-      endDate,
-      companyID,
-      positions,
-      initiatives,
-    } = req.body;
+    try {
+        const {
+            ballotName,
+            description,
+            startDate,
+            endDate,
+            companyID,
+            positions,
+            initiatives,
+        } = req.body;
 
-    // ✅ Validate arrays properly
-    if (
-      !ballotName ||
-      !description ||
-      !startDate ||
-      !endDate ||
-      !companyID ||
-      !Array.isArray(positions) ||
-      positions.length === 0
-    ) {
-      return res.status(400).json({ error: "Invalid request" });
+        // ✅ Validate arrays properly
+        if (
+            !ballotName ||
+            !description ||
+            !startDate ||
+            !endDate ||
+            !companyID ||
+            !Array.isArray(positions) ||
+            positions.length === 0
+        ) {
+            return res.status(400).json({ error: "Invalid request" });
+        }
+
+        // initiatives can be optional, normalize to []
+        const safeInitiatives = Array.isArray(initiatives) ? initiatives : [];
+
+        // check company exists
+        const company = await db.getCompany(Number(companyID));
+        if (!company) return res.status(404).json({ error: "Company does not exist" });
+
+        const ballotPositions = positions.map((position: any) => ({
+            positionName: position.positionName,
+            allowedVotes: position.allowedVotes,
+            writeIn: position.writeIn,
+            candidates: Array.isArray(position.candidates) ? position.candidates.map((candidate: any) => ({
+                fName: candidate.fName,
+                lName: candidate.lName,
+                titles: candidate.titles ?? "",
+                description: candidate.description ?? "",
+                picture: candidate.picture ?? "",
+            })) : [],
+        }));
+
+        const ballotInitiatives = safeInitiatives.map((initiative: any) => ({
+            initiativeName: initiative.initiativeName,
+            description: initiative.description ?? "",
+            picture: initiative.picture ?? "",
+            responses: Array.isArray(initiative.responses) ? initiative.responses.map((response: any) => ({
+                response: response.response,
+                votes: 0,
+            })) : [],
+        }));
+
+        const ballot = {
+            ballotName,
+            description,
+            startDate,
+            endDate,
+            companyID: Number(companyID),
+            positions: ballotPositions,
+            initiatives: ballotInitiatives,
+        };
+
+        const created = await db.createBallot(ballot, ballotPositions, ballotInitiatives);
+
+        return res.status(201).json({ message: "Ballot created successfully", ballotID: created.ballotID });
+    } catch (err: any) {
+        // debugging info dev logs
+        if (err instanceof Prisma.PrismaClientKnownRequestError) {
+            return res.status(400).json({ error: err.code, details: err.meta ?? err.message });
+        }
+        return res.status(500).json({ error: err?.message ?? "Failed to create ballot" });
     }
-
-    // initiatives can be optional, normalize to []
-    const safeInitiatives = Array.isArray(initiatives) ? initiatives : [];
-
-    // check company exists
-    const company = await db.getCompany(Number(companyID));
-    if (!company) return res.status(404).json({ error: "Company does not exist" });
-
-    const ballotPositions = positions.map((position: any) => ({
-      positionName: position.positionName,
-      allowedVotes: position.allowedVotes,
-      writeIn: position.writeIn,
-      candidates: Array.isArray(position.candidates) ? position.candidates.map((candidate: any) => ({
-        fName: candidate.fName,
-        lName: candidate.lName,
-        titles: candidate.titles ?? "",
-        description: candidate.description ?? "",
-        picture: candidate.picture ?? "",
-      })) : [],
-    }));
-
-    const ballotInitiatives = safeInitiatives.map((initiative: any) => ({
-      initiativeName: initiative.initiativeName,
-      description: initiative.description ?? "",
-      picture: initiative.picture ?? "",
-      responses: Array.isArray(initiative.responses) ? initiative.responses.map((response: any) => ({
-        response: response.response,
-        votes: 0,
-      })) : [],
-    }));
-
-    const ballot = {
-      ballotName,
-      description,
-      startDate,
-      endDate,
-      companyID: Number(companyID),
-      positions: ballotPositions,
-      initiatives: ballotInitiatives,
-    };
-
-    const created = await db.createBallot(ballot, ballotPositions, ballotInitiatives);
-
-    return res.status(201).json({ message: "Ballot created successfully", ballotID: created.ballotID });
-  } catch (err: any) {
-    // debugging info dev logs
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      return res.status(400).json({ error: err.code, details: err.meta ?? err.message });
-    }
-    return res.status(500).json({ error: err?.message ?? "Failed to create ballot" });
-  }
 });
 
 
@@ -369,6 +461,116 @@ router.put('/updateBallot', requireRole('Employee', 'Admin'), async (req, res): 
             return res.status(400).json({ error: 'Invalid request' });
         }
         return res.status(500).json({ error: 'Failed to update ballot' });
+    }
+});
+
+router.delete('/deleteBallot', async (req, res): Promise<any> => {
+    try {
+        const candidateInputs = [
+            req.query.ballotID,
+            req.query.ballotIDs,
+            req.body?.ballotID,
+            req.body?.ballotIDs,
+        ].filter((value) => value !== undefined);
+
+        if (candidateInputs.length === 0) {
+            return res.status(400).json({ error: 'Ballot ID is required' });
+        }
+
+        const normalizeIDs = (input: unknown): number[] => {
+            if (Array.isArray(input)) {
+                return input.flatMap(normalizeIDs);
+            }
+            if (typeof input === 'string') {
+                return input
+                    .split(',')
+                    .map((part) => Number(part.trim()))
+                    .filter((num) => !Number.isNaN(num));
+            }
+            if (typeof input === 'number') {
+                return [input];
+            }
+            return [];
+        };
+
+        const ballotIDs = Array.from(
+            new Set(candidateInputs.flatMap(normalizeIDs))
+        );
+
+        if (ballotIDs.length === 0 || ballotIDs.some((id) => !Number.isInteger(id) || id <= 0)) {
+            return res.status(400).json({ error: 'Invalid Ballot ID' });
+        }
+
+        for (const id of ballotIDs) {
+            await db.deleteBallot(id);
+        }
+
+        return res.status(200).json({
+            message: `Deleted ${ballotIDs.length} ballot${ballotIDs.length > 1 ? 's' : ''} successfully`,
+            deletedIDs: ballotIDs,
+        });
+    } catch (error) {
+        console.error('Error deleting ballot:', error);
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            return res.status(400).json({ error: error.code, details: error.meta ?? error.message });
+        }
+        return res.status(500).json({ error: 'Failed to delete ballot' });
+    }
+});
+
+router.put('/changeDate', async (req, res): Promise<any> => {
+    try {
+        const { ballotID, newStartDate, newEndDate } = req.body;
+
+        if (!ballotID || (!newStartDate && !newEndDate)) {
+            return res.status(400).json({ error: 'Ballot ID and at least one of new start date or new end date are required' });
+        }
+
+        const ballotIDNum = Number(ballotID);
+        if (Number.isNaN(ballotIDNum) || ballotIDNum <= 0) {
+            return res.status(400).json({ error: 'Invalid Ballot ID' });
+        }
+
+        const ballot = await db.getBallot(ballotIDNum);
+        if (!ballot) {
+            throw new Error('Ballot does not exist');
+        }
+
+        const parseDate = (value?: string | Date) => {
+            if (value === undefined || value === null || value === '') {
+                return undefined;
+            }
+            const parsed = value instanceof Date ? value : new Date(value);
+            if (Number.isNaN(parsed.getTime())) {
+                throw new TypeError('Invalid date value');
+            }
+            return parsed;
+        };
+
+        const providedStart = parseDate(newStartDate);
+        const providedEnd = parseDate(newEndDate);
+
+        const effectiveStartDate = providedStart ?? new Date(ballot.startDate);
+        const newEndDateObj = providedEnd ?? new Date(ballot.endDate);
+
+        if (effectiveStartDate >= newEndDateObj) {
+            throw new RangeError('Start date must be before end date');
+        }
+
+        await db.changeBallotDates(ballotIDNum, effectiveStartDate, newEndDateObj);
+
+        return res.status(200).json({ message: 'Ballot dates updated successfully' });
+    } catch (error: any) {
+        console.log('Error updating ballot end date:', error);
+
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors.map(e => e.message) });
+        } else if (error.message === 'Ballot does not exist') {
+            return res.status(404).json({ error: 'Ballot does not exist' });
+        } else if (error instanceof RangeError || error instanceof TypeError || error.message === 'Invalid request') {
+            return res.status(400).json({ error: 'Invalid request' });
+        }
+        return res.status(500).json({ error: 'Failed to update ballot end date' });
     }
 });
 
