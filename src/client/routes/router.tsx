@@ -14,6 +14,7 @@ import UsersPage from "./users-page";
 import AdminDashboard from "./admin-dashboard";
 import Ballot from "./ballot";
 import CreateBallot from "./create-ballot"
+import Candidate from "./candidate";
 
 export const router = createBrowserRouter([
   // Public route (no navbar)
@@ -36,6 +37,22 @@ export const router = createBrowserRouter([
         path: "ballot",
         element: (
           <Ballot />
+        ),
+      },
+      {
+        path: "dashboard",
+        element: (
+          <ProtectedRoute allowedRoles={["Employee", "Member", "Officer", "Admin"]}>
+            <Dashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "candidate/:candidateId",
+        element: (
+          <ProtectedRoute allowedRoles={["Employee", "Member", "Officer", "Admin"]}>
+            <Candidate />
+          </ProtectedRoute>
         ),
       },
 

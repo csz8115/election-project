@@ -5,8 +5,8 @@ import { Button } from "../ui/button";
 
 type SubHeaderProps = { label?: string, onTop?: () => void };
 
-function isDashboardPath(pathname: string) {
-  if (pathname === "/" || pathname === "/login") return true;
+function Path(pathname: string) {
+  if (pathname === "/" || pathname === "/login" || pathname.startsWith("/candidate")) return true;
   return false;
 }
 
@@ -15,7 +15,7 @@ export default function SubHeader({ label = "Back", onTop }: SubHeaderProps) {
   const location = useLocation();
   const reduceMotion = useReducedMotion();
 
-  const shouldShow = !isDashboardPath(location.pathname);
+  const shouldShow = !Path(location.pathname);
   const ease = [0.16, 1, 0.3, 1] as const;
 
   return (

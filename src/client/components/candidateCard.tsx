@@ -80,10 +80,16 @@ export default function CandidateCard({
         </CardHeader>
 
         <CardContent className="pt-0">
-          <p className="text-sm leading-relaxed text-slate-200/90">
-            {candidate.description?.trim()
-              ? candidate.description
-              : "No description provided."}
+          <p
+            className="truncate text-sm leading-relaxed text-slate-200/90"
+            title={
+              candidate.description?.trim()
+          ? candidate.description
+          : "No description provided."
+            }
+          >
+            {(candidate.description?.trim()?.replace(/\.*$/, "") ||
+              "No description provided") + "..."}
           </p>
         </CardContent>
       </Card>

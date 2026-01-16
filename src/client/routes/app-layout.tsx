@@ -75,6 +75,7 @@ export default function AppLayout() {
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto"
+        id="app-scroll-container"
         style={{ paddingTop: isSubnavVisible ? SUBNAV_H : 0 }}
       >
         <main className="min-h-full">

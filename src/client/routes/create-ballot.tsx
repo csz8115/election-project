@@ -13,6 +13,8 @@ import { Input } from "../components/ui/input";
 import { useState } from "react";
 import { useCompanies } from "../hooks/useCompanies";
 import SelectCompany from "../components/createBallot/selectCompany";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 
 type Candidate = {
@@ -44,6 +46,7 @@ type Initiative = {
 export default function CreateBallot() {
     const [ballotName, setBallotName] = useState("");
     const [description, setDescription] = useState("");
+    const navigate = useNavigate();
 
     // Use datetime-local so it’s easy for admins; server can parse ISO
     const [startDate, setStartDate] = useState("");
@@ -188,6 +191,7 @@ export default function CreateBallot() {
         const err = validate();
         if (err) {
             setErrorMsg(err);
+            toast.error(err);
             return;
         }
 
@@ -199,7 +203,7 @@ export default function CreateBallot() {
             const payload = {
                 ballotName: ballotName.trim(),
                 description: description.trim(),
-                startDate, // server parses
+                startDate,
                 endDate,
                 companyID: Array.from(selectedCompanies)[0],
                 positions: positions.map((p) => ({
@@ -222,39 +226,34 @@ export default function CreateBallot() {
                 })),
             };
 
-            const res = await fetch(
-                `${import.meta.env.VITE_API_URL}api/v1/employee/createBallot`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify(payload),
-                }
-            );
+            const res = await fetch(`${import.meta.env.VITE_API_URL}api/v1/employee/createBallot`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(payload),
+            });
 
             const data = await res.json().catch(() => ({}));
 
             if (!res.ok) {
-                setErrorMsg(data?.error ?? "Failed to create ballot.");
+                const msg = data?.error ?? "Failed to create ballot.";
+                setErrorMsg(msg);
+                toast.error(msg);
                 return;
             }
 
-            setSuccessMsg("Ballot created successfully.");
-
-            // optional: reset form
-            setBallotName("");
-            setDescription("");
-            setStartDate("");
-            setEndDate("");
-            setSelectedCompanies(new Set());
-            setPositions([{ positionName: "", allowedVotes: 1, writeIn: false, candidates: [{ fName: "", lName: "" }] }]);
-            setInitiatives([]);
+            // ✅ toast + redirect
+            toast.success("Ballot created successfully.");
+            navigate("/dashboard"); // <-- change to your actual dashboard route
         } catch (err: any) {
-            setErrorMsg(err?.message ?? "Failed to create ballot.");
+            const msg = err?.message ?? "Failed to create ballot.";
+            setErrorMsg(msg);
+            toast.error(msg);
         } finally {
             setIsSubmitting(false);
         }
     };
+
 
     return companiesData && (
         <div className="min-h-screen w-full bg-slate-950 text-slate-300">

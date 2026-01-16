@@ -49,10 +49,19 @@ export default function EmpBallot() {
               <CardTitle className="text-2xl text-slate-100 truncate">
                 {ballot.ballotName}
               </CardTitle>
-              <p className="text-sm text-slate-300 mt-1">Complete</p>
+              <p className="text-sm text-slate-300 mt-1">
+                {ballot?.endDate && new Date(ballot.endDate) <= new Date()
+                  ? "Complete"
+                  : "In Progress"}
+              </p>
             </div>
 
-            <CircleCheckBig className="text-green-500 shrink-0" />
+            <CircleCheckBig
+              className={`shrink-0 ${ballot?.endDate && new Date(ballot.endDate) <= new Date()
+                  ? "text-green-500"
+                  : "text-amber-400"
+                }`}
+            />
           </CardHeader>
         </Card>
 
@@ -142,12 +151,38 @@ export default function EmpBallot() {
                     <div className="p-5">
                       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         {position.candidates.map((candidate: any, index: number) => (
-                          <CandidateCard
+                          <div
                             key={candidate.candidate.candidateID}
-                            candidate={candidate.candidate}
-                            candidateIndex={index}
-                            votes={candidate.candidate._count?.positionVotes || 0}
-                          />
+                            role="button"
+                            tabIndex={0}
+                            onClick={() =>
+                              navigate(`/candidate/${candidate.candidate.candidateID}`, {
+                                state: {
+                                  candidate: candidate.candidate,
+                                  votes: candidate.candidate._count?.positionVotes || 0,
+                                  rank: index,
+                                },
+                              })
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                navigate(`/candidate/${candidate.candidate.candidateID}`, {
+                                  state: {
+                                    candidate: candidate.candidate,
+                                    votes: candidate.candidate._count?.positionVotes || 0,
+                                    rank: index,
+                                  },
+                                });
+                              }
+                            }}
+                            className="cursor-pointer focus:outline-none"
+                          >
+                            <CandidateCard
+                              candidate={candidate.candidate}
+                              candidateIndex={index}
+                              votes={candidate.candidate._count?.positionVotes || 0}
+                            />
+                          </div>
                         ))}
                       </div>
                     </div>
