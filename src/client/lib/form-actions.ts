@@ -20,6 +20,24 @@ type changeBallotDateInput = {
     newEndDate?: Date;
     newStartDate?: Date;
 }
+
+type CandidateInput = {
+    candidateID: number;
+    fName?: string;
+    lName?: string;
+    titles?: string;
+    description?: string;
+    picture?: string;
+}
+
+type BallotInput = {
+    ballotID: number;
+    ballotName?: string;
+    description?: string;
+    startDate?: string;
+    endDate?: string;
+}
+
 export async function deleteBallot(ballotID: DeleteBallotInput): Promise<any> {
     const normalizedIds = (Array.isArray(ballotID) ? ballotID : [ballotID]).map(Number);
     const invalidIds = normalizedIds.filter(id => Number.isNaN(id) || id <= 0);
@@ -73,7 +91,7 @@ export async function deleteBallot(ballotID: DeleteBallotInput): Promise<any> {
     };
 }
 
-export async function changeDate({ballotID, newStartDate, newEndDate}: changeBallotDateInput): Promise<any> {
+export async function changeDate({ ballotID, newStartDate, newEndDate }: changeBallotDateInput): Promise<any> {
     const normalizedIds = (Array.isArray(ballotID) ? ballotID : [ballotID]).map(Number);
     const invalidIds = normalizedIds.filter(id => Number.isNaN(id) || id <= 0);
 
@@ -147,6 +165,92 @@ export async function changeDate({ballotID, newStartDate, newEndDate}: changeBal
     };
 }
 
+export async function editCandidate({ candidateID, fName, lName, titles, description, picture }: CandidateInput): Promise<any> {
+    if (Number.isNaN(candidateID) || candidateID <= 0) {
+        return {
+            success: false,
+            error: 'Invalid candidate ID',
+        };
+    }
+
+    const payload: Record<string, unknown> = { candidateID };
+
+    if (fName !== undefined) payload.fName = fName;
+    if (lName !== undefined) payload.lName = lName;
+    if (titles !== undefined) payload.titles = titles;
+    if (description !== undefined) payload.description = description;
+    if (picture !== undefined) payload.picture = picture;
+
+    const response = await fetch(`${import.meta.env.VITE_API_URL}api/v1/employee/editCandidate`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage =
+            typeof errorData === 'object' && errorData !== null && 'error' in errorData
+                ? (errorData as { error?: string }).error ?? 'Failed to edit candidate'
+                : 'Failed to edit candidate';
+
+        return {
+            success: false,
+            error: errorMessage,
+        };
+    }
+
+    return {
+        success: true,
+        message: 'Candidate edited successfully',
+    };
+}
+
+export async function editBallot({ ballotID, ballotName, description, startDate, endDate }: BallotInput): Promise<any> {
+    if (Number.isNaN(ballotID) || ballotID <= 0) {
+        return {
+            success: false,
+            error: 'Invalid ballot ID',
+        };
+    }
+
+    const payload: Record<string, unknown> = { ballotID };
+
+    if (ballotName !== undefined) payload.ballotName = ballotName;
+    if (description !== undefined) payload.description = description;
+    if (startDate !== undefined) payload.startDate = startDate;
+    if (endDate !== undefined) payload.endDate = endDate;
+
+    const response = await fetch(`${import.meta.env.VITE_API_URL}api/v1/employee/editBallot`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage =
+            typeof errorData === 'object' && errorData !== null && 'error' in errorData
+                ? (errorData as { error?: string }).error ?? 'Failed to edit ballot'
+                : 'Failed to edit ballot';
+
+        return {
+            success: false,
+            error: errorMessage,
+        };
+    }
+
+    return {
+        success: true,
+        message: 'Ballot edited successfully',
+    };
+}
 
 export async function login(_prevState: LoginState, formData: FormData): Promise<any> {
     const validatedFields = LoginFormSchema.safeParse({
@@ -191,6 +295,33 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
         user: user, // Assuming the response contains user data
     };
 }
+
+export async function getBallot(ballotID: number): Promise<any> {
+    const response = await fetch(
+        `${import.meta.env.VITE_API_URL}api/v1/employee/getBallot?ballotID=${ballotID}`,
+        { method: "GET", credentials: "include" }
+    );
+
+    const json = await response.json().catch(() => null);
+
+    if (!response.ok) {
+        return {
+            success: false,
+            error: json?.error || json?.message || "Failed to fetch ballot",
+        };
+    }
+
+    // ✅ unwrap common shapes
+    const ballot =
+        json?.ballot ??
+        json?.data ??
+        json?.results?.ballot ??
+        json?.results ??
+        json;
+
+    return { success: true, ballot };
+}
+
 
 export async function getActiveUserBallots(userID: number): Promise<any> {
     const response = await fetch(`${import.meta.env.VITE_API_URL}api/v1/member/getUserBallots?userID=${userID}`, {

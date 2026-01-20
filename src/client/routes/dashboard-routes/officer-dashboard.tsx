@@ -1,4 +1,4 @@
-import OfficerDash from "../components/dashboard/officerDash";
+import OfficerDash from "../../components/dashboard/officerDash";
 
 export default function OfficerDashboard() {
     return (

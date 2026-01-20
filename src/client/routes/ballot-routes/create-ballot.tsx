@@ -1,5 +1,5 @@
-import { Button } from "../components/ui/button";
-import { Checkbox } from "../components/ui/checkbox";
+import { Button } from "../../components/ui/button";
+import { Checkbox } from "../../components/ui/checkbox";
 import {
     Field,
     FieldDescription,
@@ -8,11 +8,11 @@ import {
     FieldLegend,
     FieldSeparator,
     FieldSet,
-} from "../components/ui/field";
-import { Input } from "../components/ui/input";
+} from "../../components/ui/field";
+import { Input } from "../../components/ui/input";
 import { useState } from "react";
-import { useCompanies } from "../hooks/useCompanies";
-import SelectCompany from "../components/createBallot/selectCompany";
+import { useCompanies } from "../../hooks/useCompanies";
+import SelectCompany from "../../components/createBallot/selectCompany";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 

@@ -4,11 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { PulseLoader } from "react-spinners";
 import { CircleCheckBig } from "lucide-react";
 
-import Navbar from "../components/nav/navbar";
-import CandidateCard from "../components/candidateCard";
-import { getBallotResultsMember } from "../lib/form-actions";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
-import { Button } from "../components/ui/button";
+import Navbar from "../../components/nav/navbar";
+import CandidateCard from "../../components/candidateCard";
+import { getBallotResultsMember } from "../../lib/form-actions";
+import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
 
 export default function UserBallot() {
   const location = useLocation();

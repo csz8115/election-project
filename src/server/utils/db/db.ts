@@ -2,7 +2,7 @@ import prisma from './prisma.ts';
 import { User } from '../../types/user.ts';
 import { Company } from '../../types/company.ts';
 import { Ballot } from '../../types/ballot.ts';
-import { Candidate } from '../../types/candidate.ts';
+import { candidate } from '@prisma/client';
 import { Vote } from '../../types/vote.ts';
 import { ResponseVote } from '../../types/response.ts';
 import { BallotPositions } from '../../types/ballotPositions.ts';
@@ -166,7 +166,7 @@ async function getAllUsers(): Promise<User[]> {
     }
 }
 
-async function getCandidate(candidateID: number): Promise<Candidate> {
+async function getCandidate(candidateID: number): Promise<candidate | undefined> {
     try {
         const fetchCandidate = await prisma.candidate.findUnique({
             where: {
@@ -181,6 +181,31 @@ async function getCandidate(candidateID: number): Promise<Candidate> {
         dbLogger.error({
             message: "Unknown error during candidate retrieval",
             candidateID: candidateID,
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+}
+
+async function updateCandidate(candidateID: number, candidateData: Partial<candidate>): Promise<candidate | undefined> {
+    try {
+        const updatedCandidate = await prisma.candidate.update({
+            where: {
+                candidateID: candidateID,
+            },
+            data: {
+                fName: candidateData.fName,
+                lName: candidateData.lName,
+                titles: candidateData.titles,
+                description: candidateData.description,
+                picture: candidateData.picture,
+            },
+        });
+        return updatedCandidate;
+    } catch (error) {
+        dbLogger.error({
+            message: "Unknown error during candidate update",
+            candidateID: candidateID,
+            candidateData: candidateData,
             error: error instanceof Error ? error.message : String(error),
         });
     }
@@ -846,6 +871,19 @@ async function getBallot(ballotID: number): Promise<any> {
     } catch (error) {
         dbLogger.error({
             message: "Unknown error during ballot retrieval",
+            ballotID: ballotID,
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+}
+
+async function useBallot(ballotID: number): Promise<any> {
+    try {
+        const ballot = await getBallot(ballotID);
+        return ballot;
+    } catch (error) {
+        dbLogger.error({
+            message: "Unknown error during useBallot",
             ballotID: ballotID,
             error: error instanceof Error ? error.message : String(error),
         });
@@ -2023,5 +2061,7 @@ export const db = {
     tallyBallotMember,
     getCompanyIDByName,
     getBallotIDs,
-    changeBallotDates
+    changeBallotDates,
+    updateCandidate,
+    useBallot
 };

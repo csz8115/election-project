@@ -27,7 +27,7 @@ export default function ElectionCard({ ballot }: ElectionCardProps) {
       toggleId(ballotId);
       return;
     }
-    navigate(`/ballot`, { state: { ballot } });
+    navigate(`/ballot/?b=${ballotId}`, { state: { ballot } });
   };
 
 

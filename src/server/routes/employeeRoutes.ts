@@ -44,6 +44,30 @@ router.delete('/deleteBallot', async (req, res): Promise<any> => {
     }
 });
 
+router.get('/getBallot', async (req, res): Promise<any> => {
+    try {
+        const { ballotID } = req.query;
+
+        if (!ballotID) {
+            return res.status(400).json({ error: 'Ballot ID is required' });
+        }
+
+        const ballotIDNum = Number(ballotID);
+        if (isNaN(ballotIDNum) || ballotIDNum <= 0) {
+            return res.status(400).json({ error: 'Invalid Ballot ID' });
+        }
+
+        const ballot = await db.useBallot(ballotIDNum);
+        if (!ballot) {
+            return res.status(404).json({ error: 'Ballot does not exist' });
+        }
+        return res.status(200).json({ ballot });
+    } catch (error) {
+        console.error('Error retrieving ballot:', error);
+        return res.status(500).json({ error: "Failed to retrieve ballot." });
+    }
+});
+
 router.post('/getBallots', async (req, res): Promise<any> => {
     try {
         const cursor = Number(req.body.page);
@@ -271,194 +295,52 @@ router.post("/createBallot", requireRole("Employee", "Admin"), async (req, res):
 
 
 // Update ballot route
-router.put('/updateBallot', requireRole('Employee', 'Admin'), async (req, res): Promise<any> => {
-
-    console.log('Update ballot route called');
+router.put(`/editBallot`, async (req, res): Promise<any> => {
     try {
-        const { ballotID } = req.query;
-        const { ballotName, description, startDate, endDate, companyID, positions, initiatives } = req.body;
+        const { ballotID, ballotName, startDate, endDate, description } = req.body;
 
-        // Validate required fields
-        if (!ballotID || !ballotName || !description || !startDate || !endDate || !companyID || !positions) {
-            throw new Error('Invalid request');
+        if (!ballotID) {
+            return res.status(400).json({ error: 'Ballot ID is required' });
         }
 
-        // Check if the ballot exists
-        const existingBallot = await db.getBallot(Number(ballotID));
-        if (!existingBallot) {
-            throw new Error('Ballot does not exist');
+        const ballotIDNum = Number(ballotID);
+        if (Number.isNaN(ballotIDNum) || ballotIDNum <= 0) {
+            return res.status(400).json({ error: 'Invalid Ballot ID' });
         }
 
-        // Check if the company exists
-        const company = await db.getCompany(Number(companyID));
-        if (!company) {
-            throw new Error('Company does not exist');
+        const ballot = await db.getBallot(ballotIDNum);
+        if (!ballot) {
+            return res.status(404).json({ error: 'Ballot does not exist' });
         }
 
-
-
-        // Handle positions
-        const originalPositions = existingBallot.positions;
-
-        for (const originalPosition of originalPositions) {
-            // Check if the position still exists in the updated positions
-            const positionStillExists = positions.some((updatedPosition: any) =>
-                updatedPosition.positionID === originalPosition.positionID
-            );
-
-            // If the position does not exist in the updated positions, remove it from the database
-            if (!positionStillExists) {
-                console.log('Removing position:', originalPosition);
-                await db.deleteBallotPosition(originalPosition.positionID);
+        const ballotNameCheck = 
+        (() => {
+            if (ballotName === undefined || ballotName === null || ballotName === '') {
+                return ballot.ballotName;
             }
-        }
-
-        for (const position of positions) {
-            if (!position.positionID) {
-                // Create the position if it doesn't exist
-                const newPosition = await db.createBallotPosition({
-                    ballotID: Number(ballotID),
-                    positionName: position.positionName,
-                    allowedVotes: position.allowedVotes,
-                    writeIn: position.writeIn,
-                });
-                position.positionID = newPosition.positionID; // Assign the newly created position ID
-            }
-        }
-
-        for (const originalPosition of originalPositions) {
-            for (const originalCandidate of originalPosition.candidates) {
-                // Check if the candidate still exists in the updated positions
-                const candidateStillExists = positions.some((updatedPosition: any) =>
-                    updatedPosition.candidates.some((updatedCandidate: any) =>
-                        updatedCandidate.candidateID === originalCandidate.candidateID
-                    )
-                );
-
-                // If the candidate does not exist in the updated positions, remove it from the database
-                if (!candidateStillExists) {
-                    console.log('Removing candidate:', originalCandidate);
-                    await db.deleteCandidate(originalCandidate.candidateID);
-                }
-            }
-        }
-
-        for (const position of positions) {
-            console.log('Position:', position);
-            for (const candidate of position.candidates) {
-                if (!candidate.candidateID) {
-                    // Create the candidate if it doesn't exist
-                    await db.createCandidate(
-                        position.positionID,
-                        candidate.fName,
-                        candidate.lName,
-                        candidate.titles ?? '',
-                        candidate.description ?? '',
-                        candidate.picture ?? ''
-                    );
-                }
-            }
-        }
-
-
-        const updatedPositions = positions.map((position: any) => ({
-            positionID: position.positionID,
-            positionName: position.positionName,
-            allowedVotes: position.allowedVotes,
-            writeIn: position.writeIn,
-            candidates: position.candidates.map((candidate: any) => ({
-                candidateID: candidate.candidateID,
-                fName: candidate.fName,
-                lName: candidate.lName,
-                titles: candidate.titles ?? '',
-                description: candidate.description ?? '',
-                picture: candidate.picture ?? '',
-            })),
-        }));
-
-        // Handle initiatives
-        const originalInitiatives = existingBallot.initiatives;
-
-        for (const originalInitiative of originalInitiatives) {
-            // Check if the initiative still exists in the updated initiatives
-            const initiativeStillExists = initiatives.some((updatedInitiative: any) =>
-                updatedInitiative.initiativeID === originalInitiative.initiativeID
-            );
-
-            // If the initiative does not exist in the updated initiatives, remove it from the database
-            if (!initiativeStillExists) {
-                console.log('Removing initiative:', originalInitiative);
-                await db.deleteInitiative(originalInitiative.initiativeID);
-            }
-        }
-
-        for (const initiative of initiatives) {
-            if (!initiative.initiativeID) {
-                // Create the initiative if it doesn't exist
-                await db.createInitiative({
-                    ballotID: Number(ballotID),
-                    initiativeName: initiative.initiativeName,
-                    description: initiative.description ?? '',
-                    picture: initiative.picture ?? '',
-                    responses: initiative.responses.map((response: any) => ({
-                        response: response.response,
-                        votes: response.votes ?? 0,
-                    })),
-                });
-            }
-        }
-
-        const updatedInitiatives = initiatives.map((initiative: any) => ({
-            initiativeID: initiative.initiativeID,
-            initiativeName: initiative.initiativeName,
-            description: initiative.description ?? '',
-            picture: initiative.picture ?? '',
-            responses: initiative.responses.map((response: any) => ({
-                responseID: response.responseID,
-                response: response.response,
-                votes: response.votes ?? 0,
-            })),
-        }));
+            return z
+                .string()
+                .trim()
+                .min(5, 'Ballot name must be at least 5 characters long')
+                .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Ballot name contains invalid characters')
+                .parse(ballotName);
+        })()
 
         const updatedBallot = {
-            ballotName,
-            description,
-            startDate,
-            endDate,
-            companyID: Number(companyID),
-            positions: updatedPositions,
-            initiatives: updatedInitiatives,
+            ballotID: ballotIDNum,
+            ballotName: ballotNameCheck,
+            startDate: startDate ?? ballot.startDate,
+            endDate: endDate ?? ballot.endDate,
+            description: description ?? ballot.description,
         };
 
-        // Update existing positions in the database
-        for (const position of positions) {
-            if (position.positionID) {
-                await db.updateBallotPosition(
-                    position.positionID,
-                    {
-                        positionName: position.positionName,
-                        allowedVotes: position.allowedVotes,
-                        writeIn: position.writeIn,
-                    }
-                );
-            }
-        }
-        // Update the ballot in DB
-        await db.updateBallot(Number(ballotID), updatedBallot);
+        await db.updateBallot(ballotIDNum, updatedBallot);
 
         return res.status(200).json({ message: 'Ballot updated successfully' });
-
-    } catch (error: any) {
-        console.log('Error updating ballot:', error);
-
-        if (error instanceof z.ZodError) {
-            return res.status(400).json({ error: error.errors.map(e => e.message) });
-        } else if (error.message === 'Ballot does not exist') {
-            return res.status(404).json({ error: 'Ballot does not exist' });
-        } else if (error.message === 'Company does not exist') {
-            return res.status(404).json({ error: 'Company does not exist' });
-        } else if (error.message === 'Invalid request') {
-            return res.status(400).json({ error: 'Invalid request' });
+    } catch (error) {
+        console.error('Error updating ballot:', error);
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            return res.status(400).json({ error: error.code, details: error.meta ?? error.message });
         }
         return res.status(500).json({ error: 'Failed to update ballot' });
     }
@@ -708,6 +590,70 @@ router.post('/createBallotFromList', requireRole('Employee', 'Admin'), async (re
             return res.status(400).json({ error: 'Invalid request' });
         }
         return res.status(500).json({ error: 'Failed to create ballot' });
+    }
+});
+
+router.put('/editCandidate', async (req, res): Promise<any> => {
+    try {
+        const { candidateID, fName, lName, titles, description, picture } = req.body;
+
+        if (!candidateID) {
+            return res.status(400).json({ error: 'Candidate ID is required' });
+        }
+
+        const candidateIDNum = Number(candidateID);
+        if (isNaN(candidateIDNum) || candidateIDNum <= 0) {
+            return res.status(400).json({ error: 'Invalid Candidate ID' });
+        }
+
+        const candidate = await db.getCandidate(candidateIDNum);
+        if (!candidate) {
+            return res.status(404).json({ error: 'Candidate does not exist' });
+        }
+
+        const updatedCandidate = {
+            candidateID: candidateIDNum,
+            fName: fName ?? candidate.fName,
+            lName: lName ?? candidate.lName,
+            titles: titles ?? candidate.titles,
+            description: description ?? candidate.description,
+            picture: picture ?? candidate.picture,
+        };
+
+        await db.updateCandidate(candidateIDNum, updatedCandidate);
+
+        return res.status(200).json({ message: 'Candidate updated successfully' });
+    } catch (error) {
+        console.error('Error updating candidate:', error);
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            return res.status(400).json({ error: error.code, details: error.meta ?? error.message });
+        }
+        return res.status(500).json({ error: 'Failed to update candidate' });
+    }
+});
+
+router.get('/getCandidate', async (req, res): Promise<any> => {
+    try {
+        const { candidateID } = req.query;
+
+        if (!candidateID) {
+            return res.status(400).json({ error: 'Candidate ID is required' });
+        }
+
+        const candidateIDNum = Number(candidateID);
+        if (isNaN(candidateIDNum) || candidateIDNum <= 0) {
+            return res.status(400).json({ error: 'Invalid Candidate ID' });
+        }
+
+        const candidate = await db.getCandidate(candidateIDNum);
+        if (!candidate) {
+            return res.status(404).json({ error: 'Candidate does not exist' });
+        }
+
+        return res.status(200).json(candidate);
+    } catch (error) {
+        console.error('Error retrieving candidate:', error);
+        return res.status(500).json({ error: 'Failed to retrieve candidate' });
     }
 });
 

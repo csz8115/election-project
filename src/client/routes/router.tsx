@@ -1,20 +1,20 @@
 import { createBrowserRouter } from "react-router-dom";
 import AppLayout from "./app-layout"; // adjust path
 import Login from "./login";
-import Dashboard from "./dashboard";
-import UserDashboard from "./user-dashboard";
-import OfficerDashboard from "./officer-dashboard";
-import EmpBallot from "./EmpBallot";
+import Dashboard from "./dashboard-routes/dashboard";
+import UserDashboard from "./dashboard-routes/user-dashboard";
+import OfficerDashboard from "./dashboard-routes/officer-dashboard";
+import EmpBallot from "./ballot-routes/emp-ballot";
 import ProtectedRoute from "./protected-route";
-import EmployeeDashboard from "./employee-dashboard";
-import UserBallot from "./UserBallot";
+import EmployeeDashboard from "./dashboard-routes/employee-dashboard";
+import UserBallot from "./ballot-routes/user-ballot";
 import CompanyStats from "./company-stats";
-import AddBallot from "./add-ballot";
-import UsersPage from "./users-page";
-import AdminDashboard from "./admin-dashboard";
-import Ballot from "./ballot";
-import CreateBallot from "./create-ballot"
-import Candidate from "./candidate";
+import AddBallot from "./ballot-routes/add-ballot";
+import AdminDashboard from "./dashboard-routes/admin-dashboard";
+import Ballot from "./ballot-routes/ballot";
+import CreateBallot from "./ballot-routes/create-ballot";
+import Candidate from "./candidate-routes/candidate";
+import CreateCandidate from "./candidate-routes/create-candidate";
 
 export const router = createBrowserRouter([
   // Public route (no navbar)
@@ -55,7 +55,14 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-
+      {
+        path: "create-candidate",
+        element: (
+          <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
+            <CreateCandidate />
+          </ProtectedRoute>
+        ),
+      },
       {
         path: "employee-dashboard",
         element: (
@@ -115,15 +122,6 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
         <AddBallot />
-      </ProtectedRoute>
-    ),
-  },
-
-  {
-    path: "users-page",
-    element: (
-      <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
-        <UsersPage />
       </ProtectedRoute>
     ),
   },
