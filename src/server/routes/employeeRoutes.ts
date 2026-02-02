@@ -313,18 +313,18 @@ router.put(`/editBallot`, async (req, res): Promise<any> => {
             return res.status(404).json({ error: 'Ballot does not exist' });
         }
 
-        const ballotNameCheck = 
-        (() => {
-            if (ballotName === undefined || ballotName === null || ballotName === '') {
-                return ballot.ballotName;
-            }
-            return z
-                .string()
-                .trim()
-                .min(5, 'Ballot name must be at least 5 characters long')
-                .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Ballot name contains invalid characters')
-                .parse(ballotName);
-        })()
+        const ballotNameCheck =
+            (() => {
+                if (ballotName === undefined || ballotName === null || ballotName === '') {
+                    return ballot.ballotName;
+                }
+                return z
+                    .string()
+                    .trim()
+                    .min(5, 'Ballot name must be at least 5 characters long')
+                    .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Ballot name contains invalid characters')
+                    .parse(ballotName);
+            })()
 
         const updatedBallot = {
             ballotID: ballotIDNum,
@@ -656,5 +656,104 @@ router.get('/getCandidate', async (req, res): Promise<any> => {
         return res.status(500).json({ error: 'Failed to retrieve candidate' });
     }
 });
+
+router.post(`/addCandidate`, async (req, res): Promise<any> => {
+    try {
+        const { positionID, fName, lName, titles, description, picture } = req.body;
+
+        if (!positionID || !fName || !lName) {
+            return res.status(400).json({ error: 'Invalid request' });
+        }
+        const positionIDNum = Number(positionID);
+        if (isNaN(positionIDNum) || positionIDNum <= 0) {
+            return res.status(400).json({ error: 'Invalid Position ID' });
+        }
+
+        const candidateSchema = z.object({
+            positionID: z.number().int().positive(),
+            fName: z.string().trim().min(1, 'First name is required').max(100),
+            lName: z.string().trim().min(1, 'Last name is required').max(100),
+            titles: z.string().trim().max(255).optional().default(''),
+            description: z.string().trim().max(2000).optional().default(''),
+            picture: z.string().trim().max(2048).optional().default(''),
+        });
+
+        const candidateData = candidateSchema.parse({
+            positionID: positionIDNum,
+            fName,
+            lName,
+            titles,
+            description,
+            picture,
+        });
+
+        const createdCandidate = await db.addCandidate(candidateData);
+
+        return res.status(201).json({
+            message: 'Candidate added successfully',
+            candidateID: createdCandidate.candidateID,
+        });
+
+    } catch (error: any) {
+        console.error('Error adding candidate:', error);
+
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors.map(e => e.message) });
+        } else if (error.message === 'Invalid request') {
+            return res.status(400).json({ error: 'Invalid request' });
+        }
+        return res.status(500).json({ error: 'Failed to add candidate' });
+    }
+});
+
+router.post(`/addPosition`, async (req, res): Promise<any> => {
+    try {
+        const { positionName, allowedVotes, writeIn, ballotID } = req.body;
+
+        if (!positionName || !ballotID) {
+            return res.status(400).json({ error: 'Invalid request' });
+        }
+
+        const ballotIDNum = Number(ballotID);
+        if (isNaN(ballotIDNum) || ballotIDNum <= 0) {
+            return res.status(400).json({ error: 'Invalid Ballot ID' });
+        }
+
+        const positionData = {
+            positionName,
+            allowedVotes: allowedVotes !== undefined ? Number(allowedVotes) : undefined,
+            writeIn: writeIn === true,
+            ballotID: ballotIDNum,
+        };
+
+        const requiredFields: (keyof typeof positionData)[] = ['positionName', 'ballotID'];
+        const missingFields = requiredFields.filter((field) => {
+            const value = positionData[field];
+            return value === undefined || value === null || value === '';
+        });
+
+        if (missingFields.length > 0) {
+            return res.status(400).json({ error: `Missing required fields: ${missingFields.join(', ')}` });
+        }
+
+        const createdPosition = await db.addPosition(positionData);
+
+        return res.status(201).json({
+            message: 'Position added successfully',
+            positionID: createdPosition.positionID,
+        });
+
+    } catch (error: any) {
+        console.error('Error adding position:', error);
+
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors.map(e => e.message) });
+        } else if (error.message === 'Invalid request') {
+            return res.status(400).json({ error: 'Invalid request' });
+        }
+        return res.status(500).json({ error: 'Failed to add position' });
+    }
+});
+
 
 export default router;

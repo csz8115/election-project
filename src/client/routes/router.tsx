@@ -15,6 +15,7 @@ import Ballot from "./ballot-routes/ballot";
 import CreateBallot from "./ballot-routes/create-ballot";
 import Candidate from "./candidate-routes/candidate";
 import CreateCandidate from "./candidate-routes/create-candidate";
+import CreatePosition from "./candidate-routes/create-position";
 
 export const router = createBrowserRouter([
   // Public route (no navbar)
@@ -64,6 +65,14 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: "create-position",
+        element: (
+          <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
+            <CreatePosition />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "employee-dashboard",
         element: (
           <ProtectedRoute allowedRoles={["Employee"]}>
@@ -78,80 +87,80 @@ export const router = createBrowserRouter([
           <ProtectedRoute allowedRoles={["Employee", "Admin"]}>
             <CreateBallot />
           </ProtectedRoute>
-      ),
+        ),
       },
 
-  {
-    path: "employee-ballot",
-    element: (
-      <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
-        <EmpBallot />
-      </ProtectedRoute>
-    ),
-  },
+      {
+        path: "employee-ballot",
+        element: (
+          <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
+            <EmpBallot />
+          </ProtectedRoute>
+        ),
+      },
 
-  {
-    path: "officer-dashboard",
-    element: (
-      <ProtectedRoute allowedRoles={["Officer"]}>
-        <OfficerDashboard />
-      </ProtectedRoute>
-    ),
-  },
+      {
+        path: "officer-dashboard",
+        element: (
+          <ProtectedRoute allowedRoles={["Officer"]}>
+            <OfficerDashboard />
+          </ProtectedRoute>
+        ),
+      },
 
-  {
-    path: "admin-dashboard",
-    element: (
-      <ProtectedRoute allowedRoles={["Admin"]}>
-        <AdminDashboard />
-      </ProtectedRoute>
-    ),
-  },
+      {
+        path: "admin-dashboard",
+        element: (
+          <ProtectedRoute allowedRoles={["Admin"]}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        ),
+      },
 
-  {
-    path: "company-stats",
-    element: (
-      <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
-        <CompanyStats />
-      </ProtectedRoute>
-    ),
-  },
+      {
+        path: "company-stats",
+        element: (
+          <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
+            <CompanyStats />
+          </ProtectedRoute>
+        ),
+      },
 
-  {
-    path: "add-ballot",
-    element: (
-      <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
-        <AddBallot />
-      </ProtectedRoute>
-    ),
-  },
+      {
+        path: "add-ballot",
+        element: (
+          <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
+            <AddBallot />
+          </ProtectedRoute>
+        ),
+      },
 
-  {
-    path: "user-dashboard",
-    element: (
-      <ProtectedRoute allowedRoles={["Member"]}>
-        <UserDashboard />
-      </ProtectedRoute>
-    ),
-  },
+      {
+        path: "user-dashboard",
+        element: (
+          <ProtectedRoute allowedRoles={["Member"]}>
+            <UserDashboard />
+          </ProtectedRoute>
+        ),
+      },
 
-  {
-    path: "user-ballot",
-    element: (
-      <ProtectedRoute allowedRoles={["Member"]}>
-        <UserBallot />
-      </ProtectedRoute>
-    ),
-  },
+      {
+        path: "user-ballot",
+        element: (
+          <ProtectedRoute allowedRoles={["Member"]}>
+            <UserBallot />
+          </ProtectedRoute>
+        ),
+      },
 
-  {
-    path: "unauthorized",
-    element: (
-      <div className="flex items-center justify-center min-h-screen">
-        <h1 className="text-2xl font-bold text-slate-100">Unauthorized</h1>
-      </div>
-    ),
-  },
-],
+      {
+        path: "unauthorized",
+        element: (
+          <div className="flex items-center justify-center min-h-screen">
+            <h1 className="text-2xl font-bold text-slate-100">Unauthorized</h1>
+          </div>
+        ),
+      },
+    ],
   },
 ]);

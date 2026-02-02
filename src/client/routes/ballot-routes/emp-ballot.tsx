@@ -435,74 +435,88 @@ export default function EmpBallot() {
 
             {/* Positions */}
             <section className="space-y-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-xl font-semibold text-slate-100">Positions</h2>
+              <div className="flex gap-2">
+                <Button
+                className="bg-white/10 text-slate-100 hover:bg-white/20"
+                onClick={() =>
+                  navigate(`/create-position`, {
+                  state: { ballotID: ballot.ballotID },
+                  })
+                }
+                >
+                Add Position
+                </Button>
+              </div>
+              </div>
 
               <div className="space-y-6">
-                {resultsQuery.data.results.positions.map((position: any) => (
-                  <section
-                    key={position.positionID}
-                    className="rounded-2xl border border-white/10 bg-slate-900/60"
-                  >
-                    <div className="px-5 py-4 border-b border-white/10">
-                      <h3 className="text-lg font-semibold text-slate-100">
-                        {position.positionName}
-                      </h3>
-                      <p className="text-sm text-slate-300">
-                        Total Votes:{" "}
-                        <span className="text-slate-100 font-medium">
-                          {position?._count?.positionVotes ?? 0}
-                        </span>
-                      </p>
-                    </div>
+              {resultsQuery.data.results.positions.map((position: any) => (
+                <section
+                key={position.positionID}
+                className="rounded-2xl border border-white/10 bg-slate-900/60"
+                >
+                <div className="px-5 py-4 border-b border-white/10">
+                  <h3 className="text-lg font-semibold text-slate-100">
+                  {position.positionName}
+                  </h3>
+                  <p className="text-sm text-slate-300">
+                  Total Votes:{" "}
+                  <span className="text-slate-100 font-medium">
+                    {position?._count?.positionVotes ?? 0}
+                  </span>
+                  </p>
+                </div>
 
-                    <div className="p-5">
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {position.candidates.map((candidate: any, index: number) => (
-                          <div
-                            key={candidate.candidate.candidateID}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() =>
-                              navigate(`/candidate/${candidate.candidate.candidateID}`, {
-                                state: {
-                                  candidate: candidate.candidate,
-                                  votes: candidate.candidate._count?.positionVotes || 0,
-                                  rank: index,
-                                },
-                              })
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                navigate(`/candidate/${candidate.candidate.candidateID}`, {
-                                  state: {
-                                    candidate: candidate.candidate,
-                                    votes: candidate.candidate._count?.positionVotes || 0,
-                                    rank: index,
-                                  },
-                                });
-                              }
-                            }}
-                            className="cursor-pointer focus:outline-none"
-                          >
-                            <CandidateCard
-                              candidate={candidate.candidate}
-                              candidateIndex={index}
-                              votes={candidate.candidate._count?.positionVotes || 0}
-                            />
-                          </div>
-                        ))}
-
-                        <CreateCandidateCard
-                          onClick={() =>
-                            navigate(`/create-candidate`, {
-                              state: { positionID: position.positionID },
-                            })
-                          }
-                        />
-                      </div>
+                <div className="p-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {position.candidates.map((candidate: any, index: number) => (
+                    <div
+                    key={candidate.candidate.candidateID}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() =>
+                      navigate(`/candidate/${candidate.candidate.candidateID}`, {
+                      state: {
+                        candidate: candidate.candidate,
+                        votes: candidate.candidate._count?.positionVotes || 0,
+                        rank: index,
+                      },
+                      })
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                      navigate(`/candidate/${candidate.candidate.candidateID}`, {
+                        state: {
+                        candidate: candidate.candidate,
+                        votes: candidate.candidate._count?.positionVotes || 0,
+                        rank: index,
+                        },
+                      });
+                      }
+                    }}
+                    className="cursor-pointer focus:outline-none"
+                    >
+                    <CandidateCard
+                      candidate={candidate.candidate}
+                      candidateIndex={index}
+                      votes={candidate.candidate._count?.positionVotes || 0}
+                    />
                     </div>
-                  </section>
-                ))}
+                  ))}
+
+                  <CreateCandidateCard
+                    onClick={() =>
+                    navigate(`/create-candidate`, {
+                      state: { positionID: position.positionID, ballotID: ballot.ballotID },
+                    })
+                    }
+                  />
+                  </div>
+                </div>
+                </section>
+              ))}
               </div>
             </section>
           </div>

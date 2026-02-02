@@ -30,12 +30,28 @@ type CandidateInput = {
     picture?: string;
 }
 
+type addCandidateInput = {
+    positionID: number;
+    fName: string;
+    lName: string;
+    titles: string;
+    description: string;
+    picture: string;
+}
+
 type BallotInput = {
     ballotID: number;
     ballotName?: string;
     description?: string;
     startDate?: string;
     endDate?: string;
+}
+
+type addPositionInput = {
+    positionName: string;
+    allowedVotes?: number;
+    writeIn?: boolean;
+    ballotID?: number;
 }
 
 export async function deleteBallot(ballotID: DeleteBallotInput): Promise<any> {
@@ -391,6 +407,98 @@ export async function getBallotResultsMember(ballotID: number): Promise<any> {
     return {
         success: true,
         results: results,
+    };
+}
+
+export async function addCandidate(candidateData: addCandidateInput, ballotID: number): Promise<any> {
+    const payload = {
+        ...candidateData,
+        ballotID,
+    };
+
+    const requiredFields: (keyof addCandidateInput)[] = ["positionID", "fName", "lName", "titles", "description", "picture"];
+    const missingFields = requiredFields.filter((field) => {
+        const value = candidateData[field];
+        return value === undefined || value === null || value === "";
+    });
+
+    if (missingFields.length > 0 || Number.isNaN(ballotID) || ballotID <= 0) {
+        return {
+            success: false,
+            error: missingFields.length
+                ? `Missing required fields: ${missingFields.join(", ")}`
+                : "Invalid ballot ID",
+        };
+    }
+
+    const response = await fetch(`${import.meta.env.VITE_API_URL}api/v1/employee/addCandidate`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        return {
+            success: false,
+            error: (errorData as { error?: string }).error ?? "Failed to add candidate",
+        };
+    }
+
+    const data = await response.json().catch(() => null);
+
+    return {
+        success: true,
+        candidate: data?.candidate ?? data,
+    };
+}
+
+export async function addPosition(positionData: addPositionInput, ballotID: number): Promise<any> {
+    const payload = {
+        ...positionData,
+        ballotID,
+    };
+
+    const requiredFields: (keyof addPositionInput)[] = ["positionName"];
+    const missingFields = requiredFields.filter((field) => {
+        const value = positionData[field];
+        return value === undefined || value === null || value === "";
+    });
+
+    if (missingFields.length > 0 || Number.isNaN(ballotID) || ballotID <= 0) {
+        return {
+            success: false,
+            error: missingFields.length
+                ? `Missing required fields: ${missingFields.join(", ")}`
+                : "Invalid ballot ID",
+        };
+    }
+
+    const response = await fetch(`${import.meta.env.VITE_API_URL}api/v1/employee/addPosition`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        return {
+            success: false,
+            error: (errorData as { error?: string }).error ?? "Failed to add position",
+        };
+    }
+
+    const data = await response.json().catch(() => null);
+
+    return {
+        success: true,
+        position: data?.position ?? data,
     };
 }
 

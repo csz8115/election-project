@@ -1677,6 +1677,50 @@ async function tallyBallot(ballotID: number) {
     }
 }
 
+type candidateData = {
+    description?: string;
+    positionID?: number;
+    fName?: string;
+    lName?: string;
+    titles?: string;
+    picture?: string;
+}
+
+async function addCandidate(candidateData: candidateData) {
+    try {
+        const newCandidate = await prisma.$transaction(async (tx) => {
+            const createdCandidate = await tx.candidate.create({
+                data: {
+                    description: candidateData.description || "",
+                    fName: candidateData.fName || "",
+                    lName: candidateData.lName || "",
+                    titles: candidateData.titles || "",
+                    picture: candidateData.picture || "",
+                },
+            });
+
+            if (candidateData.positionID) {
+                await tx.ballotCandidates.create({
+                    data: {
+                        position: { connect: { positionID: candidateData.positionID } },
+                        candidate: { connect: { candidateID: createdCandidate.candidateID } },
+                    },
+                });
+            }
+
+            return createdCandidate;
+        });
+
+        return newCandidate;
+    } catch (error) {
+        dbLogger.error({
+            message: "Unknown error during candidate addition",
+            candidateData: candidateData,
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+}
+
 // same as tallyBallot but only displays the winners and not the full results
 async function tallyBallotMember(ballotID: number) {
     try {
@@ -2005,7 +2049,37 @@ async function getCompaniesByIDs(companyIDs: number[]): Promise<Company[]> {
     }
 }
 
+async function addPosition(positionData: {
+    positionName: string;
+    allowedVotes?: number;
+    writeIn?: boolean;
+    ballotID?: number;
+}) {
+    try {
+        const newPosition = await prisma.ballotPositions.create({
+            data: {
+                positionName: positionData.positionName,
+                allowedVotes: positionData.allowedVotes || 1,
+                writeIn: positionData.writeIn || false,
+                ballot: positionData.ballotID
+                    ? {
+                        connect: { ballotID: positionData.ballotID },
+                    }
+                    : undefined,
+            },
+        });
+        return newPosition;
+    } catch (error) {
+        dbLogger.error({
+            message: "Unknown error during position addition",
+            positionData: positionData,
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+}
+
 export const db = {
+    addPosition,
     getUser,
     getCandidate,
     deleteCandidate,
@@ -2063,5 +2137,6 @@ export const db = {
     getBallotIDs,
     changeBallotDates,
     updateCandidate,
-    useBallot
+    useBallot,
+    addCandidate
 };
