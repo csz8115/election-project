@@ -32,8 +32,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "../../components/ui/alert-dialog";
-import { deleteBallot, changeDate } from "../../lib/form-actions";
+import { useDeleteBallots } from "../../hooks/useDeleteBallots";
+import { useChangeDate } from "../../hooks/useChangeDate";
 import { toast } from "sonner";
+import { set } from "zod";
 
 type EmployeeToolbarProps = {
   query: string;
@@ -87,11 +89,18 @@ export function EmployeeToolbar({
   const reduceMotion = useReducedMotion();
   const selectedCount = selectedBallotIds.length;
 
+  // ✅ Hooks
+  const deleteBallotsMutation = useDeleteBallots();
+  const changeDateMutation = useChangeDate();
+
+  const isDeleting = deleteBallotsMutation.isPending;
+  const isDateSaving = changeDateMutation.isPending;
+
   // ✅ Bulk date dialog local state (always shows BOTH fields)
   const [dateOpen, setDateOpen] = React.useState(false);
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [startDateValue, setStartDateValue] = React.useState<string>(""); // YYYY-MM-DD
   const [endDateValue, setEndDateValue] = React.useState<string>(""); // YYYY-MM-DD
-  const [isDateSaving, setIsDateSaving] = React.useState(false);
   const [dateError, setDateError] = React.useState<string>("");
 
   const handleClearAll = () => {
@@ -114,7 +123,7 @@ export function EmployeeToolbar({
         transition: { duration: 0.22, ease },
       };
 
-  const todayISO = React.useMemo(() => new Date().toISOString().slice(0, 10), []);
+  React.useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   const hasAnyDate = !!startDateValue || !!endDateValue;
 
@@ -147,34 +156,50 @@ export function EmployeeToolbar({
       ? new Date(`${endDateValue}T00:00:00`)
       : undefined;
 
-    setIsDateSaving(true);
-
     const run = async () => {
-      await Promise.all(
-        selectedBallotIds.map((ballotID) =>
-          changeDate({
-            ballotID,
-            newStartDate,
-            newEndDate,
-          })
-        )
-      );
+      // ✅ ONE request (array of IDs)
+      await changeDateMutation.mutateAsync({
+        ballotID: selectedBallotIds,
+        newStartDate,
+        newEndDate,
+      });
 
       handleClearAll();
       await onAfterDateChange?.();
       setDateOpen(false);
     };
 
-    toast
-      .promise(run().finally(() => setIsDateSaving(false)), {
-        loading: `Updating date${selectedCount === 1 ? "" : "s"} for ${selectedCount} ballot${
-          selectedCount === 1 ? "" : "s"
-        }...`,
-        success: `Updated date${selectedCount === 1 ? "" : "s"} for ${selectedCount} ballot${
+    toast.promise(run(), {
+      loading: `Updating date${selectedCount === 1 ? "" : "s"} for ${selectedCount} ballot${
+        selectedCount === 1 ? "" : "s"
+      }...`,
+      success: `Updated date${selectedCount === 1 ? "" : "s"} for ${selectedCount} ballot${
+        selectedCount === 1 ? "" : "s"
+      }`,
+      error: (e: any) =>
+        e?.message ??
+        `Failed to update date${selectedCount === 1 ? "" : "s"} for ${selectedCount} ballot${
           selectedCount === 1 ? "" : "s"
         }`,
-        error: `Failed to update date${selectedCount === 1 ? "" : "s"} for ${selectedCount} ballot${selectedCount === 1 ? "" : "s"}`,
-      });
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (!selectedCount || isDeleting) return;
+
+    const run = async () => {
+      await deleteBallotsMutation.mutateAsync({ ballotID: selectedBallotIds });
+      handleClearAll();
+      await onAfterDelete?.();
+    };
+
+    setDeleteOpen(false);
+
+    toast.promise(run(), {
+      loading: `Deleting ${selectedCount} ballot${selectedCount === 1 ? "" : "s"}...`,
+      success: `Deleted ${selectedCount} ballot${selectedCount === 1 ? "" : "s"}`,
+      error: (e: any) => e?.message ?? "Failed to delete ballots",
+    });
   };
 
   return (
@@ -249,11 +274,7 @@ export function EmployeeToolbar({
           onClick={() => setSortDir(sortDir === "asc" ? "desc" : "asc")}
           aria-label="Toggle sort direction"
         >
-          {sortDir === "asc" ? (
-            <ArrowUp className="h-4 w-4" />
-          ) : (
-            <ArrowDown className="h-4 w-4" />
-          )}
+          {sortDir === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
         </Button>
 
         <Button
@@ -290,11 +311,7 @@ export function EmployeeToolbar({
           }}
           aria-label={isManageMode ? "Exit manage mode" : "Enter manage mode"}
         >
-          {isManageMode ? (
-            <Check className="h-4 w-4" />
-          ) : (
-            <CheckSquare className="h-4 w-4 mr-2" />
-          )}
+          {isManageMode ? <Check className="h-4 w-4" /> : <CheckSquare className="h-4 w-4 mr-2" />}
           {!isManageMode && "Manage"}
         </Button>
 
@@ -309,13 +326,13 @@ export function EmployeeToolbar({
             >
               <span className="text-sm text-slate-300">{selectedCount} selected</span>
 
-              {/* ✅ Bulk Date (always both fields) */}
+              {/* ✅ Bulk Date */}
               <AlertDialog open={dateOpen} onOpenChange={setDateOpen}>
                 <AlertDialogTrigger asChild>
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={selectedCount === 0}
+                    disabled={selectedCount === 0 || isDateSaving || isDeleting}
                     className="border-slate-800 bg-slate-900/30 text-slate-200 hover:bg-slate-800/60"
                     aria-label="Bulk edit dates"
                     onClick={() => {
@@ -395,8 +412,7 @@ export function EmployeeToolbar({
                       className="bg-slate-700 hover:bg-slate-600 disabled:opacity-60"
                       disabled={selectedCount === 0 || isDateSaving}
                       onClick={(e) => {
-                        // Keep dialog open until async finishes
-                        e.preventDefault();
+                        e.preventDefault(); // keep dialog open during async
                         void applyDates();
                       }}
                     >
@@ -406,13 +422,13 @@ export function EmployeeToolbar({
                 </AlertDialogContent>
               </AlertDialog>
 
-              {/* ✅ Bulk Delete (functional + refresh) */}
-              <AlertDialog>
+              {/* ✅ Bulk Delete */}
+              <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
                 <AlertDialogTrigger asChild>
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={selectedCount === 0}
+                    disabled={selectedCount === 0 || isDeleting || isDateSaving}
                     className="border-slate-800 bg-slate-900/30 text-slate-200 hover:bg-slate-800/60"
                     aria-label="Bulk delete"
                   >
@@ -431,30 +447,16 @@ export function EmployeeToolbar({
                   </AlertDialogHeader>
 
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
                     <AlertDialogAction
-                      className="bg-red-500 hover:bg-red-600"
-                      onClick={() => {
-                        if (!selectedCount) return;
-
-                        toast.promise(
-                          deleteBallot(selectedBallotIds).then(async () => {
-                            handleClearAll();
-                            await onAfterDelete?.();
-                          }),
-                          {
-                            loading: `Deleting ${selectedCount} ballot${
-                              selectedCount === 1 ? "" : "s"
-                            }...`,
-                            success: `Deleted ${selectedCount} ballot${
-                              selectedCount === 1 ? "" : "s"
-                            }`,
-                            error: "Failed to delete ballots",
-                          }
-                        );
+                      className="bg-red-500 hover:bg-red-600 disabled:opacity-60"
+                      disabled={isDeleting || selectedCount === 0}
+                      onClick={(e) => {
+                        e.preventDefault(); // optional: prevents dialog auto-close timing weirdness
+                        void handleBulkDelete();
                       }}
                     >
-                      Delete
+                      {isDeleting ? "Deleting..." : "Delete"}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -463,7 +465,7 @@ export function EmployeeToolbar({
               <Button
                 variant="ghost"
                 size="sm"
-                disabled={selectedCount === 0}
+                disabled={selectedCount === 0 || isDeleting || isDateSaving}
                 className="text-slate-300 hover:bg-slate-800/40"
                 onClick={handleClearAll}
               >
@@ -473,7 +475,7 @@ export function EmployeeToolbar({
               <Button
                 variant="ghost"
                 size="sm"
-                disabled={!onSelectAllMatching || selectAllLoading}
+                disabled={!onSelectAllMatching || selectAllLoading || isDeleting || isDateSaving}
                 className="text-slate-300 hover:bg-slate-800/40"
                 onClick={() => onSelectAllMatching?.()}
                 title="Select all ballots matching the current filters (across pages)"
@@ -488,4 +490,3 @@ export function EmployeeToolbar({
     </motion.div>
   );
 }
-

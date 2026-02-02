@@ -1116,18 +1116,30 @@ async function getBallotsByCompany(
     }
 }
 
-async function changeBallotDates(ballotID: number, newStartDate: Date | undefined, newEndDate: Date | undefined): Promise<any> {
+async function changeBallotDates(ballotID: number | number[], newStartDate: Date | undefined, newEndDate: Date | undefined): Promise<any> {
     try {
-        const updatedBallot = await prisma.ballots.update({
-            where: {
-                ballotID: ballotID,
-            },
-            data: {
-                startDate: newStartDate,
-                endDate: newEndDate,
-            },
+        const ids = Array.isArray(ballotID) ? ballotID : [ballotID];
+        const data: { startDate?: Date; endDate?: Date } = {};
+
+        if (newStartDate) data.startDate = newStartDate;
+        if (newEndDate) data.endDate = newEndDate;
+
+        if (!Object.keys(data).length) {
+            throw new Error("At least one of newStartDate or newEndDate must be provided");
+        }
+
+        if (Array.isArray(ballotID)) {
+            await prisma.ballots.updateMany({
+            where: { ballotID: { in: ids } },
+            data,
+            });
+            return prisma.ballots.findMany({ where: { ballotID: { in: ids } } });
+        }
+
+        return prisma.ballots.update({
+            where: { ballotID },
+            data,
         });
-        return updatedBallot;
     } catch (error) {
         dbLogger.error({
             message: "Unknown error during ballot end date update",

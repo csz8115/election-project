@@ -107,14 +107,18 @@ export async function deleteBallot(ballotID: DeleteBallotInput): Promise<any> {
     };
 }
 
-export async function changeDate({ ballotID, newStartDate, newEndDate }: changeBallotDateInput): Promise<any> {
+export async function changeDate({
+    ballotID,
+    newStartDate,
+    newEndDate,
+}: changeBallotDateInput): Promise<{ success: boolean; error?: string; updatedCount?: number }> {
     const normalizedIds = (Array.isArray(ballotID) ? ballotID : [ballotID]).map(Number);
-    const invalidIds = normalizedIds.filter(id => Number.isNaN(id) || id <= 0);
+    const invalidIds = normalizedIds.filter((id) => Number.isNaN(id) || id <= 0);
 
     if (invalidIds.length > 0) {
         return {
             success: false,
-            error: `Invalid ballot ID${invalidIds.length > 1 ? 's' : ''}: ${invalidIds.join(', ')}`,
+            error: `Invalid ballot ID${invalidIds.length > 1 ? "s" : ""}: ${invalidIds.join(", ")}`,
         };
     }
 
@@ -124,62 +128,41 @@ export async function changeDate({ ballotID, newStartDate, newEndDate }: changeB
     if (!hasValidStartDate && !hasValidEndDate) {
         return {
             success: false,
-            error: 'You must provide at least one valid start date or end date.',
+            error: "You must provide at least one valid start date or end date.",
         };
     }
 
-    const updateResults = await Promise.all(
-        normalizedIds.map(async (id) => {
-            const payload: Record<string, unknown> = { ballotID: id };
-
-            if (hasValidStartDate) {
-                payload.newStartDate = newStartDate!.toISOString().slice(0, 10);
-            }
-
-            if (hasValidEndDate) {
-                payload.newEndDate = newEndDate!.toISOString().slice(0, 10);
-            }
-
-            const response = await fetch(`${import.meta.env.VITE_API_URL}api/v1/employee/changeDate`, {
-                method: 'PUT',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                const errorMessage =
-                    typeof errorData === 'object' && errorData !== null && 'error' in errorData
-                        ? (errorData as { error?: string }).error ?? 'Failed to change date'
-                        : 'Failed to change date';
-
-                return { id, success: false as const, error: errorMessage };
-            }
-
-            return { id, success: true as const };
-        }),
-    );
-
-    const failed = updateResults.filter(result => !result.success);
-    if (failed.length > 0) {
-        return {
-            success: false,
-            updatedBallotIds: updateResults.filter(result => result.success).map(result => result.id),
-            errors: failed.reduce<Record<number, string>>((acc, result) => {
-                acc[result.id] = result.error ?? 'Failed to change date';
-                return acc;
-            }, {}),
-        };
-    }
-
-    return {
-        success: true,
-        updatedBallotIds: normalizedIds,
+    const payload: Record<string, unknown> = {
+        ballotID: normalizedIds, // ✅ send array once
     };
+
+    // IMPORTANT: your server currently parses via `new Date(value)`
+    // Sending ISO is the safest. If you slice(0,10), it's still ok,
+    // but ISO avoids timezone parsing weirdness.
+    if (hasValidStartDate) payload.newStartDate = newStartDate!.toISOString();
+    if (hasValidEndDate) payload.newEndDate = newEndDate!.toISOString();
+
+    const response = await fetch(`${import.meta.env.VITE_API_URL}api/v1/employee/changeDate`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const msg =
+            typeof errorData === "object" && errorData !== null && "error" in errorData
+                ? (errorData as any).error ?? "Failed to change date"
+                : "Failed to change date";
+
+        return { success: false, error: msg };
+    }
+
+    const data = await response.json().catch(() => ({}));
+    return { success: true, updatedCount: data?.updatedCount };
 }
+
 
 export async function editCandidate({ candidateID, fName, lName, titles, description, picture }: CandidateInput): Promise<any> {
     if (Number.isNaN(candidateID) || candidateID <= 0) {

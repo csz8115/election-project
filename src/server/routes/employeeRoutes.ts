@@ -404,18 +404,43 @@ router.put('/changeDate', async (req, res): Promise<any> => {
     try {
         const { ballotID, newStartDate, newEndDate } = req.body;
 
-        if (!ballotID || (!newStartDate && !newEndDate)) {
-            return res.status(400).json({ error: 'Ballot ID and at least one of new start date or new end date are required' });
+        const isMissingBallotID =
+            ballotID === undefined ||
+            ballotID === null ||
+            (typeof ballotID === 'string' && ballotID.trim() === '') ||
+            (Array.isArray(ballotID) && ballotID.length === 0);
+
+        if (isMissingBallotID || (!newStartDate && !newEndDate)) {
+            return res.status(400).json({
+                error: 'Ballot ID and at least one of new start date or new end date are required',
+            });
         }
 
-        const ballotIDNum = Number(ballotID);
-        if (Number.isNaN(ballotIDNum) || ballotIDNum <= 0) {
+        const normalizeBallotIDs = (value: unknown): number[] => {
+            if (Array.isArray(value)) {
+                return value.flatMap(normalizeBallotIDs);
+            }
+            if (value === undefined || value === null || value === '') {
+                return [];
+            }
+            const parsed = Number(value);
+            return Number.isInteger(parsed) && parsed > 0 ? [parsed] : [];
+        };
+
+        const ballotIDs = Array.from(new Set(normalizeBallotIDs(ballotID)));
+
+        if (ballotIDs.length === 0) {
             return res.status(400).json({ error: 'Invalid Ballot ID' });
         }
 
-        const ballot = await db.getBallot(ballotIDNum);
-        if (!ballot) {
-            throw new Error('Ballot does not exist');
+        const ballotsToUpdate: { id: number; ballot: any }[] = [];
+
+        for (const id of ballotIDs) {
+            const ballot = await db.getBallot(id);
+            if (!ballot) {
+                throw new Error('Ballot does not exist');
+            }
+            ballotsToUpdate.push({ id, ballot });
         }
 
         const parseDate = (value?: string | Date) => {
@@ -432,24 +457,37 @@ router.put('/changeDate', async (req, res): Promise<any> => {
         const providedStart = parseDate(newStartDate);
         const providedEnd = parseDate(newEndDate);
 
-        const effectiveStartDate = providedStart ?? new Date(ballot.startDate);
-        const newEndDateObj = providedEnd ?? new Date(ballot.endDate);
+        for (const { ballot } of ballotsToUpdate) {
+            const effectiveStartDate = providedStart ?? new Date(ballot.startDate);
+            const effectiveEndDate = providedEnd ?? new Date(ballot.endDate);
 
-        if (effectiveStartDate >= newEndDateObj) {
-            throw new RangeError('Start date must be before end date');
+            if (effectiveStartDate >= effectiveEndDate) {
+                throw new RangeError('Start date must be before end date');
+            }
         }
 
-        await db.changeBallotDates(ballotIDNum, effectiveStartDate, newEndDateObj);
+        await Promise.all(
+            ballotsToUpdate.map(({ id }) =>
+                db.changeBallotDates(id, providedStart, providedEnd),
+            ),
+        );
 
-        return res.status(200).json({ message: 'Ballot dates updated successfully' });
+        return res.status(200).json({
+            message: 'Ballot dates updated successfully',
+            updatedIDs: ballotIDs,
+        });
     } catch (error: any) {
-        console.log('Error updating ballot end date:', error);
+        console.log('Error updating ballot dates:', error);
 
         if (error instanceof z.ZodError) {
-            return res.status(400).json({ error: error.errors.map(e => e.message) });
+            return res.status(400).json({ error: error.errors.map((e) => e.message) });
         } else if (error.message === 'Ballot does not exist') {
             return res.status(404).json({ error: 'Ballot does not exist' });
-        } else if (error instanceof RangeError || error instanceof TypeError || error.message === 'Invalid request') {
+        } else if (
+            error instanceof RangeError ||
+            error instanceof TypeError ||
+            error.message === 'Invalid request'
+        ) {
             return res.status(400).json({ error: 'Invalid request' });
         }
         return res.status(500).json({ error: 'Failed to update ballot end date' });
