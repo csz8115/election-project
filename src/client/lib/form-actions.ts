@@ -208,6 +208,76 @@ export async function editCandidate({ candidateID, fName, lName, titles, descrip
     };
 }
 
+export async function deleteCandidate(candidateID: number): Promise<any> {
+    if (Number.isNaN(candidateID) || candidateID <= 0) {
+        return {
+            success: false,
+            error: 'Invalid candidate ID',
+        };
+    }
+
+    const response = await fetch(`${import.meta.env.VITE_API_URL}api/v1/employee/deleteCandidate?candidateID=${candidateID}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage =
+            typeof errorData === 'object' && errorData !== null && 'error' in errorData
+                ? (errorData as { error?: string }).error ?? 'Failed to delete candidate'
+                : 'Failed to delete candidate';
+
+        return {
+            success: false,
+            error: errorMessage,
+        };
+    }
+
+    return {
+        success: true,
+        message: 'Candidate deleted successfully',
+    };
+}
+
+export async function deletePosition(positionID: number): Promise<any> {
+    if (Number.isNaN(positionID) || positionID <= 0) {
+        return {
+            success: false,
+            error: 'Invalid position ID',
+        };
+    }
+
+    const response = await fetch(`${import.meta.env.VITE_API_URL}api/v1/employee/deletePosition?positionID=${positionID}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage =
+            typeof errorData === 'object' && errorData !== null && 'error' in errorData
+                ? (errorData as { error?: string }).error ?? 'Failed to delete position'
+                : 'Failed to delete position';
+
+        return {
+            success: false,
+            error: errorMessage,
+        };
+    }
+
+    return {
+        success: true,
+        message: 'Position deleted successfully',
+    };
+}
+
 export async function editBallot({ ballotID, ballotName, description, startDate, endDate }: BallotInput): Promise<any> {
     if (Number.isNaN(ballotID) || ballotID <= 0) {
         return {

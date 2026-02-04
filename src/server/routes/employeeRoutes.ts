@@ -744,6 +744,57 @@ router.post(`/addCandidate`, async (req, res): Promise<any> => {
     }
 });
 
+router.delete(`/deleteCandidate`, async (req, res): Promise<any> => {
+    try {
+        const { candidateID } = req.query;
+
+        if (!candidateID) {
+            return res.status(400).json({ error: 'Candidate ID is required' });
+        }
+
+        const candidateIDNum = Number(candidateID);
+        if (isNaN(candidateIDNum) || candidateIDNum <= 0) {
+            return res.status(400).json({ error: 'Invalid Candidate ID' });
+        }
+
+        await db.deleteCandidate(candidateIDNum);
+        return res.status(200).json({ message: 'Candidate deleted successfully' });
+    }
+    catch (error) {
+        console.error('Error deleting candidate:', error);
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            return res.status(400).json({ error: error.code, details: error.meta ?? error.message });
+        }
+        return res.status(500).json({ error: 'Failed to delete candidate' });
+    }
+});
+
+router.delete(`/deletePosition`, async (req, res): Promise<any> => {
+    try {
+        const { positionID } = req.query;
+
+        if (!positionID) {
+            return res.status(400).json({ error: 'Position ID is required' });
+        }
+
+        const positionIDNum = Number(positionID);
+        if (isNaN(positionIDNum) || positionIDNum <= 0) {
+            return res.status(400).json({ error: 'Invalid Position ID' });
+        }
+
+        await db.deleteBallotPosition(positionIDNum);
+        return res.status(200).json({ message: 'Position deleted successfully' });
+    }
+    catch (error) {
+        console.error('Error deleting position:', error);
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            return res.status(400).json({ error: error.code, details: error.meta ?? error.message });
+        }
+        return res.status(500).json({ error: 'Failed to delete position' });
+    }
+});
+
+
 router.post(`/addPosition`, async (req, res): Promise<any> => {
     try {
         const { positionName, allowedVotes, writeIn, ballotID } = req.body;
