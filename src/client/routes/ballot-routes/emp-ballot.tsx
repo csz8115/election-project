@@ -51,6 +51,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../../components/ui/alert-dialog";
+import { PositionCard } from "../../components/emp-ballot/positionCard";
 
 // ---------- Apple jiggle helpers ----------
 const jiggleTransition = {
@@ -657,8 +658,48 @@ export default function EmpBallot() {
                 })}
               </div>
             </section>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+               <h2 className="text-xl font-semibold text-slate-100">Initiatives</h2>
+              {/* Option to add initiatives */}
+              <Button
+                className="bg-white/10 text-slate-100 hover:bg-white/20"
+                onClick={() => navigate(`/create-initiative`, { state: { ballotID: ballot.ballotID } })}
+              >
+                Add Initiative
+              </Button>
+            </div>
+
+            {/* Initiatives section could go here if needed in the future */}
+            {!resultsQuery.isLoading && !resultsQuery.isError && resultsQuery.data.results.initiatives && (
+              <section className="w-full sm:max-w-xl space-y-4">
+                <div className="space-y-6">
+                  {resultsQuery.data.results.initiatives.map((initiative: any) => (
+                    <Card
+                      key={initiative.initiativeID}
+                      className="border border-white/10 bg-slate-900/60"
+                    >
+                      <CardHeader>
+                        <CardTitle className="text-lg text-slate-100">{initiative.initiativeName}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-slate-300">{initiative.description}</p>
+                        <p className="text-sm text-slate-300 mt-2">
+                          Total Votes:{" "}
+                          <span className="text-slate-100 font-medium">
+                            {initiative?._count?.initiativeVotes ?? 0}
+                          </span>
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
+
         )}
+
 
         {/* Candidate confirm modal */}
         <AlertDialog open={candidateConfirmOpen} onOpenChange={setCandidateConfirmOpen}>

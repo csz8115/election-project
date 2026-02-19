@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { decrypt } from '../utils/session'; // Assuming you have an encryption utility
-import logger from './logger';
+import logger from '../utils/logger.ts';
 
 export function requireRole(...allowedRoles: string[]) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {

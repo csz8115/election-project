@@ -1,14 +1,13 @@
-import prisma from './prisma.ts';
-import { User } from '../../types/user.ts';
-import { Company } from '../../types/company.ts';
-import { Ballot } from '../../types/ballot.ts';
-import { candidate } from '@prisma/client';
-import { Vote } from '../../types/vote.ts';
-import { ResponseVote } from '../../types/response.ts';
-import { BallotPositions } from '../../types/ballotPositions.ts';
-import { BallotInitiatives } from '../../types/ballotInitiatives.ts';
-import dbLogger from '../../../../prisma/dbLogger.ts';
-import { user } from '@prisma/client';
+import prisma from '../utils/db/prisma.ts';
+import { User } from '../types/user.ts';
+import { Company } from '../types/company.ts';
+import { Ballot } from '../types/ballot.ts';
+import { Prisma, candidate } from '@prisma/client';
+import { Vote } from '../types/vote.ts';
+import { ResponseVote } from '../types/response.ts';
+import { BallotPositions } from '../types/ballotPositions.ts';
+import { BallotInitiatives } from '../types/ballotInitiatives.ts';
+import dbLogger from '../../../prisma/dbLogger.ts';
 
 async function getUser(userID: number): Promise<User | string> {
     try {
@@ -323,7 +322,7 @@ async function createUser(user: User, assignedCompanies: number[] = []): Promise
 }
 
 
-async function createCandidate(positionID: number, fName: string, lName: string, titles: string, description: string, picture: string): Promise<Candidate | undefined> {
+async function createCandidate(positionID: number, fName: string, lName: string, titles: string, description: string, picture: string): Promise<candidate | undefined> {
     try {
         // Start a transaction to ensure both candidate creation and linking are successful
         const result = await prisma.$transaction(async (tx) => {
