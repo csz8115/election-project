@@ -4,6 +4,8 @@ import pretty from "pino-pretty";
 import path from 'path';
 import { multistream } from 'pino';
 
+const isTestEnv = process.env.NODE_ENV === 'test';
+
 const prettyStream = pretty({
   colorize: true,
   translateTime: 'SYS:standard',
@@ -24,14 +26,22 @@ const prettyStream = pretty({
 });
 // Create log directory if it doesn't exist
 const logDir = path.join(process.cwd(), 'log');
-if (!fs.existsSync(logDir)) {
+if (!isTestEnv && !fs.existsSync(logDir)) {
     fs.mkdirSync(logDir, { recursive: true });
 }
+
+const loggerStreams = isTestEnv
+    ? undefined
+    : multistream([
+        { stream: prettyStream },
+        { stream: pino.destination({ dest: path.join(logDir, 'app.log'), sync: true }) }
+    ]);
+
 // Correctly configure Pino logger
 const logger = pino({
-    level: 'info', // Configurable log level
+    level: isTestEnv ? 'silent' : 'info',
     timestamp: pino.stdTimeFunctions.isoTime,
-    transport: process.env.NODE_ENV === 'development'
+    transport: !isTestEnv && process.env.NODE_ENV === 'development'
         ? { target: 'pino-pretty', options: { colorize: true, translateTime: 'SYS:standard' } }
         : undefined,
     formatters: {
@@ -40,8 +50,5 @@ const logger = pino({
         }
     },
     // Redact sensitive information
-}, multistream([
-    { stream: prettyStream },
-    { stream: pino.destination({ dest: path.join(logDir, 'app.log'), sync: true }) }
-]));
+}, loggerStreams);
 export default logger;

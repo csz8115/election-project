@@ -1,18 +1,20 @@
 import pino from 'pino';
-import fs from 'fs';
-import path from 'path';
+import * as fs from "node:fs";
+import * as path from "node:path";
+
+const isTestEnv = process.env.NODE_ENV === 'test';
 
 // Create log directory if it doesn't exist
 const logDir = path.join(process.cwd(), 'log');
-if (!fs.existsSync(logDir)) {
+if (!isTestEnv && !fs.existsSync(logDir)) {
     fs.mkdirSync(logDir, { recursive: true });
 }
 
 // Correctly configure Pino logger
 const logger = pino({
-    level: 'info', // Configurable log level
+    level: isTestEnv ? 'silent' : 'info',
     timestamp: pino.stdTimeFunctions.isoTime,
-    transport: process.env.NODE_ENV === 'development'
+    transport: !isTestEnv && process.env.NODE_ENV === 'development'
         ? { target: 'pino-pretty', options: { colorize: true, translateTime: 'SYS:standard' } }
         : undefined,
     formatters: {
@@ -31,7 +33,7 @@ const logger = pino({
     // Redact sensitive information
     redact: ['password', 'secret', 'authorization'],
 },
-process.env.NODE_ENV === 'test' ? undefined : pino.destination({ dest: './log/db.log', sync: true })
+isTestEnv ? undefined : pino.destination({ dest: path.join(logDir, 'db.log'), sync: true })
 );
 
 export default logger;

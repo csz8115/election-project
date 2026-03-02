@@ -1,9 +1,11 @@
 import { PrismaClient } from '@prisma/client'
 import logger from '../../../../prisma/dbLogger.ts'
 
+const isTestEnv = process.env.NODE_ENV === 'test';
+
 const prisma = new PrismaClient({
-    log: ['info', 'warn', 'error'],
-    errorFormat: 'pretty',
+    log: isTestEnv ? [] : ['info', 'warn', 'error'],
+    errorFormat: isTestEnv ? 'minimal' : 'pretty',
 })
 
 prisma.$extends({
@@ -13,12 +15,14 @@ prisma.$extends({
             const start = Date.now()
             const result = await query(args)
             const duration = Date.now() - start
-            logger.info({
-                message: `Query ${model}.${operation} took ${duration}ms`,
-                model,
-                operation,
-                args,
-            })
+            if (!isTestEnv) {
+                logger.info({
+                    message: `Query ${model}.${operation} took ${duration}ms`,
+                    model,
+                    operation,
+                    args,
+                })
+            }
             return result
         }
     }
