@@ -13,6 +13,7 @@ import AddBallot from "./ballot-routes/add-ballot";
 import AdminDashboard from "./dashboard-routes/admin-dashboard";
 import Ballot from "./ballot-routes/ballot";
 import CreateBallot from "./ballot-routes/create-ballot";
+import CreateInitiative from "./ballot-routes/create-initiative";
 import Candidate from "./candidate-routes/candidate";
 import CreateCandidate from "./candidate-routes/create-candidate";
 import CreatePosition from "./candidate-routes/create-position";
@@ -69,6 +70,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
             <CreatePosition />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "create-initiative",
+        element: (
+          <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
+            <CreateInitiative />
           </ProtectedRoute>
         ),
       },

@@ -218,4 +218,65 @@ router.post(`/addPosition`, async (req, res): Promise<any> => {
     }
 });
 
+router.post(`/addInitiative`, async (req, res): Promise<any> => {
+    try {
+        const { ballotID, initiativeName, description, responses } = req.body;
+
+        const ballotIDNum = Number(ballotID);
+        if (!Number.isFinite(ballotIDNum) || ballotIDNum <= 0 || !initiativeName) {
+            return res.status(400).json({ error: 'Invalid request' });
+        }
+
+        const initiativeSchema = z.object({
+            ballotID: z.number().int().positive(),
+            initiativeName: z.string().trim().min(1, 'Initiative name is required').max(255),
+            description: z.string().trim().max(2000).optional().default(''),
+            responses: z
+                .array(
+                    z.object({
+                        response: z.string().trim().min(1, 'Response text is required').max(255),
+                    }),
+                )
+                .min(1, 'At least one response is required'),
+        });
+
+        const initiativeData = initiativeSchema.parse({
+            ballotID: ballotIDNum,
+            initiativeName,
+            description,
+            responses,
+        });
+
+        const ballot = await db.getBallot(ballotIDNum);
+        if (!ballot) {
+            return res.status(404).json({ error: 'Ballot does not exist' });
+        }
+
+        const createdInitiative = await db.createInitiative({
+            ballotID: initiativeData.ballotID,
+            initiativeID: 0,
+            initiativeName: initiativeData.initiativeName,
+            description: initiativeData.description,
+            picture: '',
+            responses: initiativeData.responses.map((item) => ({
+                responseID: 0,
+                response: item.response,
+                votes: 0,
+            })),
+        });
+
+        return res.status(201).json({
+            message: 'Initiative added successfully',
+            initiativeID: createdInitiative?.initiativeID,
+        });
+    } catch (error: any) {
+        console.error('Error adding initiative:', error);
+
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors.map((e) => e.message) });
+        }
+        return res.status(500).json({ error: 'Failed to add initiative' });
+    }
+});
+
 export default router;
