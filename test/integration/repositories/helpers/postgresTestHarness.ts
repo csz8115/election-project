@@ -1,6 +1,8 @@
 import { execSync } from 'node:child_process';
 import type { PrismaClient } from '@prisma/client';
 
+const DB_DEBUG = process.env.INTEGRATION_DB_DEBUG === '1';
+
 export function requireTestDatabaseUrl(): string {
   const url = process.env.DATABASE_URL_TEST;
   if (!url) {
@@ -11,6 +13,10 @@ export function requireTestDatabaseUrl(): string {
 
 export function applyMigrations(databaseUrl: string): void {
   try {
+    if (DB_DEBUG) {
+      console.log(`[integration-db] prisma migrate deploy on DATABASE_URL=${databaseUrl}`);
+    }
+
     execSync('npx prisma migrate deploy', {
       stdio: 'pipe',
       env: {
