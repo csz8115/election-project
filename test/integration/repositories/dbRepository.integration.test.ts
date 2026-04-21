@@ -9,6 +9,7 @@ import { seedBallot, seedBaseCompanies, seedPosition, seedUser } from './helpers
 import { describe, beforeAll, beforeEach, afterAll, test, expect, jest } from '@jest/globals';
 
 jest.setTimeout(30000);
+const DB_DEBUG = process.env.INTEGRATION_DB_DEBUG === '1';
 
 describe('dbRepository integration (real Postgres + Prisma)', () => {
   let prisma: PrismaClient | undefined;
@@ -54,6 +55,12 @@ describe('dbRepository integration (real Postgres + Prisma)', () => {
 
       const testDbUrl = requireTestDatabaseUrl();
       process.env.DATABASE_URL = testDbUrl;
+      process.env.DATABASE_URL_TEST = testDbUrl;
+
+      if (DB_DEBUG) {
+        console.log(`[integration-db] beforeAll DATABASE_URL_TEST=${process.env.DATABASE_URL_TEST}`);
+        console.log(`[integration-db] beforeAll DATABASE_URL=${process.env.DATABASE_URL}`);
+      }
 
       applyMigrations(testDbUrl);
 
@@ -337,6 +344,340 @@ describe('dbRepository integration (real Postgres + Prisma)', () => {
 
       expect(acmeBallots.length).toBe(1);
       expect(acmeBallots[0]).toBe(acmeBallot.ballotID);
+    });
+
+    test('createBallot: persists ballot with one position and one candidate', async () => {
+      if (!prisma) throw new Error('Prisma not initialized');
+
+      const created = await db.createBallot(
+        {
+          ballotName: 'Single Position Ballot',
+          description: 'Created with one position/candidate',
+          startDate: '2026-01-01T00:00:00.000Z',
+          endDate: '2099-12-31T00:00:00.000Z',
+          companyID: baseCompanies.acme.companyID,
+          userID: 1,
+          positions: [],
+          initiatives: [],
+        } as any,
+        [
+          {
+            positionName: 'Board Chair',
+            allowedVotes: 1,
+            writeIn: false,
+            candidates: [{ fName: 'Sam', lName: 'Nominee', titles: 'Chair', description: 'Experienced', picture: '' }],
+          },
+        ] as any,
+        [] as any,
+      );
+
+      expect(created).toBeTruthy();
+
+      const fetched = await db.getBallot(created.ballotID);
+      expect(fetched).toBeTruthy();
+      expect(fetched.ballotName).toBe('Single Position Ballot');
+      expect(fetched.positions).toHaveLength(1);
+      expect(fetched.positions[0].positionName).toBe('Board Chair');
+      expect(fetched.positions[0].candidates).toHaveLength(1);
+      expect(fetched.positions[0].candidates[0].candidate.fName).toBe('Sam');
+      expect(fetched.positions[0].candidates[0].candidate.lName).toBe('Nominee');
+
+      const persistedBallot = await prisma.ballots.findUnique({
+        where: { ballotID: created.ballotID },
+      });
+      const persistedPositions = await prisma.ballotPositions.findMany({
+        where: { ballotID: created.ballotID },
+      });
+      const persistedLinks = await prisma.ballotCandidates.findMany({
+        where: { positionID: persistedPositions[0].positionID },
+      });
+
+      expect(persistedBallot).toBeTruthy();
+      expect(persistedPositions).toHaveLength(1);
+      expect(persistedLinks).toHaveLength(1);
+    });
+
+    test('createBallot: supports initiatives with initiative responses', async () => {
+      if (!prisma) throw new Error('Prisma not initialized');
+
+      const created = await db.createBallot(
+        {
+          ballotName: 'Initiative Ballot',
+          description: 'Ballot containing initiatives',
+          startDate: '2026-01-01T00:00:00.000Z',
+          endDate: '2099-12-31T00:00:00.000Z',
+          companyID: baseCompanies.acme.companyID,
+          userID: 1,
+          positions: [],
+          initiatives: [],
+        } as any,
+        [] as any,
+        [
+          {
+            initiativeName: 'Adopt New Policy',
+            description: 'Policy proposal',
+            responses: [{ response: 'Approve' }, { response: 'Reject' }],
+          },
+        ] as any,
+      );
+
+      const fetched = await db.getBallot(created.ballotID);
+      expect(fetched.initiatives).toHaveLength(1);
+      expect(fetched.initiatives[0].initiativeName).toBe('Adopt New Policy');
+      expect(fetched.initiatives[0].responses).toHaveLength(2);
+      expect(fetched.initiatives[0].responses.map((row: any) => row.response).sort()).toEqual(['Approve', 'Reject']);
+
+      const initiativeRows = await prisma.ballotInitiatives.findMany({
+        where: { ballotID: created.ballotID },
+      });
+      const responseCount = await prisma.initiativeResponses.count({
+        where: { initiativeID: initiativeRows[0].initiativeID },
+      });
+
+      expect(initiativeRows).toHaveLength(1);
+      expect(responseCount).toBe(2);
+    });
+
+    test('createBallot: transaction rolls back when nested creation fails', async () => {
+      if (!prisma) throw new Error('Prisma not initialized');
+
+      const rollbackBallotName = 'Rollback Candidate Failure Ballot';
+      const rollbackPositionName = 'Rollback Candidate Failure Position';
+
+      await expect(
+        db.createBallot(
+          {
+            ballotName: rollbackBallotName,
+            description: 'Should not persist',
+            startDate: '2026-01-01T00:00:00.000Z',
+            endDate: '2099-12-31T00:00:00.000Z',
+            companyID: baseCompanies.acme.companyID,
+            userID: 1,
+            positions: [],
+            initiatives: [],
+          } as any,
+          [
+            {
+              positionName: rollbackPositionName,
+              allowedVotes: 1,
+              writeIn: false,
+              candidates: [{ fName: null, lName: 'Broken', titles: '', description: '', picture: '' }],
+            },
+          ] as any,
+          [] as any,
+        ),
+      ).rejects.toBeTruthy();
+
+      const rolledBackBallot = await prisma.ballots.findMany({
+        where: { ballotName: rollbackBallotName },
+      });
+      const rolledBackPosition = await prisma.ballotPositions.findMany({
+        where: { positionName: rollbackPositionName },
+      });
+
+      expect(rolledBackBallot).toHaveLength(0);
+      expect(rolledBackPosition).toHaveLength(0);
+    });
+
+    test('getBallots/getBallotIDs: search + open status + company filters stay consistent', async () => {
+      if (!prisma) throw new Error('Prisma not initialized');
+
+      const openAcmeByName = await seedBallot(prisma, {
+        companyID: baseCompanies.acme.companyID,
+        ballotName: 'Budget Oversight 2028',
+        description: 'Operations approval',
+        startDate: new Date('2026-01-01T00:00:00.000Z'),
+        endDate: new Date('2099-12-31T00:00:00.000Z'),
+      });
+      const openAcmeByDescription = await seedBallot(prisma, {
+        companyID: baseCompanies.acme.companyID,
+        ballotName: 'Operations Election',
+        description: 'Budget-focused election',
+        startDate: new Date('2026-01-01T00:00:00.000Z'),
+        endDate: new Date('2099-12-31T00:00:00.000Z'),
+      });
+      await seedBallot(prisma, {
+        companyID: baseCompanies.acme.companyID,
+        ballotName: 'Budget Archived',
+        description: 'Budget but closed',
+        startDate: new Date('2000-01-01T00:00:00.000Z'),
+        endDate: new Date('2000-12-31T00:00:00.000Z'),
+      });
+      await seedBallot(prisma, {
+        companyID: baseCompanies.americanDream.companyID,
+        ballotName: 'Budget External',
+        description: 'Open but wrong company',
+        startDate: new Date('2026-01-01T00:00:00.000Z'),
+        endDate: new Date('2099-12-31T00:00:00.000Z'),
+      });
+
+      const ballotPage = await db.getBallots(
+        0,
+        'budget',
+        'ballotName',
+        'asc',
+        'open',
+        [baseCompanies.acme.companyID],
+      );
+      const filteredIDs = await db.getBallotIDs(
+        'budget',
+        'ballotName',
+        'asc',
+        'open',
+        [baseCompanies.acme.companyID],
+      );
+
+      expect(ballotPage).toBeTruthy();
+      expect(ballotPage!.totalCount).toBe(2);
+      expect(ballotPage!.ballots).toHaveLength(2);
+      expect(ballotPage!.ballots.map((row) => row.ballotID)).toEqual(filteredIDs);
+      expect(ballotPage!.ballots.map((row) => row.ballotID).sort((a, b) => a - b)).toEqual(
+        [openAcmeByName.ballotID, openAcmeByDescription.ballotID].sort((a, b) => a - b),
+      );
+      expect(ballotPage!.ballots.every((row) => row.companyID === baseCompanies.acme.companyID)).toBe(true);
+    });
+
+    test('getBallots: closed status returns only closed ballots', async () => {
+      if (!prisma) throw new Error('Prisma not initialized');
+
+      const closedBallot = await seedBallot(prisma, {
+        companyID: baseCompanies.acme.companyID,
+        ballotName: 'Closed Compliance Vote',
+        description: 'Already ended',
+        startDate: new Date('2000-01-01T00:00:00.000Z'),
+        endDate: new Date('2000-12-31T00:00:00.000Z'),
+      });
+      await seedBallot(prisma, {
+        companyID: baseCompanies.acme.companyID,
+        ballotName: 'Open Compliance Vote',
+        description: 'Still active',
+        startDate: new Date('2026-01-01T00:00:00.000Z'),
+        endDate: new Date('2099-12-31T00:00:00.000Z'),
+      });
+
+      const closedPage = await db.getBallots(0, undefined, 'ballotName', 'asc', 'closed');
+      expect(closedPage).toBeTruthy();
+      expect(closedPage!.ballots).toHaveLength(1);
+      expect(closedPage!.ballots[0].ballotID).toBe(closedBallot.ballotID);
+    });
+
+    test('getBallots: pagination fields are correct', async () => {
+      if (!prisma) throw new Error('Prisma not initialized');
+
+      for (let i = 0; i < 41; i += 1) {
+        await seedBallot(prisma, {
+          companyID: baseCompanies.acme.companyID,
+          ballotName: `Paginated Ballot ${String(i).padStart(2, '0')}`,
+          description: 'Pagination scenario',
+          startDate: new Date('2026-01-01T00:00:00.000Z'),
+          endDate: new Date('2099-12-31T00:00:00.000Z'),
+        });
+      }
+
+      const firstPage = await db.getBallots(
+        0,
+        'Paginated Ballot',
+        'ballotName',
+        'asc',
+        'all',
+        [baseCompanies.acme.companyID],
+      );
+      const secondPage = await db.getBallots(
+        1,
+        'Paginated Ballot',
+        'ballotName',
+        'asc',
+        'all',
+        [baseCompanies.acme.companyID],
+      );
+      const allIDs = await db.getBallotIDs(
+        'Paginated Ballot',
+        'ballotName',
+        'asc',
+        'all',
+        [baseCompanies.acme.companyID],
+      );
+
+      expect(firstPage).toBeTruthy();
+      expect(firstPage!.ballots).toHaveLength(40);
+      expect(firstPage!.totalCount).toBe(41);
+      expect(firstPage!.hasNextPage).toBe(true);
+      expect(firstPage!.hasPreviousPage).toBe(false);
+      expect(firstPage!.nextCursor).toBe('1');
+
+      expect(secondPage).toBeTruthy();
+      expect(secondPage!.ballots).toHaveLength(1);
+      expect(secondPage!.totalCount).toBe(41);
+      expect(secondPage!.hasNextPage).toBe(false);
+      expect(secondPage!.hasPreviousPage).toBe(true);
+      expect(secondPage!.nextCursor).toBeNull();
+
+      expect(allIDs).toHaveLength(41);
+      expect(firstPage!.ballots.map((row) => row.ballotID)).toEqual(allIDs.slice(0, 40));
+      expect(secondPage!.ballots.map((row) => row.ballotID)).toEqual(allIDs.slice(40));
+    });
+
+    test('changeBallotDates: updates one ballot end date and persists', async () => {
+      if (!prisma) throw new Error('Prisma not initialized');
+
+      const ballot = await seedBallot(prisma, {
+        companyID: baseCompanies.acme.companyID,
+        ballotName: 'Single Date Update Ballot',
+        startDate: new Date('2026-01-01T00:00:00.000Z'),
+        endDate: new Date('2026-12-31T00:00:00.000Z'),
+      });
+
+      const newEndDate = new Date('2027-05-20T00:00:00.000Z');
+      const updated = await db.changeBallotDates(ballot.ballotID, undefined, newEndDate);
+      const persisted = await prisma.ballots.findUnique({ where: { ballotID: ballot.ballotID } });
+
+      expect(new Date(updated.endDate).toISOString()).toBe(newEndDate.toISOString());
+      expect(persisted).toBeTruthy();
+      expect(persisted!.endDate.toISOString()).toBe(newEndDate.toISOString());
+    });
+
+    test('changeBallotDates: updates multiple ballots when passed an ID array', async () => {
+      if (!prisma) throw new Error('Prisma not initialized');
+
+      const ballotOne = await seedBallot(prisma, {
+        companyID: baseCompanies.acme.companyID,
+        ballotName: 'Bulk Date Update 1',
+        startDate: new Date('2026-01-01T00:00:00.000Z'),
+        endDate: new Date('2026-12-31T00:00:00.000Z'),
+      });
+      const ballotTwo = await seedBallot(prisma, {
+        companyID: baseCompanies.acme.companyID,
+        ballotName: 'Bulk Date Update 2',
+        startDate: new Date('2026-01-01T00:00:00.000Z'),
+        endDate: new Date('2026-12-31T00:00:00.000Z'),
+      });
+
+      const newEndDate = new Date('2028-01-15T00:00:00.000Z');
+      const updatedRows = await db.changeBallotDates([ballotOne.ballotID, ballotTwo.ballotID], undefined, newEndDate);
+      const persistedRows = await prisma.ballots.findMany({
+        where: {
+          ballotID: { in: [ballotOne.ballotID, ballotTwo.ballotID] },
+        },
+        orderBy: { ballotID: 'asc' },
+      });
+
+      expect(updatedRows).toHaveLength(2);
+      expect(updatedRows.every((row: any) => new Date(row.endDate).toISOString() === newEndDate.toISOString())).toBe(true);
+      expect(persistedRows).toHaveLength(2);
+      expect(persistedRows.every((row) => row.endDate.toISOString() === newEndDate.toISOString())).toBe(true);
+    });
+
+    test('changeBallotDates: throws when neither start nor end date is provided', async () => {
+      if (!prisma) throw new Error('Prisma not initialized');
+
+      const ballot = await seedBallot(prisma, {
+        companyID: baseCompanies.acme.companyID,
+        ballotName: 'No Date Payload Ballot',
+      });
+
+      await expect(db.changeBallotDates(ballot.ballotID, undefined, undefined)).rejects.toThrow(
+        'At least one of newStartDate or newEndDate must be provided',
+      );
     });
   });
 
