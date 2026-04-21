@@ -664,7 +664,9 @@ export default function EmpBallot() {
               {/* Option to add initiatives */}
               <Button
                 className="bg-white/10 text-slate-100 hover:bg-white/20"
-                onClick={() => navigate(`/create-initiative`, { state: { ballotID: ballot.ballotID } })}
+                onClick={() =>
+                  navigate(`/create-initiative?ballotID=${ballot.ballotID}`, { state: { ballotID: ballot.ballotID } })
+                }
               >
                 Add Initiative
               </Button>

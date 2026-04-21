@@ -54,6 +54,12 @@ type addPositionInput = {
     ballotID?: number;
 }
 
+type addInitiativeInput = {
+    initiativeName: string;
+    description?: string;
+    responses: Array<{ response: string }>;
+}
+
 export async function deleteBallot(ballotID: DeleteBallotInput): Promise<any> {
     const normalizedIds = (Array.isArray(ballotID) ? ballotID : [ballotID]).map(Number);
     const invalidIds = normalizedIds.filter(id => Number.isNaN(id) || id <= 0);
@@ -552,6 +558,65 @@ export async function addPosition(positionData: addPositionInput, ballotID: numb
     return {
         success: true,
         position: data?.position ?? data,
+    };
+}
+
+export async function addInitiative(initiativeData: addInitiativeInput, ballotID: number): Promise<any> {
+    const payload = {
+        ...initiativeData,
+        ballotID,
+    };
+
+    if (Number.isNaN(ballotID) || ballotID <= 0) {
+        return {
+            success: false,
+            error: "Invalid ballot ID",
+        };
+    }
+
+    if (!initiativeData.initiativeName?.trim()) {
+        return {
+            success: false,
+            error: "Initiative name is required",
+        };
+    }
+
+    if (!Array.isArray(initiativeData.responses) || initiativeData.responses.length === 0) {
+        return {
+            success: false,
+            error: "At least one response is required",
+        };
+    }
+
+    if (initiativeData.responses.some((r) => !r.response?.trim())) {
+        return {
+            success: false,
+            error: "Response text is required",
+        };
+    }
+
+    const response = await fetch(`${import.meta.env.VITE_API_URL}api/v1/employee/addInitiative`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        return {
+            success: false,
+            error: (errorData as { error?: string }).error ?? "Failed to add initiative",
+        };
+    }
+
+    const data = await response.json().catch(() => null);
+
+    return {
+        success: true,
+        initiative: data?.initiative ?? data,
     };
 }
 
