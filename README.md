@@ -302,6 +302,28 @@ Both HTTP traffic and database queries are logged in real time and stored in loc
 }
 ```
 
+## Testing & Coverage
+
+This project uses Jest with both unit and integration test suites.
+
+To run tests:
+```bash
+npm test
+```
+
+To generate coverage:
+```bash
+npm run test:coverage
+```
+
+Coverage highlights:
+- Service layer: ~100% coverage
+- Integration tests use Testcontainers with PostgreSQL
+- Repository layer coverage is intentionally focused on high-value query paths
+
+Note:
+The `/coverage` directory is generated locally and not committed.
+
 ## Frontend 
 
 DESCRIPTION 
