@@ -594,6 +594,7 @@ async function getCompanyIDByName(companyName: string): Promise<number | null> {
 
 async function getCompanyStats(companyID: number): Promise<any> {
     try {
+        const now = new Date();
         const company = await prisma.company.findUnique({
             where: {
                 companyID: companyID,
@@ -624,20 +625,20 @@ async function getCompanyStats(companyID: number): Promise<any> {
             throw new Error("No ballots found for this company");
         }
 
-        const inactiveBallots = company.ballots.filter(ballot => {
-            const now = new Date();
-            return ballot.startDate < now;
-        });
-        const activeBallots = company.ballots.filter(ballot => {
-            const now = new Date();
+        const activeBallots = company.ballots.filter((ballot) => {
             return ballot.startDate <= now && ballot.endDate >= now;
         });
-        const avg_votes_per_ballot = company.ballots.reduce((acc, ballot) => {
+        const inactiveBallots = company.ballots.filter((ballot) => {
+            return ballot.endDate < now;
+        });
+
+        const totalBallots = company.ballots.length;
+        const avg_votes_per_ballot = totalBallots > 0 ? company.ballots.reduce((acc, ballot) => {
             return acc + ballot._count.votes;
-        }, 0) / company.ballots.length;
-        const avg_initiative_votes_per_ballot = company.ballots.reduce((acc, ballot) => {
+        }, 0) / totalBallots : 0;
+        const avg_initiative_votes_per_ballot = totalBallots > 0 ? company.ballots.reduce((acc, ballot) => {
             return acc + ballot._count.initiativeVotes;
-        }, 0) / company.ballots.length;
+        }, 0) / totalBallots : 0;
         const total_votes = company.ballots.reduce((acc, ballot) => {
             return acc + ballot._count.votes;
         }, 0);
@@ -645,30 +646,46 @@ async function getCompanyStats(companyID: number): Promise<any> {
             return acc + ballot._count.initiativeVotes;
         }, 0);
 
+        const toBallotCardStats = (ballot: any) => ({
+            ballotID: ballot.ballotID,
+            ballotName: ballot.ballotName,
+            description: ballot.description,
+            startDate: ballot.startDate,
+            endDate: ballot.endDate,
+            voteCount: ballot._count.votes,
+            initiativeVoteCount: ballot._count.initiativeVotes,
+            status: ballot.endDate < now ? "closed" : "active",
+        });
+
+        const allBallots = company.ballots.map(toBallotCardStats);
+        const ballot_vote_ranking = [...allBallots].sort((a, b) => b.voteCount - a.voteCount);
+
+        const voteTrendMap = new Map<string, number>();
+        for (const ballot of allBallots) {
+            // NOTE: votes table has no vote timestamp; bucket by ballot startDate.
+            const bucket = new Date(ballot.startDate).toISOString().slice(0, 10);
+            voteTrendMap.set(bucket, (voteTrendMap.get(bucket) ?? 0) + ballot.voteCount);
+        }
+        const vote_trend = Array.from(voteTrendMap.entries())
+            .map(([date, totalVotes]) => ({ date, totalVotes }))
+            .sort((a, b) => a.date.localeCompare(b.date));
+
         const companyStats = {
             inactive_ballots: {
                 count: inactiveBallots.length,
-                ballots: inactiveBallots.map(ballot => ({
-                    ballotID: ballot.ballotID,
-                    ballotName: ballot.ballotName,
-                    startDate: ballot.startDate,
-                    endDate: ballot.endDate,
-                }))
+                ballots: inactiveBallots.map(toBallotCardStats),
             },
             active_ballots: {
                 count: activeBallots.length,
-                ballots: activeBallots.map(ballot => ({
-                    ballotID: ballot.ballotID,
-                    ballotName: ballot.ballotName,
-                    startDate: ballot.startDate,
-                    endDate: ballot.endDate,
-                }))
+                ballots: activeBallots.map(toBallotCardStats),
             },
             total_members: company._count.users,
             avg_votes_per_ballot: avg_votes_per_ballot,
             avg_initiative_votes_per_ballot: avg_initiative_votes_per_ballot,
             total_votes: total_votes,
             total_initiative_votes: total_initiative_votes,
+            ballot_vote_ranking,
+            vote_trend,
         }
         return companyStats;
     } catch (error) {
