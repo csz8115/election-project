@@ -16,6 +16,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PulseLoader } from "react-spinners";
 import { motion } from "framer-motion";
 import {
+  ArrowLeft,
   CircleCheckBig,
   Pencil,
   Save,
@@ -121,6 +122,18 @@ export default function EmpBallot() {
 
   const ballotIdFromQuery = parseBallotIdFromQuery(location.search);
   const ballotID = ballotIdFromQuery ?? ballotFromState?.ballotID;
+  const backToDashboardUrl = React.useMemo(() => {
+    const sp = new URLSearchParams(location.search);
+    const from = sp.get("from");
+    const companyIdRaw = Number(sp.get("companyId"));
+    const companyId = Number.isFinite(companyIdRaw) && companyIdRaw > 0 ? companyIdRaw : undefined;
+
+    if (from === "company-stats" && companyId) {
+      return `/company-stats?companyId=${companyId}`;
+    }
+
+    return "/dashboard";
+  }, [location.search]);
 
   // ✅ per-position edit toggle map
   const [editByPosition, setEditByPosition] = React.useState<Record<number, boolean>>({});
@@ -231,6 +244,10 @@ export default function EmpBallot() {
             <CardTitle>No ballot selected</CardTitle>
           </CardHeader>
           <CardContent className="flex gap-3">
+            <Button variant="outline" onClick={() => navigate(backToDashboardUrl)}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Dashboard
+            </Button>
             <Button variant="outline" onClick={() => navigate(-1)}>
               Go Back
             </Button>
@@ -348,6 +365,10 @@ export default function EmpBallot() {
             <CardTitle>Failed to load ballot</CardTitle>
           </CardHeader>
           <CardContent className="flex gap-3">
+            <Button variant="outline" onClick={() => navigate(backToDashboardUrl)}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Dashboard
+            </Button>
             <Button variant="outline" onClick={() => navigate(-1)}>
               Go Back
             </Button>
@@ -383,6 +404,15 @@ export default function EmpBallot() {
             </div>
 
             <div className="flex items-start gap-3">
+              <Button
+                variant="outline"
+                className="border-white/10 bg-white/5 hover:bg-white/10"
+                onClick={() => navigate(backToDashboardUrl)}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+
               <CircleCheckBig
                 className={`shrink-0 ${isComplete ? "text-green-500" : "text-amber-400"}`}
               />

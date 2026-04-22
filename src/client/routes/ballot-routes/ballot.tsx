@@ -11,6 +11,8 @@ export default function Ballot() {
   // ✅ read ID from query param (refresh + second open safe)
   const sp = new URLSearchParams(location.search);
   const b = sp.get("b");
+  const from = sp.get("from");
+  const companyId = sp.get("companyId");
   const ballotID = b ? Number(b) : ballotFromState?.ballotID;
 
   if (!Number.isFinite(ballotID) || (ballotID as number) <= 0) {
@@ -19,10 +21,15 @@ export default function Ballot() {
 
   // pass state only if we have it (optional optimization)
   const nextState = ballotFromState ? { ballot: ballotFromState } : undefined;
+  const nextParams = new URLSearchParams();
+  nextParams.set("b", String(ballotID));
+  if (from) nextParams.set("from", from);
+  if (companyId) nextParams.set("companyId", companyId);
+  const nextQuery = nextParams.toString();
 
   // ✅ KEEP the query param when redirecting
   if (user.accountType === "Member") {
-    return <Navigate to={`/user-ballot?b=${ballotID}`} replace state={nextState} />;
+    return <Navigate to={`/user-ballot?${nextQuery}`} replace state={nextState} />;
   }
 
   if (
@@ -30,7 +37,7 @@ export default function Ballot() {
     user.accountType === "Officer" ||
     user.accountType === "Admin"
   ) {
-    return <Navigate to={`/employee-ballot?b=${ballotID}`} replace state={nextState} />;
+    return <Navigate to={`/employee-ballot?${nextQuery}`} replace state={nextState} />;
   }
 
   return <Navigate to="/login" replace />;
