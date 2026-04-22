@@ -15,6 +15,14 @@ export default function SubHeader({ label = "Back", onTop }: SubHeaderProps) {
   const location = useLocation();
   const reduceMotion = useReducedMotion();
 
+  const handleBackClick = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
+
   const shouldShow = !Path(location.pathname);
   const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -54,7 +62,7 @@ export default function SubHeader({ label = "Back", onTop }: SubHeaderProps) {
             <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/')}
+            onClick={() => handleBackClick()}
             className="
               h-9 bg-transparent px-3
               text-slate-200 hover:bg-white/10 hover:text-white

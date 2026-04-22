@@ -1,11 +1,14 @@
 import React from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import type { company as CompanyModel } from "@prisma/client";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import SearchInput from "../components/searchInput";
+import SelectCompany from "../components/createBallot/selectCompany";
 import { useCompanies } from "../hooks/useCompanies";
 import { useCompanyStats } from "../hooks/useCompanyStats";
 import { useUserStore } from "../store/userStore";
+import SearchInput from "../components/searchInput";
 
 type Company = {
   companyID?: number;
@@ -138,20 +141,30 @@ function VoteTrendLineChart({ trend }: { trend: Array<{ date: string; totalVotes
   );
 }
 
-function BallotCard({ ballot }: { ballot: BallotStat }) {
+function BallotCard({ ballot, companyIdContext }: { ballot: BallotStat; companyIdContext?: number }) {
   const navigate = useNavigate();
   const isClosed = ballot.status === "closed" || new Date(ballot.endDate) < new Date();
   const statusLabel = isClosed ? "Closed" : "Active";
 
+  const navigateToBallot = () => {
+    const sp = new URLSearchParams();
+    sp.set("b", String(ballot.ballotID));
+    if (companyIdContext && companyIdContext > 0) {
+      sp.set("from", "company-stats");
+      sp.set("companyId", String(companyIdContext));
+    }
+    navigate(`/ballot?${sp.toString()}`);
+  };
+
   return (
     <Card
       className="border border-white/10 bg-slate-900/60 cursor-pointer hover:bg-slate-900/80 transition-colors"
-      onClick={() => navigate(`/ballot?b=${ballot.ballotID}`)}
+      onClick={navigateToBallot}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
-          navigate(`/ballot?b=${ballot.ballotID}`);
+          navigateToBallot();
         }
       }}
     >
@@ -189,51 +202,94 @@ function BallotCard({ ballot }: { ballot: BallotStat }) {
 export default function CompanyStats() {
   const user = useUserStore((state) => state);
   const companiesQuery = useCompanies();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const companyIdFromUrlRaw = Number(searchParams.get("companyId"));
-  const companyIdFromUrl =
-    Number.isFinite(companyIdFromUrlRaw) && companyIdFromUrlRaw > 0 ? companyIdFromUrlRaw : undefined;
+  const companyIdFromUrl = Number.isFinite(companyIdFromUrlRaw) && companyIdFromUrlRaw > 0 ? companyIdFromUrlRaw : undefined;
 
-  const [selectedCompanyID, setSelectedCompanyID] = React.useState<number>(companyIdFromUrl ?? user.companyID ?? 0);
-  const [companyQuery, setCompanyQuery] = React.useState("");
+  const selectedCompanyID = companyIdFromUrl ?? 0;
   const [ballotQuery, setBallotQuery] = React.useState("");
   const [ballotScope, setBallotScope] = React.useState<"all" | "active" | "inactive">("all");
 
-  React.useEffect(() => {
-    if (companyIdFromUrl && companyIdFromUrl !== selectedCompanyID) {
-      setSelectedCompanyID(companyIdFromUrl);
-    }
-  }, [companyIdFromUrl, selectedCompanyID]);
+  const companyOptions = React.useMemo<CompanyModel[]>(
+    () =>
+      ((companiesQuery.data as Company[] | undefined) ?? [])
+        .filter((company): company is Required<Pick<Company, "companyID">> & Company => {
+          return Number.isFinite(company.companyID) && (company.companyID ?? 0) > 0;
+        })
+        .map((company) => ({
+          companyID: company.companyID!,
+          companyName: company.companyName ?? `Company #${company.companyID}`,
+          abbreviation: null,
+          category: null,
+        })),
+    [companiesQuery.data],
+  );
+
+  const setCompanyIdInUrl = React.useCallback(
+    (companyID: number) => {
+      if (!Number.isFinite(companyID) || companyID <= 0) return;
+      if (companyIdFromUrl === companyID) return;
+
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set("companyId", String(companyID));
+      setSearchParams(nextParams, { replace: true });
+    },
+    [companyIdFromUrl, searchParams, setSearchParams],
+  );
 
   React.useEffect(() => {
-    const companyList = (companiesQuery.data as Company[] | undefined) ?? [];
+    const companyList = companyOptions;
     if (!companyList.length) return;
-    const exists = companyList.some((company) => company.companyID === selectedCompanyID);
-    if (!selectedCompanyID || !exists) {
-      const fallback = companyIdFromUrl ?? user.companyID ?? companyList[0].companyID ?? 0;
-      if (fallback && fallback > 0) {
-        setSelectedCompanyID(fallback);
-      }
+
+    const validCompanyIds = companyList
+      .map((company) => company.companyID)
+      .filter((id): id is number => Number.isFinite(id) && id > 0);
+
+    if (validCompanyIds.length === 0) return;
+
+    if (companyIdFromUrl && validCompanyIds.includes(companyIdFromUrl)) {
+      return;
     }
-  }, [companiesQuery.data, selectedCompanyID, companyIdFromUrl, user.companyID]);
 
-  React.useEffect(() => {
-    if (!selectedCompanyID || selectedCompanyID <= 0) return;
-    if (searchParams.get("companyId") === String(selectedCompanyID)) return;
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.set("companyId", String(selectedCompanyID));
-    setSearchParams(nextParams, { replace: true });
-  }, [selectedCompanyID, setSearchParams, searchParams]);
+    const preferred =
+      user.companyID && validCompanyIds.includes(user.companyID) ? user.companyID : validCompanyIds[0];
+    setCompanyIdInUrl(preferred);
+  }, [companyOptions, companyIdFromUrl, setCompanyIdInUrl, user.companyID]);
 
-  const filteredCompanies = React.useMemo(() => {
-    const q = companyQuery.trim().toLowerCase();
-    const list = ((companiesQuery.data as Company[] | undefined) ?? []).filter(
-      (company) => (company.companyID ?? 0) > 0,
-    );
-    if (!q) return list;
-    return list.filter((company) => (company.companyName ?? "").toLowerCase().includes(q));
-  }, [companiesQuery.data, companyQuery]);
+  const selectedCompanySet = React.useMemo(
+    () => (selectedCompanyID > 0 ? new Set<number>([selectedCompanyID]) : new Set<number>()),
+    [selectedCompanyID],
+  );
+
+  const setSelectedCompanySet = React.useCallback(
+    (update: React.SetStateAction<Set<number>>) => {
+      const nextSet =
+        typeof update === "function"
+          ? (update as (prev: Set<number>) => Set<number>)(selectedCompanySet)
+          : update;
+      const first = nextSet.values().next().value;
+      if (typeof first === "number" && first > 0) {
+        setCompanyIdInUrl(first);
+      }
+    },
+    [selectedCompanySet, setCompanyIdInUrl],
+  );
+
+  const handleBackToPreviousOrDashboard = React.useCallback(() => {
+    const historyIdx =
+      typeof window !== "undefined" && typeof window.history?.state?.idx === "number"
+        ? window.history.state.idx
+        : 0;
+
+    if (historyIdx > 0) {
+      navigate(-1);
+      return;
+    }
+
+    navigate("/dashboard", { replace: true });
+  }, [navigate]);
 
   const statsQuery = useCompanyStats(selectedCompanyID);
   const stats = (statsQuery.data ?? null) as CompanyStatsData | null;
@@ -255,7 +311,9 @@ export default function CompanyStats() {
   const showActiveSection = ballotScope === "all" || ballotScope === "active";
   const showInactiveSection = ballotScope === "all" || ballotScope === "inactive";
 
-  const isLoading = companiesQuery.isLoading || statsQuery.isLoading;
+  const waitingForInitialCompanySelection =
+    !selectedCompanyID && !companiesQuery.isLoading && ((companiesQuery.data?.length ?? 0) > 0);
+  const isLoading = companiesQuery.isLoading || statsQuery.isLoading || waitingForInitialCompanySelection;
   const hasError = companiesQuery.isError || statsQuery.isError;
   const errorMessage =
     (companiesQuery.error as Error | undefined)?.message ||
@@ -267,28 +325,30 @@ export default function CompanyStats() {
       <div className="mx-auto w-full max-w-7xl px-4 py-6 space-y-6">
         <Card className="border border-white/10 bg-slate-900/60">
           <CardHeader className="space-y-2">
-            <CardTitle className="text-2xl text-slate-100">Company Statistics</CardTitle>
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle className="text-2xl text-slate-100">Company Statistics</CardTitle>
+              <Button
+                variant="outline"
+                className="border-white/10 bg-white/5 hover:bg-white/10"
+                onClick={handleBackToPreviousOrDashboard}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+              </Button>
+            </div>
             <p className="text-sm text-slate-400">Analyze company participation and ballot engagement.</p>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <SearchInput
-              value={companyQuery}
-              onChange={(e) => setCompanyQuery(e.target.value)}
-              placeholder="Search companies..."
+          <CardContent>
+            <SelectCompany
+              companiesData={companyOptions}
+              companiesIsLoading={companiesQuery.isLoading}
+              companiesIsError={companiesQuery.isError}
+              selectedCompanies={selectedCompanySet}
+              setSelectedCompanies={setSelectedCompanySet}
+              label="Company"
+              description="Select the company this dashboard is showing"
+              placeholder="Select a company"
             />
-            <select
-              className="h-9 w-full rounded-md border border-white/10 bg-black/20 px-3 text-sm text-slate-100"
-              value={selectedCompanyID || ""}
-              onChange={(event) => setSelectedCompanyID(Number(event.target.value))}
-              disabled={companiesQuery.isLoading || filteredCompanies.length === 0}
-            >
-              {filteredCompanies.length === 0 ? <option value="">No companies found</option> : null}
-              {filteredCompanies.map((company) => (
-                <option key={company.companyID} value={company.companyID}>
-                  {company.companyName}
-                </option>
-              ))}
-            </select>
           </CardContent>
         </Card>
 
@@ -405,7 +465,11 @@ export default function CompanyStats() {
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         {filteredActive.map((ballot) => (
-                          <BallotCard key={`active-${ballot.ballotID}`} ballot={ballot} />
+                          <BallotCard
+                            key={`active-${ballot.ballotID}`}
+                            ballot={ballot}
+                            companyIdContext={selectedCompanyID}
+                          />
                         ))}
                       </div>
                     )}
@@ -422,7 +486,11 @@ export default function CompanyStats() {
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         {filteredInactive.map((ballot) => (
-                          <BallotCard key={`inactive-${ballot.ballotID}`} ballot={ballot} />
+                          <BallotCard
+                            key={`inactive-${ballot.ballotID}`}
+                            ballot={ballot}
+                            companyIdContext={selectedCompanyID}
+                          />
                         ))}
                       </div>
                     )}
