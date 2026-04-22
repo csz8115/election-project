@@ -642,3 +642,37 @@ export async function getSystemReport(): Promise<any> {
         report: report,
     };
 }
+
+export async function getCompanyStats(companyID: number): Promise<any> {
+    if (Number.isNaN(companyID) || companyID <= 0) {
+        return {
+            success: false,
+            error: "Invalid company ID",
+        };
+    }
+
+    const response = await fetch(
+        `${import.meta.env.VITE_API_URL}api/v1/officer/getCompanyStats?companyID=${companyID}`,
+        {
+            method: "GET",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        },
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        return {
+            success: false,
+            error: (errorData as { error?: string }).error ?? "Failed to fetch company stats",
+        };
+    }
+
+    const stats = await response.json().catch(() => null);
+    return {
+        success: true,
+        stats,
+    };
+}
