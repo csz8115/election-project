@@ -1214,14 +1214,28 @@ async function getBallots(
             skip: cursor * entryPerPage,
             orderBy: buildBallotOrderBy(sortBy, sortDir),
             where,
+            include: {
+                company: {
+                    select: {
+                        companyName: true,
+                    },
+                },
+            },
         });
 
         const hasNextPage = ballots.length > entryPerPage;
         const hasPreviousPage = cursor > 0;
         const ballotsPage = hasNextPage ? ballots.slice(0, entryPerPage) : ballots;
+        const ballotsWithCompanyName = ballotsPage.map((ballot) => {
+            const { company, ...ballotFields } = ballot;
+            return {
+                ...ballotFields,
+                companyName: company?.companyName ?? `Company #${ballot.companyID}`,
+            };
+        });
 
         return {
-            ballots: ballotsPage,
+            ballots: ballotsWithCompanyName,
             nextCursor: hasNextPage ? String(cursor + 1) : null,
             hasNextPage,
             hasPreviousPage,
@@ -1254,14 +1268,28 @@ async function getBallotsByCompany(
             skip: cursor * 40,
             orderBy: buildBallotOrderBy(sortBy, sortDir),
             where,
+            include: {
+                company: {
+                    select: {
+                        companyName: true,
+                    },
+                },
+            },
         });
 
         const hasNextPage = ballots.length > 40;
         const hasPreviousPage = cursor > 0;
         const ballotsPage = hasNextPage ? ballots.slice(0, 40) : ballots;
+        const ballotsWithCompanyName = ballotsPage.map((ballot) => {
+            const { company, ...ballotFields } = ballot;
+            return {
+                ...ballotFields,
+                companyName: company?.companyName ?? `Company #${ballot.companyID}`,
+            };
+        });
 
         return {
-            ballots: ballotsPage,
+            ballots: ballotsWithCompanyName,
             nextCursor: hasNextPage ? String(cursor + 1) : null,
             hasNextPage,
             hasPreviousPage,

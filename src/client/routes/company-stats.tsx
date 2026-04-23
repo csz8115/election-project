@@ -9,21 +9,14 @@ import { useCompanies } from "../hooks/useCompanies";
 import { useCompanyStats } from "../hooks/useCompanyStats";
 import { useUserStore } from "../store/userStore";
 import SearchInput from "../components/searchInput";
+import BallotCard, { type BallotCardData } from "../components/ballot/BallotCard";
 
 type Company = {
   companyID?: number;
   companyName?: string;
 };
 
-type BallotStat = {
-  ballotID: number;
-  ballotName: string;
-  description?: string;
-  startDate: string;
-  endDate: string;
-  voteCount?: number;
-  status?: "active" | "closed";
-};
+type BallotStat = BallotCardData;
 
 type CompanyStatsData = {
   active_ballots?: { count?: number; ballots?: BallotStat[] };
@@ -141,64 +134,6 @@ function VoteTrendLineChart({ trend }: { trend: Array<{ date: string; totalVotes
   );
 }
 
-function BallotCard({ ballot, companyIdContext }: { ballot: BallotStat; companyIdContext?: number }) {
-  const navigate = useNavigate();
-  const isClosed = ballot.status === "closed" || new Date(ballot.endDate) < new Date();
-  const statusLabel = isClosed ? "Closed" : "Active";
-
-  const navigateToBallot = () => {
-    const sp = new URLSearchParams();
-    sp.set("b", String(ballot.ballotID));
-    if (companyIdContext && companyIdContext > 0) {
-      sp.set("from", "company-stats");
-      sp.set("companyId", String(companyIdContext));
-    }
-    navigate(`/ballot?${sp.toString()}`);
-  };
-
-  return (
-    <Card
-      className="border border-white/10 bg-slate-900/60 cursor-pointer hover:bg-slate-900/80 transition-colors"
-      onClick={navigateToBallot}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          navigateToBallot();
-        }
-      }}
-    >
-      <CardHeader className="space-y-2">
-        <div className="flex items-start justify-between gap-3">
-          <CardTitle className="text-base text-slate-100 leading-snug">{ballot.ballotName}</CardTitle>
-          <span
-            className={[
-              "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-              isClosed ? "bg-slate-700 text-slate-100" : "bg-emerald-700 text-emerald-100",
-            ].join(" ")}
-          >
-            {statusLabel}
-          </span>
-        </div>
-        {ballot.description ? (
-          <p className="text-sm text-slate-400 line-clamp-2">{ballot.description}</p>
-        ) : null}
-      </CardHeader>
-      <CardContent className="space-y-1 text-sm">
-        <p className="text-slate-300">
-          Start: <span className="text-slate-100">{new Date(ballot.startDate).toLocaleString()}</span>
-        </p>
-        <p className="text-slate-300">
-          End: <span className="text-slate-100">{new Date(ballot.endDate).toLocaleString()}</span>
-        </p>
-        <p className="text-slate-300">
-          Votes: <span className="text-slate-100">{metricValue(ballot.voteCount ?? 0)}</span>
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
 export default function CompanyStats() {
   const user = useUserStore((state) => state);
   const companiesQuery = useCompanies();
@@ -310,6 +245,19 @@ export default function CompanyStats() {
 
   const showActiveSection = ballotScope === "all" || ballotScope === "active";
   const showInactiveSection = ballotScope === "all" || ballotScope === "inactive";
+
+  const ballotHref = React.useCallback(
+    (ballotID: number) => {
+      const sp = new URLSearchParams();
+      sp.set("b", String(ballotID));
+      if (selectedCompanyID > 0) {
+        sp.set("from", "company-stats");
+        sp.set("companyId", String(selectedCompanyID));
+      }
+      return `/ballot?${sp.toString()}`;
+    },
+    [selectedCompanyID],
+  );
 
   const waitingForInitialCompanySelection =
     !selectedCompanyID && !companiesQuery.isLoading && ((companiesQuery.data?.length ?? 0) > 0);
@@ -468,7 +416,7 @@ export default function CompanyStats() {
                           <BallotCard
                             key={`active-${ballot.ballotID}`}
                             ballot={ballot}
-                            companyIdContext={selectedCompanyID}
+                            to={ballotHref(ballot.ballotID)}
                           />
                         ))}
                       </div>
@@ -489,7 +437,7 @@ export default function CompanyStats() {
                           <BallotCard
                             key={`inactive-${ballot.ballotID}`}
                             ballot={ballot}
-                            companyIdContext={selectedCompanyID}
+                            to={ballotHref(ballot.ballotID)}
                           />
                         ))}
                       </div>

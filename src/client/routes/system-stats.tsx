@@ -5,18 +5,9 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import SearchInput from "../components/searchInput";
 import { useSystemStats } from "../hooks/useSystemStats";
+import BallotCard, { type BallotCardData } from "../components/ballot/BallotCard";
 
-type BallotStat = {
-  ballotID: number;
-  ballotName: string;
-  description?: string;
-  companyID?: number;
-  companyName?: string;
-  startDate: string;
-  endDate: string;
-  voteCount?: number;
-  status?: "active" | "closed";
-};
+type BallotStat = BallotCardData & { companyID?: number };
 
 type SystemOverview = {
   total_companies?: number;
@@ -161,63 +152,6 @@ function BallotStatusBarChart({ activeCount, inactiveCount }: { activeCount: num
         <p className="text-slate-300">Inactive: {metricValue(inactiveCount)}</p>
       </div>
     </div>
-  );
-}
-
-function BallotCard({ ballot }: { ballot: BallotStat }) {
-  const navigate = useNavigate();
-  const isClosed = ballot.status === "closed" || new Date(ballot.endDate) < new Date();
-  const statusLabel = isClosed ? "Closed" : "Active";
-
-  const navigateToBallot = () => {
-    const sp = new URLSearchParams();
-    sp.set("b", String(ballot.ballotID));
-    navigate(`/ballot?${sp.toString()}`);
-  };
-
-  return (
-    <Card
-      className="border border-white/10 bg-slate-900/60 cursor-pointer hover:bg-slate-900/80 transition-colors"
-      onClick={navigateToBallot}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          navigateToBallot();
-        }
-      }}
-    >
-      <CardHeader className="space-y-2">
-        <div className="flex items-start justify-between gap-3">
-          <CardTitle className="text-base text-slate-100 leading-snug">{ballot.ballotName}</CardTitle>
-          <span
-            className={[
-              "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-              isClosed ? "bg-slate-700 text-slate-100" : "bg-emerald-700 text-emerald-100",
-            ].join(" ")}
-          >
-            {statusLabel}
-          </span>
-        </div>
-        {ballot.description ? (
-          <p className="text-sm text-slate-400 line-clamp-2">{ballot.description}</p>
-        ) : null}
-      </CardHeader>
-      <CardContent className="space-y-1 text-sm">
-        <p className="text-slate-300">
-          Company: <span className="text-slate-100">{ballot.companyName ?? "N/A"}</span>
-        </p>
-        <p className="text-slate-300">
-          Start: <span className="text-slate-100">{new Date(ballot.startDate).toLocaleString()}</span>
-        </p>
-        <p className="text-slate-300">
-          End: <span className="text-slate-100">{new Date(ballot.endDate).toLocaleString()}</span>
-        </p>
-        <p className="text-slate-300">
-          Votes: <span className="text-slate-100">{metricValue(ballot.voteCount ?? 0)}</span>
-        </p>
-      </CardContent>
-    </Card>
   );
 }
 
