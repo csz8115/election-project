@@ -6,6 +6,7 @@ import adminRoutes from './routes/adminRoutes.ts';
 import employeeRoutes from './routes/employeeRoutes.ts';
 import officerRoutes from './routes/officerRoutes.ts';
 import logger from './utils/logger.ts';
+import requestLogger from './middlewares/requestLogger.ts';
 import dotenv from 'dotenv';
 dotenv.config();
 const app = express();
@@ -18,6 +19,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // Add cookie parser middleware
+app.use(requestLogger);
 
 // // auth middleware 
 // app.use(async (req, res, next) => {

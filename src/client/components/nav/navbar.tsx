@@ -221,6 +221,22 @@ export default function Navbar({ scrollProgress }: NavbarProps) {
                           <MotionButton
                             variant="ghost"
                             className="bg-transparent hover:bg-slate-800/50 hover:text-white flex items-center justify-center gap-2 transition-colors duration-200"
+                            onClick={() => navigate("/system-stats")}
+                          >
+                            System Stats
+                          </MotionButton>
+                        </motion.div>
+                      </NavigationMenuLink>
+                    </NavigationMenuItem>
+
+                    <span className="text-slate-600 select-none">|</span>
+
+                    <NavigationMenuItem>
+                      <NavigationMenuLink asChild>
+                        <motion.div {...navItemMotion}>
+                          <MotionButton
+                            variant="ghost"
+                            className="bg-transparent hover:bg-slate-800/50 hover:text-white flex items-center justify-center gap-2 transition-colors duration-200"
                             onClick={() => navigate("/users-page")}
                           >
                             Edit Users

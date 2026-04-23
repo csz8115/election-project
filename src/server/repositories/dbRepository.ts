@@ -697,6 +697,97 @@ async function getCompanyStats(companyID: number): Promise<any> {
     }
 }
 
+async function getSystemStats(): Promise<any> {
+    try {
+        const now = new Date();
+
+        const [totalCompanies, totalUsers, ballots] = await prisma.$transaction([
+            prisma.company.count(),
+            prisma.user.count(),
+            prisma.ballots.findMany({
+                include: {
+                    company: {
+                        select: {
+                            companyID: true,
+                            companyName: true,
+                        },
+                    },
+                    _count: {
+                        select: {
+                            votes: true,
+                            initiativeVotes: true,
+                        },
+                    },
+                },
+            }),
+        ]);
+
+        const activeBallots = ballots.filter((ballot) => {
+            return ballot.startDate <= now && ballot.endDate >= now;
+        });
+        const inactiveBallots = ballots.filter((ballot) => {
+            return ballot.endDate < now;
+        });
+
+        const toBallotCardStats = (ballot: any) => ({
+            ballotID: ballot.ballotID,
+            ballotName: ballot.ballotName,
+            description: ballot.description,
+            companyID: ballot.companyID,
+            companyName: ballot.company?.companyName ?? `Company #${ballot.companyID}`,
+            startDate: ballot.startDate,
+            endDate: ballot.endDate,
+            voteCount: ballot._count.votes,
+            initiativeVoteCount: ballot._count.initiativeVotes,
+            status: ballot.endDate < now ? "closed" : "active",
+        });
+
+        const allBallots = ballots.map(toBallotCardStats);
+        const totalBallots = allBallots.length;
+        const total_votes = allBallots.reduce((acc, ballot) => acc + ballot.voteCount, 0);
+        const total_initiative_votes = allBallots.reduce((acc, ballot) => acc + ballot.initiativeVoteCount, 0);
+        const avg_votes_per_ballot = totalBallots > 0 ? total_votes / totalBallots : 0;
+        const avg_initiative_votes_per_ballot = totalBallots > 0 ? total_initiative_votes / totalBallots : 0;
+
+        const ballot_vote_ranking = [...allBallots].sort((a, b) => b.voteCount - a.voteCount);
+
+        const voteTrendMap = new Map<string, number>();
+        for (const ballot of allBallots) {
+            // NOTE: votes table has no vote timestamp; bucket by ballot startDate.
+            const bucket = new Date(ballot.startDate).toISOString().slice(0, 10);
+            voteTrendMap.set(bucket, (voteTrendMap.get(bucket) ?? 0) + ballot.voteCount);
+        }
+        const vote_trend = Array.from(voteTrendMap.entries())
+            .map(([date, totalVotes]) => ({ date, totalVotes }))
+            .sort((a, b) => a.date.localeCompare(b.date));
+
+        return {
+            total_companies: totalCompanies,
+            total_users: totalUsers,
+            total_ballots: totalBallots,
+            active_ballots: {
+                count: activeBallots.length,
+                ballots: activeBallots.map(toBallotCardStats),
+            },
+            inactive_ballots: {
+                count: inactiveBallots.length,
+                ballots: inactiveBallots.map(toBallotCardStats),
+            },
+            total_votes,
+            total_initiative_votes,
+            avg_votes_per_ballot,
+            avg_initiative_votes_per_ballot,
+            ballot_vote_ranking,
+            vote_trend,
+        };
+    } catch (error) {
+        logRepositoryError({
+            message: "Unknown error during system stats retrieval",
+            error,
+        });
+    }
+}
+
 async function createBallotPosition(position: BallotPositions): Promise<BallotPositions> {
     try {
         const result = await prisma.$transaction(async (tx) => {
@@ -2210,6 +2301,7 @@ export const db = {
     getActiveCompanyBallots,
     getInactiveCompanyBallots,
     getCompanyStats,
+    getSystemStats,
     getBallotStatus,
     getAllUsers,
     deleteUser,

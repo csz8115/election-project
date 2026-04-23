@@ -9,11 +9,9 @@ router.get(`/getSystemReport`, requireRole('Admin', 'Employee'), async (req, res
     try {
         const keys = await getRedisClient().keys('*active:*');
         const activeUsers = keys.length;
-        const activeElections = await db.getActiveBallots();
-        const inactiveElections = await db.getInactiveBallots();
-
-        const activeElectionsCount = activeElections.length;
-        const inactiveElectionsCount = inactiveElections.length;
+        const systemOverview = await db.getSystemStats();
+        const activeElectionsCount = systemOverview?.active_ballots?.count ?? 0;
+        const inactiveElectionsCount = systemOverview?.inactive_ballots?.count ?? 0;
 
         const systemStats = await getDbStats();
 
@@ -25,6 +23,7 @@ router.get(`/getSystemReport`, requireRole('Admin', 'Employee'), async (req, res
             activeUsers,
             activeElectionsCount,
             inactiveElectionsCount,
+            systemOverview,
             queryStats: {
                 totalCalls: Number(systemStats.totalQueries),
                 totalExecTimeMs: Number(systemStats.totalResponseTime.toFixed(2)),
