@@ -9,6 +9,7 @@ import ProtectedRoute from "./protected-route";
 import EmployeeDashboard from "./dashboard-routes/employee-dashboard";
 import UserBallot from "./ballot-routes/user-ballot";
 import CompanyStats from "./company-stats";
+import SystemStats from "./system-stats";
 import AddBallot from "./ballot-routes/add-ballot";
 import AdminDashboard from "./dashboard-routes/admin-dashboard";
 import Ballot from "./ballot-routes/ballot";
@@ -131,6 +132,15 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute allowedRoles={["Employee", "Officer", "Admin"]}>
             <CompanyStats />
+          </ProtectedRoute>
+        ),
+      },
+
+      {
+        path: "system-stats",
+        element: (
+          <ProtectedRoute allowedRoles={["Employee", "Admin"]}>
+            <SystemStats />
           </ProtectedRoute>
         ),
       },
