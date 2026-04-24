@@ -1,11 +1,23 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import SearchInput from "../components/searchInput";
 import { useSystemStats } from "../hooks/useSystemStats";
-import BallotCard, { type BallotCardData } from "../components/ballot/BallotCard";
+import { useAllBallots } from "../hooks/useAllBallots";
+import { PulseLoader } from "react-spinners";
+import { PaginationControls } from "../components/paginationControls";
+import ElectionCard from "../components/dashboard/electionCard";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import NoResultsCat from "../components/catErrors/noResultsCat";
+import type { BallotCardData } from "../components/ballot/BallotCard";
 
 type BallotStat = BallotCardData & { companyID?: number };
 
@@ -157,28 +169,46 @@ function BallotStatusBarChart({ activeCount, inactiveCount }: { activeCount: num
 
 export default function SystemStats() {
   const navigate = useNavigate();
-  const [ballotQuery, setBallotQuery] = React.useState("");
-  const [ballotScope, setBallotScope] = React.useState<"all" | "active" | "inactive">("all");
+  const [page, setPage] = React.useState(0);
+  const [query, setQuery] = React.useState("");
+  const [debouncedQuery, setDebouncedQuery] = React.useState(query);
+  const [status, setStatus] = React.useState<"open" | "closed" | "all">("all");
+  const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
+  const [sortBy, setSortBy] = React.useState<"startDate" | "endDate" | "ballotName" | "votes">("startDate");
 
   const statsQuery = useSystemStats();
   const report = (statsQuery.data ?? null) as SystemReport | null;
   const stats = report?.systemOverview ?? null;
 
-  const activeBallots = stats?.active_ballots?.ballots ?? [];
-  const inactiveBallots = stats?.inactive_ballots?.ballots ?? [];
-  const normalizedBallotQuery = ballotQuery.trim().toLowerCase();
-  const filterBallotBySearch = (ballot: BallotStat) =>
-    !normalizedBallotQuery ||
-    ballot.ballotName.toLowerCase().includes(normalizedBallotQuery) ||
-    (ballot.description ?? "").toLowerCase().includes(normalizedBallotQuery);
+  React.useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 450);
+    return () => clearTimeout(t);
+  }, [query]);
 
-  const filteredActive = activeBallots.filter(filterBallotBySearch);
-  const filteredInactive = inactiveBallots.filter(filterBallotBySearch);
-  const rankingData = (stats?.ballot_vote_ranking ?? []).filter(filterBallotBySearch);
+  React.useEffect(() => {
+    setPage(0);
+  }, [debouncedQuery, status, sortBy, sortDir]);
+
+  const ballotListQuery = useAllBallots({
+    pageParam: page,
+    q: debouncedQuery,
+    sortBy,
+    sortDir,
+    status,
+  });
+
+  const totalCount = ballotListQuery.data?.totalCount ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / 40));
+
+  React.useEffect(() => {
+    if (page >= totalPages) setPage(totalPages - 1);
+  }, [page, totalPages]);
+
+  const ballotsList = ballotListQuery.data?.ballots ?? [];
+  const hasBallotResults = ballotsList.length > 0;
+
+  const rankingData = stats?.ballot_vote_ranking ?? [];
   const trendData = stats?.vote_trend ?? [];
-
-  const showActiveSection = ballotScope === "all" || ballotScope === "active";
-  const showInactiveSection = ballotScope === "all" || ballotScope === "inactive";
 
   return (
     <div className="min-h-screen w-full bg-slate-950 text-slate-300">
@@ -294,73 +324,88 @@ export default function SystemStats() {
             <Card className="border border-white/10 bg-slate-900/60">
               <CardHeader className="space-y-3">
                 <CardTitle className="text-slate-100">Ballot Discovery</CardTitle>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <SearchInput
-                    value={ballotQuery}
-                    onChange={(e) => setBallotQuery(e.target.value)}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search ballots by name or description..."
                   />
+                  <Select value={status} onValueChange={(v) => setStatus(v as "open" | "closed" | "all")}>
+                    <SelectTrigger className="w-32 bg-slate-900/30 border-slate-800 text-slate-200">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="open">Open</SelectItem>
+                      <SelectItem value="closed">Closed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="flex-1" />
                   <div className="flex items-center gap-2">
+                    <span className="text-sm text-slate-300">Sort by:</span>
+                    <Select value={sortBy} onValueChange={(v) => setSortBy(v as "startDate" | "endDate" | "ballotName" | "votes")}>
+                      <SelectTrigger className="w-36 bg-slate-900/30 border-slate-800 text-slate-200">
+                        <SelectValue placeholder="Sort" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
+                        <SelectItem value="startDate">Start Date</SelectItem>
+                        <SelectItem value="endDate">End Date</SelectItem>
+                        <SelectItem value="ballotName">Ballot Name</SelectItem>
+                        <SelectItem value="votes">Votes</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Button
-                      type="button"
-                      variant={ballotScope === "all" ? "default" : "outline"}
-                      className={ballotScope === "all" ? "bg-white/15 text-slate-100" : "border-white/10 bg-white/5 text-slate-300"}
-                      onClick={() => setBallotScope("all")}
+                      variant="outline"
+                      size="icon"
+                      className="border-slate-800 bg-slate-900/30 text-slate-200 hover:bg-slate-800/60"
+                      onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                      aria-label="Toggle sort direction"
                     >
-                      All
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={ballotScope === "active" ? "default" : "outline"}
-                      className={ballotScope === "active" ? "bg-white/15 text-slate-100" : "border-white/10 bg-white/5 text-slate-300"}
-                      onClick={() => setBallotScope("active")}
-                    >
-                      Active
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={ballotScope === "inactive" ? "default" : "outline"}
-                      className={ballotScope === "inactive" ? "bg-white/15 text-slate-100" : "border-white/10 bg-white/5 text-slate-300"}
-                      onClick={() => setBallotScope("inactive")}
-                    >
-                      Inactive
+                      {sortDir === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
                     </Button>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-8">
-                {showActiveSection ? (
-                  <section className="space-y-3">
-                    <h3 className="text-lg font-semibold text-slate-100">Active Ballots</h3>
-                    {filteredActive.length === 0 ? (
-                      <p className="text-sm text-slate-300">
-                        {normalizedBallotQuery ? "No active ballots match your search." : "No active ballots."}
-                      </p>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {filteredActive.map((ballot) => (
-                          <BallotCard key={`active-${ballot.ballotID}`} ballot={ballot} />
-                        ))}
-                      </div>
-                    )}
-                  </section>
+              <CardContent className="space-y-6">
+                {!ballotListQuery.isLoading && !ballotListQuery.isError && hasBallotResults ? (
+                  <PaginationControls
+                    page={page}
+                    totalPages={totalPages}
+                    setPage={setPage}
+                    sortBy={sortBy}
+                    sortDir={sortDir}
+                    status={status}
+                  />
                 ) : null}
 
-                {showInactiveSection ? (
-                  <section className="space-y-3">
-                    <h3 className="text-lg font-semibold text-slate-100">Inactive Ballots</h3>
-                    {filteredInactive.length === 0 ? (
-                      <p className="text-sm text-slate-300">
-                        {normalizedBallotQuery ? "No inactive ballots match your search." : "No inactive ballots."}
-                      </p>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {filteredInactive.map((ballot) => (
-                          <BallotCard key={`inactive-${ballot.ballotID}`} ballot={ballot} />
-                        ))}
-                      </div>
-                    )}
-                  </section>
+                {ballotListQuery.isLoading ? (
+                  <div className="flex items-center justify-center py-16">
+                    <PulseLoader color="#cbd5e1" size={12} />
+                  </div>
+                ) : ballotListQuery.isError ? (
+                  <p className="text-slate-300">Error loading ballots</p>
+                ) : hasBallotResults ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                    {ballotsList.map((ballot: any) => (
+                      <ElectionCard
+                        key={(ballot as { id?: number; ballotID?: number; ballotName?: string }).id ?? ballot.ballotID ?? ballot.ballotName}
+                        ballot={ballot}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <NoResultsCat />
+                )}
+
+                {!ballotListQuery.isLoading && !ballotListQuery.isError && hasBallotResults ? (
+                  <PaginationControls
+                    page={page}
+                    totalPages={totalPages}
+                    setPage={setPage}
+                    sortBy={sortBy}
+                    sortDir={sortDir}
+                    status={status}
+                  />
                 ) : null}
               </CardContent>
             </Card>
