@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { getQueryStatsSnapshot } from './db/queryStats.ts';
 // read log files and generate system stats
 
 export async function getHttpStats() {
@@ -13,6 +14,10 @@ export async function getHttpStats() {
     };
 
     try {
+        if (!fs.existsSync(logFilePath)) {
+            return stats;
+        }
+
         const data = await fs.promises.readFile(logFilePath, 'utf-8');
         const lines = data.split('\n');
 
@@ -20,10 +25,12 @@ export async function getHttpStats() {
             if (line) {
                 const logEntry = JSON.parse(line);
                 stats.totalRequests += 1;
-                stats.totalResponseTime += logEntry.responseTime || 0;
-                stats.maxResponseTime = logEntry.responseTime > stats.maxResponseTime ? logEntry.responseTime : stats.maxResponseTime;
+                const durationMs = Number(logEntry.durationMs ?? logEntry.responseTime ?? 0);
+                const statusCode = Number(logEntry.statusCode ?? logEntry?.res?.statusCode ?? 0);
+                stats.totalResponseTime += Number.isFinite(durationMs) ? durationMs : 0;
+                stats.maxResponseTime = durationMs > stats.maxResponseTime ? durationMs : stats.maxResponseTime;
 
-                if (logEntry.res && logEntry.res.statusCode && (logEntry.res.statusCode < 200 || logEntry.res.statusCode >= 300)) {
+                if (Number.isFinite(statusCode) && statusCode >= 400) {
                     stats.totalErrors += 1;
                 }
             }
@@ -36,44 +43,16 @@ export async function getHttpStats() {
         return stats;
     } catch (error) {
         console.error('Error reading log file:', error);
-        throw new Error('Failed to get HTTP stats');
+        return stats;
     }
 }
 
 export async function getDbStats() {
-    const logFilePath = path.resolve('./log/db.log'); // Using relative path
-    const stats = {
-        totalQueries: 0,
-        totalResponseTime: 0,
-        avgResponseTime: 0,
-        maxResponseTime: 0,
+    const snapshot = getQueryStatsSnapshot();
+    return {
+        ...snapshot,
+        totalResponseTime: snapshot.totalQueries * snapshot.averageQueryDurationMs,
+        avgResponseTime: snapshot.averageQueryDurationMs,
+        maxResponseTime: snapshot.slowestQueryDurationMs,
     };
-
-    try {
-        const data = await fs.promises.readFile(logFilePath, 'utf-8');
-        const lines = data.split('\n');
-
-        for (const line of lines) {
-            if (line) {
-                const logEntry = JSON.parse(line);
-                // take ms off duration and convert to number
-                if (logEntry.duration) {
-                    logEntry.duration = Number(logEntry.duration.replace('ms', ''));
-                }
-                stats.totalQueries += 1;
-                stats.totalResponseTime += logEntry.duration || 0;
-                stats.maxResponseTime = logEntry.duration > stats.maxResponseTime ? logEntry.duration : stats.maxResponseTime;
-                stats.avgResponseTime = logEntry.duration > stats.avgResponseTime ? logEntry.duration : stats.avgResponseTime;
-            }
-        }
-
-        if (stats.totalQueries > 0) {
-            stats.avgResponseTime = stats.totalResponseTime / stats.totalQueries;
-        }
-
-        return stats;
-    } catch (error) {
-        console.error('Error reading log file:', error);
-        throw new Error('Failed to get DB stats');
-    }
 }

@@ -36,6 +36,39 @@ type SystemOverview = {
 };
 
 type SystemReport = {
+  dbStats?: {
+    totalQueries?: number;
+    averageQueryDurationMs?: number;
+    slowestQueryDurationMs?: number;
+    queryErrors?: number;
+    queriesByOperation?: {
+      findMany?: number;
+      findUnique?: number;
+      create?: number;
+      update?: number;
+      delete?: number;
+      raw?: number;
+    };
+    slowestOperations?: Array<{
+      model?: string;
+      operation?: string;
+      averageDurationMs?: number;
+      count?: number;
+    }>;
+    recentSlowQueries?: Array<{
+      model?: string;
+      operation?: string;
+      durationMs?: number;
+      timestamp?: string;
+    }>;
+  };
+  httpStats?: {
+    totalRequests?: number;
+    totalErrors?: number;
+    totalResponseTime?: number;
+    avgResponseTime?: number;
+    maxResponseTime?: number;
+  };
   systemOverview?: SystemOverview;
 };
 
@@ -45,6 +78,12 @@ function metricValue(value: unknown): string {
   return numberValue.toLocaleString(undefined, {
     maximumFractionDigits: Number.isInteger(numberValue) ? 0 : 2,
   });
+}
+
+function metricMs(value: unknown): string {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) return "N/A";
+  return `${numberValue.toFixed(numberValue >= 100 ? 0 : 2)} ms`;
 }
 
 function HorizontalBallotBarChart({ data }: { data: BallotStat[] }) {
@@ -167,6 +206,32 @@ function BallotStatusBarChart({ activeCount, inactiveCount }: { activeCount: num
   );
 }
 
+function QueryOperationBarChart({
+  data,
+}: {
+  data: Array<{ operation: string; count: number }>;
+}) {
+  const max = Math.max(...data.map((d) => d.count), 1);
+  return (
+    <div className="space-y-3">
+      {data.map((row) => {
+        const widthPercent = Math.max((row.count / max) * 100, row.count > 0 ? 4 : 0);
+        return (
+          <div key={row.operation} className="space-y-1">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-300">{row.operation}</span>
+              <span className="text-slate-100">{metricValue(row.count)}</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
+              <div className="h-full rounded-full bg-sky-500" style={{ width: `${widthPercent}%` }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function SystemStats() {
   const navigate = useNavigate();
   const [page, setPage] = React.useState(0);
@@ -179,6 +244,8 @@ export default function SystemStats() {
   const statsQuery = useSystemStats();
   const report = (statsQuery.data ?? null) as SystemReport | null;
   const stats = report?.systemOverview ?? null;
+  const dbStats = report?.dbStats ?? null;
+  const httpStats = report?.httpStats ?? null;
 
   React.useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query), 450);
@@ -209,6 +276,17 @@ export default function SystemStats() {
 
   const rankingData = stats?.ballot_vote_ranking ?? [];
   const trendData = stats?.vote_trend ?? [];
+  const operationCounts = dbStats?.queriesByOperation ?? {};
+  const queryOperationChartData = [
+    { operation: "findMany", count: Number(operationCounts.findMany ?? 0) },
+    { operation: "findUnique", count: Number(operationCounts.findUnique ?? 0) },
+    { operation: "create", count: Number(operationCounts.create ?? 0) },
+    { operation: "update", count: Number(operationCounts.update ?? 0) },
+    { operation: "delete", count: Number(operationCounts.delete ?? 0) },
+    { operation: "raw", count: Number(operationCounts.raw ?? 0) },
+  ];
+  const recentSlowQueries = dbStats?.recentSlowQueries ?? [];
+  const topSlowOperations = dbStats?.slowestOperations ?? [];
 
   return (
     <div className="min-h-screen w-full bg-slate-950 text-slate-300">
@@ -318,6 +396,118 @@ export default function SystemStats() {
                   activeCount={stats.active_ballots?.count ?? 0}
                   inactiveCount={stats.inactive_ballots?.count ?? 0}
                 />
+              </CardContent>
+            </Card>
+
+            <Card className="border border-white/10 bg-slate-900/60">
+              <CardHeader>
+                <CardTitle className="text-slate-100">API Health</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="border border-white/10 bg-slate-900/40">
+                  <CardHeader><CardTitle className="text-sm text-slate-300">Total Requests</CardTitle></CardHeader>
+                  <CardContent className="text-2xl font-semibold text-slate-100">{metricValue(httpStats?.totalRequests ?? 0)}</CardContent>
+                </Card>
+                <Card className="border border-white/10 bg-slate-900/40">
+                  <CardHeader><CardTitle className="text-sm text-slate-300">Request Errors</CardTitle></CardHeader>
+                  <CardContent className="text-2xl font-semibold text-slate-100">{metricValue(httpStats?.totalErrors ?? 0)}</CardContent>
+                </Card>
+                <Card className="border border-white/10 bg-slate-900/40">
+                  <CardHeader><CardTitle className="text-sm text-slate-300">Avg Response Time</CardTitle></CardHeader>
+                  <CardContent className="text-2xl font-semibold text-slate-100">{metricMs(httpStats?.avgResponseTime ?? 0)}</CardContent>
+                </Card>
+                <Card className="border border-white/10 bg-slate-900/40">
+                  <CardHeader><CardTitle className="text-sm text-slate-300">Max Response Time</CardTitle></CardHeader>
+                  <CardContent className="text-2xl font-semibold text-slate-100">{metricMs(httpStats?.maxResponseTime ?? 0)}</CardContent>
+                </Card>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-white/10 bg-slate-900/60">
+              <CardHeader>
+                <CardTitle className="text-slate-100">Database Performance</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card className="border border-white/10 bg-slate-900/40">
+                    <CardHeader><CardTitle className="text-sm text-slate-300">Total Queries</CardTitle></CardHeader>
+                    <CardContent className="text-2xl font-semibold text-slate-100">{metricValue(dbStats?.totalQueries ?? 0)}</CardContent>
+                  </Card>
+                  <Card className="border border-white/10 bg-slate-900/40">
+                    <CardHeader><CardTitle className="text-sm text-slate-300">Avg Query Duration</CardTitle></CardHeader>
+                    <CardContent className="text-2xl font-semibold text-slate-100">{metricMs(dbStats?.averageQueryDurationMs ?? 0)}</CardContent>
+                  </Card>
+                  <Card className="border border-white/10 bg-slate-900/40">
+                    <CardHeader><CardTitle className="text-sm text-slate-300">Slowest Query</CardTitle></CardHeader>
+                    <CardContent className="text-2xl font-semibold text-slate-100">{metricMs(dbStats?.slowestQueryDurationMs ?? 0)}</CardContent>
+                  </Card>
+                  <Card className="border border-white/10 bg-slate-900/40">
+                    <CardHeader><CardTitle className="text-sm text-slate-300">Query Errors</CardTitle></CardHeader>
+                    <CardContent className="text-2xl font-semibold text-slate-100">{metricValue(dbStats?.queryErrors ?? 0)}</CardContent>
+                  </Card>
+                </div>
+
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  <Card className="border border-white/10 bg-slate-900/40">
+                    <CardHeader>
+                      <CardTitle className="text-slate-100">Queries by Operation</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <QueryOperationBarChart data={queryOperationChartData} />
+                    </CardContent>
+                  </Card>
+                  <Card className="border border-white/10 bg-slate-900/40">
+                    <CardHeader>
+                      <CardTitle className="text-slate-100">Slowest Operations</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {topSlowOperations.length === 0 ? (
+                        <p className="text-sm text-slate-300">No operation timing data yet.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {topSlowOperations.slice(0, 8).map((op, idx) => (
+                            <div key={`${op.model}-${op.operation}-${idx}`} className="flex items-center justify-between text-sm gap-3">
+                              <div className="text-slate-300 truncate">
+                                {op.model}.{op.operation} ({metricValue(op.count)})
+                              </div>
+                              <div className="text-slate-100 whitespace-nowrap">{metricMs(op.averageDurationMs ?? 0)}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card className="border border-white/10 bg-slate-900/40">
+                  <CardHeader>
+                    <CardTitle className="text-slate-100">Recent Slow Queries</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {recentSlowQueries.length === 0 ? (
+                      <p className="text-sm text-slate-300">No recent slow queries captured.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {recentSlowQueries.slice(0, 12).map((query, idx) => (
+                          <div
+                            key={`${query.model}-${query.operation}-${query.timestamp}-${idx}`}
+                            className="flex items-center justify-between gap-3 text-sm"
+                          >
+                            <span className="text-slate-300 truncate">
+                              {query.model}.{query.operation}
+                            </span>
+                            <span className="text-slate-400 whitespace-nowrap">
+                              {new Date(query.timestamp ?? "").toLocaleString()}
+                            </span>
+                            <span className="text-slate-100 whitespace-nowrap">
+                              {metricMs(query.durationMs ?? 0)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </CardContent>
             </Card>
 
