@@ -2180,6 +2180,88 @@ async function getInitiative(initiativeID: number): Promise<any> {
     }
 }
 
+async function getBallotByPositionID(positionID: number): Promise<any> {
+    try {
+        const position = await prisma.ballotPositions.findUnique({
+            where: {
+                positionID: positionID,
+            },
+            select: {
+                ballot: {
+                    select: {
+                        ballotID: true,
+                        endDate: true,
+                    },
+                },
+            },
+        });
+
+        return position?.ballot ?? null;
+    } catch (error) {
+        logRepositoryError({
+            message: "Unknown error during ballot retrieval by position ID",
+            positionID: positionID,
+            error,
+        });
+    }
+}
+
+async function getBallotByCandidateID(candidateID: number): Promise<any> {
+    try {
+        const ballotCandidate = await prisma.ballotCandidates.findFirst({
+            where: {
+                candidateID: candidateID,
+            },
+            select: {
+                position: {
+                    select: {
+                        ballot: {
+                            select: {
+                                ballotID: true,
+                                endDate: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        return ballotCandidate?.position?.ballot ?? null;
+    } catch (error) {
+        logRepositoryError({
+            message: "Unknown error during ballot retrieval by candidate ID",
+            candidateID: candidateID,
+            error,
+        });
+    }
+}
+
+async function getBallotByInitiativeID(initiativeID: number): Promise<any> {
+    try {
+        const initiative = await prisma.ballotInitiatives.findUnique({
+            where: {
+                initiativeID: initiativeID,
+            },
+            select: {
+                ballot: {
+                    select: {
+                        ballotID: true,
+                        endDate: true,
+                    },
+                },
+            },
+        });
+
+        return initiative?.ballot ?? null;
+    } catch (error) {
+        logRepositoryError({
+            message: "Unknown error during ballot retrieval by initiative ID",
+            initiativeID: initiativeID,
+            error,
+        });
+    }
+}
+
 async function deleteInitiative(initiativeID: number): Promise<boolean> {
     try {
         const deletedInitiative = await prisma.ballotInitiatives.delete({
@@ -2377,6 +2459,9 @@ export const db = {
     createWriteInCandidate,
     createInitiative,
     getInitiative,
+    getBallotByPositionID,
+    getBallotByCandidateID,
+    getBallotByInitiativeID,
     deleteInitiative,
     getResponse,
     deleteResponse,

@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useReducedMotion } from "framer-motion";
 import { useScrollContainerToTop } from "../../hooks/useScrollContainer";
 import { useCreateCandidate } from "../../hooks/useCreateCandidate";
+import { useBallot } from "../../hooks/useBallot";
 
 function parseNum(search: string, keys: string[]): number | undefined {
   const sp = new URLSearchParams(search);
@@ -43,12 +44,21 @@ export default function CreateCandidate() {
   const [picture, setPicture] = React.useState("");
 
   const missingIDs = !positionID || !ballotID;
+  const ballotQuery = useBallot(ballotID, { enabled: !!ballotID });
+  const isStructureLocked = Boolean(
+    ballotQuery.data?.endDate &&
+      new Date().getTime() > new Date(ballotQuery.data.endDate as any).getTime(),
+  );
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!positionID || !ballotID) {
       toast.error("Missing positionID or ballotID. Navigate from a ballot position or include them in the URL.");
+      return;
+    }
+    if (isStructureLocked) {
+      toast.error("This election has ended. Structure edits are disabled.");
       return;
     }
 
@@ -108,6 +118,11 @@ export default function CreateCandidate() {
               </div>
             ) : (
               <form onSubmit={onSubmit} className="space-y-4">
+                {isStructureLocked && (
+                  <div className="rounded-md border border-amber-500/40 bg-amber-950/30 p-3 text-amber-200 text-sm">
+                    This election has ended. Structure edits are disabled.
+                  </div>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-sm text-slate-300">First Name</label>
@@ -167,7 +182,7 @@ export default function CreateCandidate() {
                   <Button
                     type="submit"
                     className="bg-white/10 hover:bg-white/15 text-slate-100"
-                    disabled={createCandidateMutation.isPending}
+                    disabled={createCandidateMutation.isPending || isStructureLocked}
                   >
                     {createCandidateMutation.isPending ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

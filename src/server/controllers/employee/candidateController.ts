@@ -2,6 +2,13 @@ import express from 'express';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { employeeCandidateService } from '../../services/employee/candidateService.ts';
+import {
+    BallotNotFoundError,
+    BallotStructureLockedError,
+    assertBallotEditableByBallotID,
+    assertBallotEditableByCandidateID,
+    assertBallotEditableByPositionID,
+} from '../../utils/ballotEditGuard.ts';
 
 const router = express.Router();
 const { db } = employeeCandidateService;
@@ -23,6 +30,8 @@ router.put('/editCandidate', async (req, res): Promise<any> => {
             return res.status(404).json({ error: 'Candidate does not exist' });
         }
 
+        await assertBallotEditableByCandidateID(db, candidateIDNum);
+
         const updatedCandidate = {
             candidateID: candidateIDNum,
             fName: fName ?? candidate.fName,
@@ -37,6 +46,12 @@ router.put('/editCandidate', async (req, res): Promise<any> => {
         return res.status(200).json({ message: 'Candidate updated successfully' });
     } catch (error) {
         console.error('Error updating candidate:', error);
+        if (error instanceof BallotNotFoundError) {
+            return res.status(404).json({ error: error.message });
+        }
+        if (error instanceof BallotStructureLockedError) {
+            return res.status(403).json({ error: error.message });
+        }
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
             return res.status(400).json({ error: error.code, details: error.meta ?? error.message });
         }
@@ -99,6 +114,8 @@ router.post(`/addCandidate`, async (req, res): Promise<any> => {
             picture,
         });
 
+        await assertBallotEditableByPositionID(db, positionIDNum);
+
         const createdCandidate = await db.addCandidate(candidateData);
 
         return res.status(201).json({
@@ -111,6 +128,10 @@ router.post(`/addCandidate`, async (req, res): Promise<any> => {
 
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors.map(e => e.message) });
+        } else if (error instanceof BallotNotFoundError) {
+            return res.status(404).json({ error: error.message });
+        } else if (error instanceof BallotStructureLockedError) {
+            return res.status(403).json({ error: error.message });
         } else if (error.message === 'Invalid request') {
             return res.status(400).json({ error: 'Invalid request' });
         }
@@ -131,11 +152,19 @@ router.delete(`/deleteCandidate`, async (req, res): Promise<any> => {
             return res.status(400).json({ error: 'Invalid Candidate ID' });
         }
 
+        await assertBallotEditableByCandidateID(db, candidateIDNum);
+
         await db.deleteCandidate(candidateIDNum);
         return res.status(200).json({ message: 'Candidate deleted successfully' });
     }
     catch (error) {
         console.error('Error deleting candidate:', error);
+        if (error instanceof BallotNotFoundError) {
+            return res.status(404).json({ error: error.message });
+        }
+        if (error instanceof BallotStructureLockedError) {
+            return res.status(403).json({ error: error.message });
+        }
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
             return res.status(400).json({ error: error.code, details: error.meta ?? error.message });
         }
@@ -156,11 +185,19 @@ router.delete(`/deletePosition`, async (req, res): Promise<any> => {
             return res.status(400).json({ error: 'Invalid Position ID' });
         }
 
+        await assertBallotEditableByPositionID(db, positionIDNum);
+
         await db.deleteBallotPosition(positionIDNum);
         return res.status(200).json({ message: 'Position deleted successfully' });
     }
     catch (error) {
         console.error('Error deleting position:', error);
+        if (error instanceof BallotNotFoundError) {
+            return res.status(404).json({ error: error.message });
+        }
+        if (error instanceof BallotStructureLockedError) {
+            return res.status(403).json({ error: error.message });
+        }
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
             return res.status(400).json({ error: error.code, details: error.meta ?? error.message });
         }
@@ -199,6 +236,8 @@ router.post(`/addPosition`, async (req, res): Promise<any> => {
             return res.status(400).json({ error: `Missing required fields: ${missingFields.join(', ')}` });
         }
 
+        await assertBallotEditableByBallotID(db, ballotIDNum);
+
         const createdPosition = await db.addPosition(positionData);
 
         return res.status(201).json({
@@ -211,6 +250,10 @@ router.post(`/addPosition`, async (req, res): Promise<any> => {
 
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors.map(e => e.message) });
+        } else if (error instanceof BallotNotFoundError) {
+            return res.status(404).json({ error: error.message });
+        } else if (error instanceof BallotStructureLockedError) {
+            return res.status(403).json({ error: error.message });
         } else if (error.message === 'Invalid request') {
             return res.status(400).json({ error: 'Invalid request' });
         }
@@ -252,6 +295,8 @@ router.post(`/addInitiative`, async (req, res): Promise<any> => {
             return res.status(404).json({ error: 'Ballot does not exist' });
         }
 
+        await assertBallotEditableByBallotID(db, ballotIDNum);
+
         const createdInitiative = await db.createInitiative({
             ballotID: initiativeData.ballotID,
             initiativeID: 0,
@@ -274,6 +319,12 @@ router.post(`/addInitiative`, async (req, res): Promise<any> => {
 
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors.map((e) => e.message) });
+        }
+        if (error instanceof BallotNotFoundError) {
+            return res.status(404).json({ error: error.message });
+        }
+        if (error instanceof BallotStructureLockedError) {
+            return res.status(403).json({ error: error.message });
         }
         return res.status(500).json({ error: 'Failed to add initiative' });
     }

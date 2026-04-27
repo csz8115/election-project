@@ -28,11 +28,14 @@ import { Textarea } from "../../components/ui/textarea";
 import { toast } from "sonner";
 import { useUserStore } from "../../store/userStore";
 import { useEditCandidate } from "../../hooks/useEditCandidate";
+import { useBallot } from "../../hooks/useBallot";
 
 type LocationState = {
   candidate?: candidate;
   votes?: number;
   rank?: number; // 0-based rank, optional
+  ballotID?: number;
+  ballotEnded?: boolean;
 };
 
 const MotionDiv = motion.div;
@@ -61,7 +64,14 @@ export default function CandidatePage() {
   const rank = state?.rank;
 
   const user = useUserStore((s) => s);
-  const canEdit = user.accountType === "Admin" || user.accountType === "Employee";
+  const ballotIDFromState = state?.ballotID;
+  const ballotQuery = useBallot(ballotIDFromState, { enabled: !!ballotIDFromState });
+  const endedFromBallot = Boolean(
+    ballotQuery.data?.endDate &&
+      new Date().getTime() > new Date(ballotQuery.data.endDate as any).getTime(),
+  );
+  const isStructureLocked = Boolean(state?.ballotEnded || endedFromBallot);
+  const canEdit = (user.accountType === "Admin" || user.accountType === "Employee") && !isStructureLocked;
 
   const editCandidate = useEditCandidate();
 
@@ -192,6 +202,11 @@ export default function CandidatePage() {
           </Button>
 
           <div className="flex flex-wrap items-center gap-2">
+            {isStructureLocked && (
+              <div className="inline-flex items-center rounded-full border border-amber-500/40 bg-amber-950/30 px-3 py-1 text-sm text-amber-200">
+                This election has ended. Structure edits are disabled.
+              </div>
+            )}
             {typeof votes === "number" && (
               <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-slate-100">
                 <Vote className="h-4 w-4 text-slate-300" />

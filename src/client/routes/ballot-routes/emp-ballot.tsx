@@ -159,11 +159,19 @@ export default function EmpBallot() {
   const deleteBallotMutation = useDeleteBallots();
 
   const requestCandidateDelete = (payload: PendingCandidateDelete) => {
+    if (isStructureLocked) {
+      toast.error("This election has ended. Structure edits are disabled.");
+      return;
+    }
     setPendingCandidateDelete(payload);
     setCandidateConfirmOpen(true);
   };
 
   const requestPositionDelete = (payload: PendingPositionDelete) => {
+    if (isStructureLocked) {
+      toast.error("This election has ended. Structure edits are disabled.");
+      return;
+    }
     setPendingPositionDelete(payload);
     setPositionConfirmOpen(true);
   };
@@ -379,7 +387,10 @@ export default function EmpBallot() {
     );
   }
 
-  const isComplete = ballot?.endDate && new Date(ballot.endDate as any) <= new Date();
+  const isStructureLocked = Boolean(
+    ballot?.endDate && new Date().getTime() > new Date(ballot.endDate as any).getTime(),
+  );
+  const isComplete = isStructureLocked;
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground">
@@ -522,6 +533,14 @@ export default function EmpBallot() {
           </CardContent>
         </Card>
 
+        {isStructureLocked && (
+          <Card className="border border-amber-500/40 bg-amber-950/20">
+            <CardContent className="py-4 text-amber-200">
+              This election has ended. Structure edits are disabled.
+            </CardContent>
+          </Card>
+        )}
+
         {resultsQuery.isLoading && (
           <div className="flex items-center justify-center py-16">
             <PulseLoader color="currentColor" size={10} />
@@ -542,6 +561,7 @@ export default function EmpBallot() {
                 <Button
                   className="bg-white/10 text-slate-100 hover:bg-white/20"
                   onClick={() => navigate(`/create-position`, { state: { ballotID: ballot.ballotID } })}
+                  disabled={isStructureLocked}
                 >
                   Add Position
                 </Button>
@@ -580,6 +600,7 @@ export default function EmpBallot() {
                             }
                             className="rounded-xl border border-white/10 bg-white/5 hover:bg-red-500/15"
                             aria-label="Delete position"
+                            disabled={isStructureLocked}
                           >
                             <Trash2 className="h-5 w-5 text-red-300" />
                           </Button>
@@ -588,9 +609,13 @@ export default function EmpBallot() {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            onClick={() => togglePositionEdit(position.positionID)}
+                            onClick={() => {
+                              if (isStructureLocked) return;
+                              togglePositionEdit(position.positionID);
+                            }}
                             className="rounded-xl border border-white/10 bg-white/5 hover:bg-white/10"
                             aria-label={isPosEdit ? "Exit position edit mode" : "Edit candidates"}
+                            disabled={isStructureLocked}
                           >
                             {isPosEdit ? (
                               <Check className="h-5 w-5 text-emerald-300" />
@@ -629,7 +654,7 @@ export default function EmpBallot() {
                                   role="button"
                                   tabIndex={0}
                                   onClick={() => {
-                                    if (isPosEdit) {
+                                    if (isPosEdit && !isStructureLocked) {
                                       requestCandidateDelete({
                                         positionID: position.positionID,
                                         positionName: position.positionName,
@@ -640,13 +665,19 @@ export default function EmpBallot() {
                                     }
 
                                     navigate(`/candidate/${cand.candidateID}`, {
-                                      state: { candidate: cand, votes, rank: index },
+                                      state: {
+                                        candidate: cand,
+                                        votes,
+                                        rank: index,
+                                        ballotID: ballot.ballotID,
+                                        ballotEnded: isStructureLocked,
+                                      },
                                     });
                                   }}
                                   onKeyDown={(e) => {
                                     if (e.key !== "Enter" && e.key !== " ") return;
 
-                                    if (isPosEdit) {
+                                    if (isPosEdit && !isStructureLocked) {
                                       requestCandidateDelete({
                                         positionID: position.positionID,
                                         positionName: position.positionName,
@@ -655,13 +686,19 @@ export default function EmpBallot() {
                                       });
                                     } else {
                                       navigate(`/candidate/${cand.candidateID}`, {
-                                        state: { candidate: cand, votes, rank: index },
+                                        state: {
+                                          candidate: cand,
+                                          votes,
+                                          rank: index,
+                                          ballotID: ballot.ballotID,
+                                          ballotEnded: isStructureLocked,
+                                        },
                                       });
                                     }
                                   }}
                                   className={[
                                     "focus:outline-none",
-                                    isPosEdit
+                                    isPosEdit && !isStructureLocked
                                       ? "cursor-pointer rounded-2xl ring-2 ring-red-500/40 hover:ring-red-500/60"
                                       : "cursor-pointer",
                                   ].join(" ")}
@@ -672,7 +709,7 @@ export default function EmpBallot() {
                             );
                           })}
 
-                          <div className={isPosEdit ? "opacity-60 pointer-events-none" : ""}>
+                          <div className={isPosEdit || isStructureLocked ? "opacity-60 pointer-events-none" : ""}>
                             <CreateCandidateCard
                               onClick={() =>
                                 navigate(`/create-candidate`, {
@@ -697,6 +734,7 @@ export default function EmpBallot() {
                 onClick={() =>
                   navigate(`/create-initiative?ballotID=${ballot.ballotID}`, { state: { ballotID: ballot.ballotID } })
                 }
+                disabled={isStructureLocked}
               >
                 Add Initiative
               </Button>
