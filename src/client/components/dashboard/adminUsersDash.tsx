@@ -39,6 +39,7 @@ import NoResultsCat from "../catErrors/noResultsCat";
 import { useCompanies } from "../../hooks/useCompanies";
 import {
   AdminUser,
+  useEmployeeAssignedCompanies,
   useAdminUsers,
   useCreateAdminUser,
   useDeleteAdminUser,
@@ -46,6 +47,7 @@ import {
 } from "../../hooks/useAdminUsers";
 import { PaginationControls } from "../paginationControls";
 import SelectCompany from "../createBallot/selectCompany";
+import { useUserStore } from "../../store/userStore";
 
 type AccountType = "Admin" | "Member" | "Officer" | "Employee";
 type UserSortBy = "name" | "username" | "accountType" | "company";
@@ -86,8 +88,13 @@ function normalizeCompanyName(user: AdminUser): string {
 }
 
 export default function AdminUsersDash() {
+  const currentUserID = useUserStore((s) => s.userID);
+  const currentUserRole = useUserStore((s) => s.accountType);
+  const isEmployeeScoped = currentUserRole === "Employee";
+
   const usersQuery = useAdminUsers();
   const companiesQuery = useCompanies();
+  const assignedCompaniesQuery = useEmployeeAssignedCompanies(currentUserID, isEmployeeScoped);
   const createUserMutation = useCreateAdminUser();
   const updateUserMutation = useUpdateAdminUser();
   const deleteUserMutation = useDeleteAdminUser();
@@ -103,6 +110,25 @@ export default function AdminUsersDash() {
     [companiesQuery.data],
   );
 
+  const assignedCompanyIDs = useMemo(
+    () =>
+      (assignedCompaniesQuery.data ?? [])
+        .map((row) => Number(row.companyID))
+        .filter((companyID) => Number.isFinite(companyID) && companyID > 0),
+    [assignedCompaniesQuery.data],
+  );
+
+  const allowedRoleOptions: Array<AccountType> = isEmployeeScoped
+    ? ["Officer", "Member"]
+    : ["Admin", "Employee", "Officer", "Member"];
+
+  const allowedCompanies = useMemo(() => {
+    if (!isEmployeeScoped) return companies;
+    if (assignedCompanyIDs.length === 0) return [];
+    const companySet = new Set(assignedCompanyIDs);
+    return companies.filter((company) => companySet.has(company.companyID));
+  }, [isEmployeeScoped, companies, assignedCompanyIDs]);
+
   const [page, setPage] = useState(0);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState(query);
@@ -114,7 +140,7 @@ export default function AdminUsersDash() {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
   const [formError, setFormError] = useState("");
-  const [form, setForm] = useState<UserFormState>(() => getDefaultForm(companies));
+  const [form, setForm] = useState<UserFormState>(() => getDefaultForm(allowedCompanies));
 
   const selectedFilterCompanyID = useMemo(() => {
     const first = companyFilterSet.values().next().value;
@@ -144,6 +170,38 @@ export default function AdminUsersDash() {
   useEffect(() => {
     setPage(0);
   }, [debouncedQuery, roleFilter, selectedFilterCompanyID, sortBy, sortDir]);
+
+  useEffect(() => {
+    if (!isEmployeeScoped) return;
+    const allowedCompanySet = new Set(allowedCompanies.map((company) => company.companyID));
+    setCompanyFilterSet((prev) => {
+      const filtered = Array.from(prev).filter((companyID) => allowedCompanySet.has(companyID));
+      return new Set(filtered);
+    });
+  }, [isEmployeeScoped, allowedCompanies]);
+
+  useEffect(() => {
+    if (!isEmployeeScoped) return;
+    if (allowedRoleOptions.includes(form.accountType)) return;
+    setForm((prev) => ({ ...prev, accountType: "Member" }));
+  }, [isEmployeeScoped, allowedRoleOptions, form.accountType]);
+
+  useEffect(() => {
+    if (!isEmployeeScoped) return;
+    if (roleFilter === "all" || allowedRoleOptions.includes(roleFilter)) return;
+    setRoleFilter("all");
+  }, [isEmployeeScoped, roleFilter, allowedRoleOptions]);
+
+  useEffect(() => {
+    if (!isEmployeeScoped) return;
+    const allowedCompanySet = new Set(allowedCompanies.map((company) => company.companyID));
+    if (allowedCompanies.length === 0) {
+      setForm((prev) => ({ ...prev, companyID: 0 }));
+      return;
+    }
+    if (allowedCompanySet.has(form.companyID)) return;
+    setForm((prev) => ({ ...prev, companyID: allowedCompanies[0].companyID }));
+  }, [isEmployeeScoped, allowedCompanies, form.companyID]);
 
   const users = (usersQuery.data ?? []) as AdminUser[];
   const filteredUsers = useMemo(() => {
@@ -195,7 +253,7 @@ export default function AdminUsersDash() {
 
   const openCreateModal = () => {
     setFormError("");
-    setForm(getDefaultForm(companies));
+    setForm(getDefaultForm(allowedCompanies));
     setCreateOpen(true);
   };
 
@@ -232,6 +290,12 @@ export default function AdminUsersDash() {
     }
     if (!Number.isFinite(form.companyID) || form.companyID <= 0) {
       return "A company must be selected.";
+    }
+    if (isEmployeeScoped && !allowedRoleOptions.includes(form.accountType)) {
+      return "Employees can only manage Officers and Members.";
+    }
+    if (isEmployeeScoped && !assignedCompanyIDs.includes(form.companyID)) {
+      return "Selected company is outside your assigned companies.";
     }
     return "";
   };
@@ -300,12 +364,20 @@ export default function AdminUsersDash() {
     setDeleteTarget(null);
   };
 
+  const isPageLoading = usersQuery.isLoading || (isEmployeeScoped && assignedCompaniesQuery.isLoading);
+  const hasAssignedCompaniesError = isEmployeeScoped && assignedCompaniesQuery.isError;
+  const hasNoAssignedCompanies =
+    isEmployeeScoped &&
+    !assignedCompaniesQuery.isLoading &&
+    !assignedCompaniesQuery.isError &&
+    assignedCompanyIDs.length === 0;
+
   return (
     <div className="min-h-screen w-full bg-slate-950 text-slate-300">
       <div className="p-4 space-y-4 flex flex-col">
         <h1 className="text-2xl text-slate-100">Edit Users Dashboard</h1>
 
-        {!usersQuery.isLoading && !usersQuery.isError && (
+        {!isPageLoading && !usersQuery.isError && !hasAssignedCompaniesError && !hasNoAssignedCompanies && (
           <PaginationControls
             page={page}
             totalPages={totalPages}
@@ -332,16 +404,17 @@ export default function AdminUsersDash() {
             </SelectTrigger>
             <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
               <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="Admin">Admin</SelectItem>
-              <SelectItem value="Employee">Employee</SelectItem>
-              <SelectItem value="Officer">Officer</SelectItem>
-              <SelectItem value="Member">Member</SelectItem>
+              {allowedRoleOptions.map((role) => (
+                <SelectItem key={role} value={role}>
+                  {role}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
           <div className="w-full max-w-sm">
             <SelectCompany
-              companiesData={companies}
+              companiesData={allowedCompanies}
               companiesIsLoading={companiesQuery.isLoading}
               companiesIsError={companiesQuery.isError}
               selectedCompanies={companyFilterSet}
@@ -390,6 +463,7 @@ export default function AdminUsersDash() {
             <Button
               className="border-slate-700 bg-slate-200/10 text-slate-100 hover:bg-slate-200/15"
               onClick={openCreateModal}
+              disabled={isEmployeeScoped && allowedCompanies.length === 0}
             >
               <Plus className="mr-2 h-4 w-4" />
               Create User
@@ -397,9 +471,19 @@ export default function AdminUsersDash() {
           </div>
         </div>
 
-        {usersQuery.isLoading ? (
+        {isPageLoading ? (
           <div className="flex-1 flex items-center justify-center py-24">
             <PulseLoader color="#cbd5e1" size={12} />
+          </div>
+        ) : hasAssignedCompaniesError ? (
+          <div className="flex-1 flex items-center justify-center py-24">
+            <p className="text-slate-300">Unable to load assigned companies</p>
+          </div>
+        ) : hasNoAssignedCompanies ? (
+          <div className="flex-1 flex items-center justify-center py-24">
+            <p className="text-slate-300">
+              You do not have assigned companies, so user management is unavailable.
+            </p>
           </div>
         ) : usersQuery.isError ? (
           <div className="flex-1 flex items-center justify-center py-24">
@@ -542,15 +626,16 @@ export default function AdminUsersDash() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
-                  <SelectItem value="Admin">Admin</SelectItem>
-                  <SelectItem value="Employee">Employee</SelectItem>
-                  <SelectItem value="Officer">Officer</SelectItem>
-                  <SelectItem value="Member">Member</SelectItem>
+                  {allowedRoleOptions.map((role) => (
+                    <SelectItem key={`create-role-${role}`} value={role}>
+                      {role}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <SelectCompany
-              companiesData={companies}
+              companiesData={allowedCompanies}
               companiesIsLoading={companiesQuery.isLoading}
               companiesIsError={companiesQuery.isError}
               selectedCompanies={selectedFormCompanySet}
@@ -566,7 +651,7 @@ export default function AdminUsersDash() {
               <Label>Assigned Companies</Label>
               <ScrollArea className="h-36 rounded-md border border-slate-800 p-3">
                 <div className="space-y-2">
-                  {companies.map((company) => (
+                  {allowedCompanies.map((company) => (
                     <div key={`create-assigned-${company.companyID}`} className="flex items-center gap-2">
                       <Checkbox
                         checked={form.assignedCompanies.has(company.companyID)}
@@ -636,15 +721,16 @@ export default function AdminUsersDash() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
-                  <SelectItem value="Admin">Admin</SelectItem>
-                  <SelectItem value="Employee">Employee</SelectItem>
-                  <SelectItem value="Officer">Officer</SelectItem>
-                  <SelectItem value="Member">Member</SelectItem>
+                  {allowedRoleOptions.map((role) => (
+                    <SelectItem key={`edit-role-${role}`} value={role}>
+                      {role}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <SelectCompany
-              companiesData={companies}
+              companiesData={allowedCompanies}
               companiesIsLoading={companiesQuery.isLoading}
               companiesIsError={companiesQuery.isError}
               selectedCompanies={selectedFormCompanySet}
@@ -660,7 +746,7 @@ export default function AdminUsersDash() {
               <Label>Assigned Companies</Label>
               <ScrollArea className="h-36 rounded-md border border-slate-800 p-3">
                 <div className="space-y-2">
-                  {companies.map((company) => (
+                  {allowedCompanies.map((company) => (
                     <div key={`edit-assigned-${company.companyID}`} className="flex items-center gap-2">
                       <Checkbox
                         checked={form.assignedCompanies.has(company.companyID)}

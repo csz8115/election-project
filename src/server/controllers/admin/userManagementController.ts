@@ -5,6 +5,16 @@ import { User } from '../../types/user.ts';
 import logger from '../../utils/logger.ts';
 import { requireRole } from '../../middlewares/requireRole.ts';
 import { adminUserService } from '../../services/admin/adminUserService.ts';
+import { decrypt } from '../../utils/session.ts';
+import {
+    assertEmployeeCreateScope,
+    assertEmployeeDeleteScope,
+    assertEmployeeUpdateScope,
+    filterUsersForActor,
+    uniquePositiveCompanyIDs,
+    type ManagementRole,
+    type ScopedActor,
+} from './userManagementAccess.ts';
 
 const router = express.Router();
 const { db } = adminUserService;
@@ -17,8 +27,57 @@ const lNameSchema = z.string().min(1).max(50).regex(/^[a-zA-Z]+$/);
 const companyIDSchema = z.number().int().positive();
 const assignedCompaniesSchema = z.array(z.number().int().positive()).optional();
 
-router.post('/createUser', requireRole('Admin'), async (req, res): Promise<any> => {
+async function getScopedActor(req): Promise<ScopedActor> {
+    const session = await decrypt(req.cookies?.user_session);
+    const accountType = session?.accountType as ManagementRole | undefined;
+    const username = session?.username as string | undefined;
+
+    if (!accountType || !username || (accountType !== 'Admin' && accountType !== 'Employee')) {
+        throw new Error('Access denied');
+    }
+
+    const actor = await db.getUserByUsername(username);
+    if (!actor || !actor.userID) {
+        throw new Error('Access denied');
+    }
+
+    if (accountType === 'Admin') {
+        return {
+            accountType,
+            assignedCompanyIDs: [],
+        };
+    }
+
+    const assignments = await db.getEmpAssignedCompanies(Number(actor.userID));
+    const assignedCompanyIDs = uniquePositiveCompanyIDs(
+        (assignments ?? []).map((assignment) => Number(assignment?.companyID)),
+    );
+
+    return {
+        accountType,
+        assignedCompanyIDs,
+    };
+}
+
+function resolveErrorStatus(error): { status: number; message: string } | null {
+    if (!error || typeof error.message !== 'string') return null;
+
+    if (
+        error.message === 'Forbidden account type' ||
+        error.message === 'Forbidden company' ||
+        error.message === 'Forbidden assigned company' ||
+        error.message === 'Forbidden target user' ||
+        error.message === 'Access denied'
+    ) {
+        return { status: 403, message: 'Access denied' };
+    }
+
+    return null;
+}
+
+router.post('/createUser', requireRole('Admin', 'Employee'), async (req, res): Promise<any> => {
     try {
+        const actor = await getScopedActor(req);
         const {
             username,
             fName,
@@ -42,6 +101,13 @@ router.post('/createUser', requireRole('Admin'), async (req, res): Promise<any> 
         const parsedAssignedCompanies = assignedCompaniesSchema.parse(
             Array.isArray(assignedCompanies) ? assignedCompanies.map(Number) : undefined,
         ) ?? [];
+
+        assertEmployeeCreateScope(actor, {
+            accountType,
+            companyID: Number(companyID),
+            assignedCompanies: parsedAssignedCompanies,
+        });
+
         // Check if the username already exists
         const existingUser = await db.checkUsername(username);
         if (existingUser) {
@@ -85,21 +151,25 @@ router.post('/createUser', requireRole('Admin'), async (req, res): Promise<any> 
         else if (error.message === 'Invalid request') {
             return res.status(400).json({ error: 'Invalid request' });
         }
+
+        const resolved = resolveErrorStatus(error);
+        if (resolved) {
+            return res.status(resolved.status).json({ error: resolved.message });
+        }
+
         // Handle other errors
         return res.status(500).json({ error: 'Failed to register user' })
     }
 });
 
-router.get(`/getAllUsers`, requireRole('Admin'), async (req, res): Promise<any> => {
+router.get(`/getAllUsers`, requireRole('Admin', 'Employee'), async (req, res): Promise<any> => {
     try {
+        const actor = await getScopedActor(req);
 
-        const users = await db.getAllUsers();
+        const users = await db.getAllUsers() ?? [];
+        const scopedUsers = filterUsersForActor(actor, users);
 
-        if (!users) {
-            throw new Error('Users not found');
-        }
-
-        return res.status(200).json(users);
+        return res.status(200).json(scopedUsers);
     } catch (error) {
         // Handle the Zod validation error
         if (error instanceof z.ZodError) {
@@ -113,14 +183,21 @@ router.get(`/getAllUsers`, requireRole('Admin'), async (req, res): Promise<any> 
         else if (error.message === 'Users not found') {
             return res.status(404).json({ error: 'Users not found' });
         }
+
+        const resolved = resolveErrorStatus(error);
+        if (resolved) {
+            return res.status(resolved.status).json({ error: resolved.message });
+        }
+
         // Handle other errors
         console.log(error);
         return res.status(500).json({ error: 'Failed to get users' });
     }
 });
 
-router.delete('/deleteUser', requireRole('Admin'), async (req, res): Promise<any> => {
+router.delete('/deleteUser', requireRole('Admin', 'Employee'), async (req, res): Promise<any> => {
     try {
+        const actor = await getScopedActor(req);
         const userID = Number(req.body.userID ?? req.query.userID);
         if (!Number.isFinite(userID) || userID <= 0) {
             throw new Error('Invalid request');
@@ -129,6 +206,9 @@ router.delete('/deleteUser', requireRole('Admin'), async (req, res): Promise<any
         if (!existingUser || typeof existingUser === 'string') {
             throw new Error('User does not exist');
         }
+
+        assertEmployeeDeleteScope(actor, existingUser);
+
         // Delete the user
         const status = await db.deleteUser(userID);
         if (!status) {
@@ -148,14 +228,21 @@ router.delete('/deleteUser', requireRole('Admin'), async (req, res): Promise<any
         else if (error.message === 'Invalid request') {
             return res.status(400).json({ error: 'Invalid request' });
         }
+
+        const resolved = resolveErrorStatus(error);
+        if (resolved) {
+            return res.status(resolved.status).json({ error: resolved.message });
+        }
+
         // Handle other errors
         console.log(error);
         return res.status(500).json({ error: 'Failed to delete user' });
     }
 });
 
-router.put('/updateUser', requireRole('Admin'), async (req, res): Promise<any> => {
+router.put('/updateUser', requireRole('Admin', 'Employee'), async (req, res): Promise<any> => {
     try {
+        const actor = await getScopedActor(req);
         const {
             userID,
             username,
@@ -188,6 +275,12 @@ router.put('/updateUser', requireRole('Admin'), async (req, res): Promise<any> =
         if (!existingUser || typeof existingUser === 'string') {
             throw new Error('User does not exist');
         }
+
+        assertEmployeeUpdateScope(actor, existingUser, {
+            accountType,
+            companyID: Number(companyID),
+            assignedCompanies: parsedAssignedCompanies,
+        });
 
         const usernameOwner = await db.checkUsername(username);
         if (usernameOwner && usernameOwner.userID !== parsedUserID) {
@@ -228,6 +321,12 @@ router.put('/updateUser', requireRole('Admin'), async (req, res): Promise<any> =
         else if (error.message === 'Invalid request') {
             return res.status(400).json({ error: 'Invalid request' });
         }
+
+        const resolved = resolveErrorStatus(error);
+        if (resolved) {
+            return res.status(resolved.status).json({ error: resolved.message });
+        }
+
         return res.status(500).json({ error: 'Failed to update user' });
     }
 });

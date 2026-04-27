@@ -130,7 +130,7 @@ export const router = createBrowserRouter([
       {
         path: "users-page",
         element: (
-          <ProtectedRoute allowedRoles={["Admin"]}>
+          <ProtectedRoute allowedRoles={["Admin", "Employee"]}>
             <AdminUsersDashboard />
           </ProtectedRoute>
         ),

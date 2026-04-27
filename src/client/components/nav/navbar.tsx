@@ -229,25 +229,21 @@ export default function Navbar({ scrollProgress }: NavbarProps) {
                       </NavigationMenuLink>
                     </NavigationMenuItem>
 
-                    {user.accountType === "Admin" && (
-                      <>
-                        <span className="text-slate-600 select-none">|</span>
-                        <NavigationMenuItem>
-                          <NavigationMenuLink asChild>
-                            <motion.div {...navItemMotion}>
-                              <MotionButton
-                                variant="ghost"
-                                className="bg-transparent hover:bg-slate-800/50 hover:text-white flex items-center justify-center gap-2 transition-colors duration-200"
-                                onClick={() => navigate("/users-page")}
-                              >
-                                Edit Users
-                              </MotionButton>
-                            </motion.div>
-                          </NavigationMenuLink>
-                        </NavigationMenuItem>
-                        <span className="text-slate-600 select-none">|</span>
-                      </>
-                    )}
+                    <span className="text-slate-600 select-none">|</span>
+                    <NavigationMenuItem>
+                      <NavigationMenuLink asChild>
+                        <motion.div {...navItemMotion}>
+                          <MotionButton
+                            variant="ghost"
+                            className="bg-transparent hover:bg-slate-800/50 hover:text-white flex items-center justify-center gap-2 transition-colors duration-200"
+                            onClick={() => navigate("/users-page")}
+                          >
+                            Edit Users
+                          </MotionButton>
+                        </motion.div>
+                      </NavigationMenuLink>
+                    </NavigationMenuItem>
+                    <span className="text-slate-600 select-none">|</span>
                   </>
                 )}
 

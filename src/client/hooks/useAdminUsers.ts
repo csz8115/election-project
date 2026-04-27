@@ -40,6 +40,10 @@ export type UpdateAdminUserPayload = {
   assignedCompanies?: number[];
 };
 
+export type EmployeeAssignedCompany = {
+  companyID: number;
+};
+
 async function parseApiResponse(response: Response): Promise<any> {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -120,5 +124,23 @@ export function useDeleteAdminUser() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
     },
+  });
+}
+
+export function useEmployeeAssignedCompanies(userID: number, enabled: boolean) {
+  return useQuery<EmployeeAssignedCompany[]>({
+    queryKey: ["employeeAssignedCompanies", userID],
+    queryFn: async () => {
+      const url = new URL(`${import.meta.env.VITE_API_URL}api/v1/member/getEmployeeCompany`);
+      url.searchParams.set("userID", String(userID));
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        credentials: "include",
+      });
+      return parseApiResponse(response);
+    },
+    enabled: enabled && Number.isFinite(userID) && userID > 0,
+    refetchOnWindowFocus: false,
+    retry: (failureCount) => failureCount < 2,
   });
 }
