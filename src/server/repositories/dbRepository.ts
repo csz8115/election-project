@@ -207,6 +207,16 @@ async function getAllUsers(): Promise<User[]> {
                 lName: true,
                 companyID: true,
                 company: true,
+                employeeSocieties: {
+                    select: {
+                        companyID: true,
+                        company: {
+                            select: {
+                                companyName: true,
+                            },
+                        },
+                    },
+                },
                 // password field is omitted
             },
         });
@@ -283,6 +293,14 @@ async function deleteCandidate(candidateID: number): Promise<boolean> {
 
 async function createUser(user: User, assignedCompanies: number[] = []): Promise<User> {
     try {
+        const normalizedAssignedCompanies = Array.from(
+            new Set(
+                (assignedCompanies ?? [])
+                    .map((companyID) => Number(companyID))
+                    .filter((companyID) => Number.isFinite(companyID) && companyID > 0),
+            ),
+        );
+
         // Start a transaction to ensure both user creation and linking are successful
         const newUser = await prisma.$transaction(async (tx) => {
             // Check if the user is of type Employee or Admin
@@ -324,7 +342,7 @@ async function createUser(user: User, assignedCompanies: number[] = []): Promise
 
                 // If the user is of type Employee, create the assigned companies entries
                 if (user.accountType === "Employee") {
-                    for (const companyID of assignedCompanies) {
+                    for (const companyID of normalizedAssignedCompanies) {
                         await tx.employeeSocietyAssignment.create({
                             data: {
                                 user: {
@@ -441,29 +459,69 @@ async function createWriteInCandidate(fName: string, lName: string): Promise<num
     }
 }
 
-async function updateUser(userID: number, user: User): Promise<User> {
+async function updateUser(
+    userID: number,
+    user: Partial<User>,
+    assignedCompanies: number[] = [],
+): Promise<User> {
     try {
-        const fetchUser = await prisma.user.update({
-            where: {
-                userID: userID,
-            },
-            data: {
-                accountType: user.accountType,
-                username: user.username,
-                fName: user.fName,
-                lName: user.lName,
-            },
-            select: {
-                userID: true,
-                accountType: true,
-                username: true,
-                fName: true,
-                lName: true,
-                companyID: true,
-                company: true,
-                // password field is omitted
-            },
+        const normalizedAssignedCompanies = Array.from(
+            new Set(
+                (assignedCompanies ?? [])
+                    .map((companyID) => Number(companyID))
+                    .filter((companyID) => Number.isFinite(companyID) && companyID > 0),
+            ),
+        );
+
+        const fetchUser = await prisma.$transaction(async (tx) => {
+            const updatedUser = await tx.user.update({
+                where: {
+                    userID: userID,
+                },
+                data: {
+                    accountType: user.accountType,
+                    username: user.username,
+                    fName: user.fName,
+                    lName: user.lName,
+                    companyID: user.companyID,
+                    ...(user.password ? { password: user.password } : {}),
+                },
+                select: {
+                    userID: true,
+                    accountType: true,
+                    username: true,
+                    fName: true,
+                    lName: true,
+                    companyID: true,
+                    company: true,
+                    // password field is omitted
+                },
+            });
+
+            await tx.employeeSocietyAssignment.deleteMany({
+                where: {
+                    userID,
+                },
+            });
+
+            if (updatedUser.accountType === "Employee") {
+                for (const companyID of normalizedAssignedCompanies) {
+                    await tx.employeeSocietyAssignment.create({
+                        data: {
+                            user: {
+                                connect: { userID },
+                            },
+                            company: {
+                                connect: { companyID },
+                            },
+                        },
+                    });
+                }
+            }
+
+            return updatedUser;
         });
+
         return fetchUser;
     } catch (error) {
         logRepositoryError({

@@ -18,6 +18,7 @@ import CreateInitiative from "./ballot-routes/create-initiative";
 import Candidate from "./candidate-routes/candidate";
 import CreateCandidate from "./candidate-routes/create-candidate";
 import CreatePosition from "./candidate-routes/create-position";
+import AdminUsersDashboard from "./dashboard-routes/admin-users-dashboard";
 
 export const router = createBrowserRouter([
   // Public route (no navbar)
@@ -123,6 +124,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute allowedRoles={["Admin"]}>
             <AdminDashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "users-page",
+        element: (
+          <ProtectedRoute allowedRoles={["Admin"]}>
+            <AdminUsersDashboard />
           </ProtectedRoute>
         ),
       },
