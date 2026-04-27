@@ -74,7 +74,7 @@ export default function SelectCompany({
 
   return (
     <Field>
-      <FieldLabel>{label}</FieldLabel>
+      {label !== "" && <FieldLabel>{label}</FieldLabel>}
 
       <Popover open={open} onOpenChange={(v) => !disabled && setOpen(v)}>
         <PopoverTrigger asChild>

@@ -5,7 +5,7 @@ import { adminReportService } from '../../services/admin/adminReportService.ts';
 
 const router = express.Router();
 const { db, getRedisClient, getHttpStats, getDbStats } = adminReportService;
-router.get(`/getSystemReport`, requireRole('Admin', 'Employee'), async (req, res): Promise<any> => {
+router.get(`/getSystemReport`, requireRole('Admin'), async (req, res): Promise<any> => {
     try {
         const keys = await getRedisClient().keys('*active:*');
         const activeUsers = keys.length;
