@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useReducedMotion } from "framer-motion";
 import { useScrollContainerToTop } from "../../hooks/useScrollContainer";
 import { useCreateInitiative } from "../../hooks/useCreateInitiative";
+import { useBallot } from "../../hooks/useBallot";
 
 function parseNum(search: string, keys: string[]): number | undefined {
   const sp = new URLSearchParams(search);
@@ -38,6 +39,11 @@ export default function CreateInitiative() {
   const [inlineError, setInlineError] = React.useState<string | null>(null);
 
   const missingBallot = !ballotID;
+  const ballotQuery = useBallot(ballotID, { enabled: !!ballotID });
+  const isStructureLocked = Boolean(
+    ballotQuery.data?.endDate &&
+      new Date().getTime() > new Date(ballotQuery.data.endDate as any).getTime(),
+  );
 
   const updateResponse = (index: number, value: string) => {
     setResponses((prev) => prev.map((item, i) => (i === index ? { response: value } : item)));
@@ -60,6 +66,12 @@ export default function CreateInitiative() {
 
     if (!ballotID) {
       const msg = "Missing ballotID. Navigate from a ballot or include it in the URL.";
+      setInlineError(msg);
+      toast.error(msg);
+      return;
+    }
+    if (isStructureLocked) {
+      const msg = "This election has ended. Structure edits are disabled.";
       setInlineError(msg);
       toast.error(msg);
       return;
@@ -128,6 +140,11 @@ export default function CreateInitiative() {
                     {inlineError}
                   </div>
                 ) : null}
+                {isStructureLocked ? (
+                  <div className="rounded-md border border-amber-500/40 bg-amber-950/30 p-3 text-amber-200 text-sm">
+                    This election has ended. Structure edits are disabled.
+                  </div>
+                ) : null}
 
                 <div className="space-y-1">
                   <label className="text-sm text-slate-300">Initiative Name</label>
@@ -157,6 +174,7 @@ export default function CreateInitiative() {
                       variant="outline"
                       className="border-white/10 bg-white/5 hover:bg-white/10"
                       onClick={addResponse}
+                      disabled={isStructureLocked}
                     >
                       <Plus className="mr-2 h-4 w-4" />
                       Add Response
@@ -175,7 +193,7 @@ export default function CreateInitiative() {
                         type="button"
                         variant="outline"
                         onClick={() => removeResponse(idx)}
-                        disabled={responses.length <= 1}
+                        disabled={responses.length <= 1 || isStructureLocked}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -187,7 +205,7 @@ export default function CreateInitiative() {
                   <Button
                     type="submit"
                     className="bg-white/10 hover:bg-white/15 text-slate-100"
-                    disabled={createInitiativeMutation.isPending}
+                    disabled={createInitiativeMutation.isPending || isStructureLocked}
                   >
                     {createInitiativeMutation.isPending ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
