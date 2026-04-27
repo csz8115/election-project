@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
 import { PulseLoader } from "react-spinners";
 import { toast } from "sonner";
@@ -44,6 +45,7 @@ import {
   useUpdateAdminUser,
 } from "../../hooks/useAdminUsers";
 import { PaginationControls } from "../paginationControls";
+import SelectCompany from "../createBallot/selectCompany";
 
 type AccountType = "Admin" | "Member" | "Officer" | "Employee";
 type UserSortBy = "name" | "username" | "accountType" | "company";
@@ -105,7 +107,7 @@ export default function AdminUsersDash() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState(query);
   const [roleFilter, setRoleFilter] = useState<"all" | AccountType>("all");
-  const [companyFilter, setCompanyFilter] = useState<string>("all");
+  const [companyFilterSet, setCompanyFilterSet] = useState<Set<number>>(new Set());
   const [sortBy, setSortBy] = useState<UserSortBy>("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [createOpen, setCreateOpen] = useState(false);
@@ -114,6 +116,26 @@ export default function AdminUsersDash() {
   const [formError, setFormError] = useState("");
   const [form, setForm] = useState<UserFormState>(() => getDefaultForm(companies));
 
+  const selectedFilterCompanyID = useMemo(() => {
+    const first = companyFilterSet.values().next().value;
+    return typeof first === "number" ? first : null;
+  }, [companyFilterSet]);
+
+  const selectedFormCompanySet = useMemo(() => {
+    return form.companyID > 0 ? new Set<number>([form.companyID]) : new Set<number>();
+  }, [form.companyID]);
+
+  const setFormCompanySelection: Dispatch<SetStateAction<Set<number>>> = (next) => {
+    const prevSelection =
+      form.companyID > 0 ? new Set<number>([form.companyID]) : new Set<number>();
+    const resolved = typeof next === "function" ? next(prevSelection) : next;
+    const selected = resolved.values().next().value;
+    setForm((prev) => ({
+      ...prev,
+      companyID: typeof selected === "number" ? selected : 0,
+    }));
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query), 450);
     return () => clearTimeout(timer);
@@ -121,12 +143,12 @@ export default function AdminUsersDash() {
 
   useEffect(() => {
     setPage(0);
-  }, [debouncedQuery, roleFilter, companyFilter, sortBy, sortDir]);
+  }, [debouncedQuery, roleFilter, selectedFilterCompanyID, sortBy, sortDir]);
 
   const users = (usersQuery.data ?? []) as AdminUser[];
   const filteredUsers = useMemo(() => {
     const normalized = debouncedQuery.trim().toLowerCase();
-    const companyIDFilter = companyFilter === "all" ? null : Number(companyFilter);
+    const companyIDFilter = selectedFilterCompanyID;
 
     const withFilters = users.filter((user) => {
       const fullName = `${user.fName} ${user.lName}`.toLowerCase();
@@ -161,7 +183,7 @@ export default function AdminUsersDash() {
       }
       return normalizeCompanyName(a).localeCompare(normalizeCompanyName(b)) * dir;
     });
-  }, [users, debouncedQuery, roleFilter, companyFilter, sortBy, sortDir]);
+  }, [users, debouncedQuery, roleFilter, selectedFilterCompanyID, sortBy, sortDir]);
 
   const LIMIT = 40;
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / LIMIT));
@@ -317,19 +339,27 @@ export default function AdminUsersDash() {
             </SelectContent>
           </Select>
 
-          <Select value={companyFilter} onValueChange={(value) => setCompanyFilter(value)}>
-            <SelectTrigger className="w-44 bg-slate-900/30 border-slate-800 text-slate-200">
-              <SelectValue placeholder="Company" />
-            </SelectTrigger>
-            <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
-              <SelectItem value="all">All Companies</SelectItem>
-              {companies.map((company) => (
-                <SelectItem key={company.companyID} value={String(company.companyID)}>
-                  {company.companyName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="w-full max-w-sm">
+            <SelectCompany
+              companiesData={companies}
+              companiesIsLoading={companiesQuery.isLoading}
+              companiesIsError={companiesQuery.isError}
+              selectedCompanies={companyFilterSet}
+              setSelectedCompanies={setCompanyFilterSet}
+              placeholder="All Companies"
+              label=""
+              description=""
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="border-slate-800 bg-slate-900/30 text-slate-200 hover:bg-slate-800/60"
+            onClick={() => setCompanyFilterSet(new Set())}
+            disabled={companyFilterSet.size === 0}
+          >
+            All Companies
+          </Button>
 
           <div className="flex-1" />
 
@@ -519,24 +549,16 @@ export default function AdminUsersDash() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Company</Label>
-              <Select
-                value={String(form.companyID || "")}
-                onValueChange={(value) => setForm((prev) => ({ ...prev, companyID: Number(value) }))}
-              >
-                <SelectTrigger className="bg-slate-900/40 border-slate-700 text-slate-100">
-                  <SelectValue placeholder="Select company" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
-                  {companies.map((company) => (
-                    <SelectItem key={company.companyID} value={String(company.companyID)}>
-                      {company.companyName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <SelectCompany
+              companiesData={companies}
+              companiesIsLoading={companiesQuery.isLoading}
+              companiesIsError={companiesQuery.isError}
+              selectedCompanies={selectedFormCompanySet}
+              setSelectedCompanies={setFormCompanySelection}
+              label="Company"
+              description=""
+              placeholder="Select company"
+            />
           </div>
 
           {form.accountType === "Employee" ? (
@@ -621,24 +643,16 @@ export default function AdminUsersDash() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Company</Label>
-              <Select
-                value={String(form.companyID || "")}
-                onValueChange={(value) => setForm((prev) => ({ ...prev, companyID: Number(value) }))}
-              >
-                <SelectTrigger className="bg-slate-900/40 border-slate-700 text-slate-100">
-                  <SelectValue placeholder="Select company" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
-                  {companies.map((company) => (
-                    <SelectItem key={company.companyID} value={String(company.companyID)}>
-                      {company.companyName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <SelectCompany
+              companiesData={companies}
+              companiesIsLoading={companiesQuery.isLoading}
+              companiesIsError={companiesQuery.isError}
+              selectedCompanies={selectedFormCompanySet}
+              setSelectedCompanies={setFormCompanySelection}
+              label="Company"
+              description=""
+              placeholder="Select company"
+            />
           </div>
 
           {form.accountType === "Employee" ? (
